@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1B3A6B">
+<title>ProceduresApp</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --blue:#1B3A6B;--blue-mid:#2E75B6;--blue-pale:#D6E4F0;
+  --orange:#E8610A;--white:#fff;--bg:#F4F6FA;
+  --border:#E2E8F0;--text:#1A1A2E;--muted:#7A8AA0;
+  --green:#16A34A;--red:#DC2626;
+  --r:12px;--shadow:0 2px 10px rgba(0,0,0,.1);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;overflow-x:hidden}
+.screen{display:none;flex-direction:column;min-height:100vh}
+.screen.active{display:flex}
+
+/* HEADER */
+.hdr{background:var(--blue);color:#fff;padding:0 16px;height:58px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.hdr-title{font-size:17px;font-weight:700;flex:1;line-height:1.2}
+.hdr-sub{font-size:11px;opacity:.75;font-weight:400}
+.btn-back{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:6px;line-height:1}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:16px;padding-bottom:86px}
+
+/* FOOTER */
+.ftr{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;border-top:1px solid var(--border);padding:10px 14px;display:flex;gap:8px;z-index:100}
+
+/* BUTTONS */
+.btn{padding:12px 18px;border-radius:var(--r);border:none;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:opacity .15s,transform .1s;font-family:inherit}
+.btn:active{transform:scale(.97)}
+.btn-p{background:var(--blue-mid);color:#fff;flex:1}
+.btn-s{background:var(--bg);color:var(--text);border:1.5px solid var(--border)}
+.btn-o{background:var(--orange);color:#fff;flex:1}
+.btn-full{width:100%}
+.btn-sm{padding:8px 14px;font-size:13px}
+.btn-danger{background:var(--red);color:#fff}
+
+/* CARDS */
+.card{background:#fff;border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card-title{font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+
+/* FORM */
+.fg{margin-bottom:14px}
+.fl{display:block;font-size:12px;font-weight:700;color:var(--blue);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+.fi,.fs,.fta{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:15px;font-family:inherit;background:#fff;color:var(--text);transition:border-color .2s}
+.fi:focus,.fs:focus,.fta:focus{outline:none;border-color:var(--blue-mid)}
+.fs{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%237A8AA0' d='M6 8L0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center}
+.fta{resize:none;line-height:1.5}
+
+/* PROCEDURE LIST */
+.proc-item{background:#fff;border-radius:var(--r);padding:14px 15px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;cursor:pointer;border-left:4px solid var(--blue-mid);transition:transform .1s}
+.proc-item:active{transform:scale(.99)}
+.proc-icon{font-size:28px;flex-shrink:0}
+.proc-info{flex:1;min-width:0}
+.proc-title{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proc-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.badge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700;white-space:nowrap;flex-shrink:0}
+.badge-draft{background:var(--bg);color:var(--muted)}
+.badge-generated{background:#DCFCE7;color:#15803D}
+.badge-exported{background:var(--blue-pale);color:var(--blue)}
+
+/* CAPTURE */
+.sec-hdr{background:var(--blue);color:#fff;padding:10px 14px;border-radius:9px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.sec-num{font-size:12px;opacity:.7;flex-shrink:0}
+.sec-title{font-size:14px;font-weight:700;flex:1}
+.sec-edit{background:none;border:none;color:#fff;opacity:.8;font-size:16px;cursor:pointer;padding:2px}
+
+.step-card{background:#fff;border-radius:9px;margin-bottom:8px;margin-left:16px;border:1px solid var(--border);overflow:hidden}
+.step-top{padding:10px 13px;display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.step-n{width:26px;height:26px;background:var(--blue-pale);color:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px}
+.step-txt{font-size:13px;color:var(--text);flex:1;line-height:1.45}
+.step-txt.empty{color:var(--muted);font-style:italic}
+.step-media{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.step-tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600}
+.tag-photo{background:#E0F2FE;color:#0369A1}
+.tag-voice{background:#FEF3C7;color:#92400E}
+
+.step-btns{display:flex;gap:0;border-top:1px solid var(--border)}
+.cap-btn{flex:1;padding:9px 6px;border:none;font-size:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;background:#fff;border-right:1px solid var(--border);transition:background .1s}
+.cap-btn:last-child{border-right:none}
+.cap-btn:active{background:var(--bg)}
+.cap-btn span{font-size:10px;font-weight:600;color:var(--muted)}
+.cap-btn.cv{background:#FFFBEB}
+.cap-btn.cp{background:#F0F9FF}
+.cap-btn.ct{background:#F0FFF4}
+.cap-btn.cd{background:#FFF1F2}
+
+.add-row{display:flex;gap:8px;margin-top:4px;margin-bottom:16px;margin-left:16px}
+
+/* STEP DETAIL */
+.voice-box{border:1.5px solid var(--border);border-radius:9px;padding:12px;min-height:60px;font-size:13px;line-height:1.5;color:var(--text);background:#FAFAFA;margin-top:8px;word-break:break-word}
+.rec-bar{display:flex;align-items:center;gap:8px;padding:10px 13px;background:#FEF3C7;border-radius:9px;margin-top:8px}
+.rec-dot{width:10px;height:10px;background:var(--red);border-radius:50%;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.photo-wrap{position:relative;aspect-ratio:1}
+.photo-wrap img{width:100%;height:100%;object-fit:cover;border-radius:7px;display:block}
+.photo-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+
+/* REVIEW */
+.review-box{background:var(--blue-pale);border-left:4px solid var(--blue-mid);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.review-label{font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.review-text{font-size:13px;line-height:1.75;color:var(--text);white-space:pre-wrap;word-break:break-word}
+
+/* EXPORT SUCCESS */
+.success-box{text-align:center;padding:32px 20px}
+.success-icon{font-size:72px;margin-bottom:16px}
+.success-title{font-size:22px;font-weight:700;margin-bottom:8px}
+.success-sub{font-size:14px;color:var(--muted);line-height:1.5}
+.share-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+
+/* EMPTY */
+.empty{text-align:center;padding:56px 20px}
+.empty-ico{font-size:64px;margin-bottom:16px;opacity:.6}
+.empty-t{font-size:18px;font-weight:700;margin-bottom:8px}
+.empty-s{font-size:14px;color:var(--muted);line-height:1.5}
+
+/* FAB */
+.fab{position:fixed;bottom:82px;right:16px;width:54px;height:54px;background:var(--orange);color:#fff;border:none;border-radius:50%;font-size:28px;cursor:pointer;box-shadow:0 4px 16px rgba(232,97,10,.45);display:flex;align-items:center;justify-content:center;z-index:50;transition:transform .15s}
+.fab:active{transform:scale(.9)}
+
+/* LOADING */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px;color:#fff;font-size:15px;font-weight:500}
+.spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+.toast{position:fixed;bottom:86px;left:50%;transform:translateX(-50%);background:rgba(26,26,46,.92);color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;font-weight:500;z-index:998;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;max-width:320px;text-align:center}
+.toast.on{opacity:1}
+
+/* SETTINGS */
+.settings-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
+.settings-row:last-child{border-bottom:none}
+.settings-label{flex:1;font-size:14px;font-weight:500}
+.settings-sub{font-size:12px;color:var(--muted);margin-top:2px}
+</style>
+</head>
+<body>
+
+<div id="toast" class="toast"></div>
+<div id="overlay" class="overlay" style="display:none">
+  <div class="spinner"></div>
+  <div id="overlay-text">Loading...</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     HOME
+══════════════════════════════════════════ -->
+<div id="s-home" class="screen">
+  <header class="hdr">
+    <div style="flex:1">
+      <div class="hdr-title">ProceduresApp</div>
+      <div class="hdr-sub">Magnetic Solution</div>
+    </div>
+    <button onclick="go('settings')" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px">⚙️</button>
+  </header>
+  <div class="content">
+    <div id="home-list"></div>
+  </div>
+  <button class="fab" onclick="go('form')">+</button>
+  <div class="ftr">
+    <button class="btn btn-p" onclick="go('form')">＋ New procedure</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SETTINGS
+══════════════════════════════════════════ -->
+<div id="s-settings" class="screen">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('home')">←</button>
+    <div class="hdr-title">Settings</div>
+  </header>
+  <div class="content">
+    <div class="card">
+      <div class="card-title">Claude API Key</div>
+      <div class="fg">
+        <label class="fl">API Key</label>
+        <input type="password" id="inp-apikey" class="fi" placeholder="sk-ant-api03-..." style="font-family:monospace;font-size:13px" />
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5">
+          Get your key at <strong>console.anthropic.com</strong><br>
+          Stored locally on your device only. ~€0.001 per procedure.
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Default operator</div>
+      <div class="fg" style="margin-bottom:0">
+        <input type="text" id="inp-operator" class="fi" placeholder="Your name" />
+      </div>
+    </div>
+    <div class="card">
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">🗑️ Clear all data</div>
+          <div class="settings-sub">Delete all procedures (irreversible)</div>
+        </div>
+        <button class="btn btn-sm btn-danger" onclick="clearAll()">Clear</button>
+      </div>
+    </div>
+  </div>
+  <div class="ftr">
+    <button class="btn btn-s" onclick="go('home')">Cancel</button>
+    <button class="btn btn-p" onclick="saveSettings()">Save ✓</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     FORM — New procedure
+══════════════════════════════════════════ -->
+<div id="s-form" class="screen">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('home')">←</button>
+    <div class="hdr-title">New procedure</div>
+  </header>
+  <div class="content">
+    <div class="card">
+      <div class="fg">
+        <label class="fl">Title *</label>
+        <input type="text" id="f-title" class="fi" placeholder="e.g. SASIC F0527000014" />
+      </div>
+      <div class="fg">
+        <label class="fl">Reference *</label>
+        <input type="text" id="f-ref" class="fi" placeholder="e.g. FAB-001" />
+      </div>
+      <div class="fg">
+        <label class="fl">Operator</label>
+        <input type="text" id="f-op" class="fi" placeholder="Your name" />
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="fl">Category</label>
+        <select id="f-cat" class="fs">
+          <option>Assembly</option>
+          <option>Electronics</option>
+          <option>Cabling</option>
+          <option>Packaging</option>
+          <option>Testing</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="ftr">
+    <button class="btn btn-s" onclick="go('home')">Cancel</button>
+    <button class="btn btn-p" onclick="createProc()">Create & start →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CAPTURE — Sections & Steps
+══════════════════════════════════════════ -->
+<div id="s-capture" class="screen">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('home')">←</button>
+    <div style="flex:1;min-width:0">
+      <div class="hdr-title" id="cap-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Procedure</div>
+      <div class="hdr-sub" id="cap-ref"></div>
+    </div>
+    <button onclick="generateAI()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px" title="Generate with AI">🤖</button>
+  </header>
+  <div class="content">
+    <div id="cap-content"></div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-s btn-sm" style="flex:1" onclick="addSection()">＋ Section</button>
+      <button class="btn btn-s btn-sm" style="flex:1" onclick="addStepLast()">＋ Sub-step</button>
+    </div>
+  </div>
+  <div class="ftr">
+    <button class="btn btn-s" onclick="go('home')">Save draft</button>
+    <button class="btn btn-o" onclick="generateAI()">🤖 Generate AI</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     STEP DETAIL
+══════════════════════════════════════════ -->
+<div id="s-step" class="screen">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('capture')">←</button>
+    <div class="hdr-title" id="step-hdr">Step</div>
+  </header>
+  <div class="content">
+
+    <!-- Voice -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="card-title" style="margin-bottom:0">🎙️ Voice dictation</div>
+        <button id="voice-btn" class="btn btn-s btn-sm" onclick="toggleVoice()">▶ Start</button>
+      </div>
+      <div id="rec-bar" class="rec-bar" style="display:none">
+        <div class="rec-dot"></div>
+        <span style="font-size:13px;font-weight:500">Recording — speak now</span>
+        <span style="font-size:12px;color:var(--muted);margin-left:auto" id="rec-lang">FR</span>
+      </div>
+      <div id="voice-box" class="voice-box" style="color:var(--muted);font-style:italic">
+        Tap "Start" to begin voice dictation...
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn btn-s btn-sm btn-full" onclick="clearVoice()">Clear voice</button>
+        <button class="btn btn-s btn-sm btn-full" onclick="appendVoiceToText()">→ Copy to notes</button>
+      </div>
+    </div>
+
+    <!-- Photos -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="card-title" style="margin-bottom:0">📷 Photos</div>
+        <label class="btn btn-s btn-sm" style="cursor:pointer">
+          Add photo
+          <input type="file" accept="image/*" capture="environment" id="photo-inp" style="display:none" onchange="addPhoto(event)" multiple />
+        </label>
+      </div>
+      <div id="photo-grid" class="photo-grid"></div>
+    </div>
+
+    <!-- Text -->
+    <div class="card">
+      <div class="card-title">✍️ Notes & description</div>
+      <textarea id="step-txt" class="fta" rows="6" placeholder="Write here in French or English — AI will translate to English..."></textarea>
+    </div>
+
+  </div>
+  <div class="ftr">
+    <button class="btn btn-s" onclick="cancelStep()">Cancel</button>
+    <button class="btn btn-p" onclick="saveStep()">Save step ✓</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     REVIEW — AI generated
+══════════════════════════════════════════ -->
+<div id="s-review" class="screen">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('capture')">←</button>
+    <div class="hdr-title">AI Review</div>
+    <button onclick="generateAI()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:4px" title="Regenerate">🔄</button>
+  </header>
+  <div class="content">
+    <div class="review-box">
+      <div class="review-label">Generated procedure — English only</div>
+      <div id="review-display" class="review-text"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Edit before export</div>
+      <textarea id="review-edit" class="fta" rows="14" style="font-size:13px;line-height:1.6"></textarea>
+    </div>
+  </div>
+  <div class="ftr">
+    <button class="btn btn-s" onclick="go('capture')">← Back</button>
+    <button class="btn btn-p" onclick="exportWord()">📄 Export Word</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     EXPORT
+══════════════════════════════════════════ -->
+<div id="s-export" class="screen">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('review')">←</button>
+    <div class="hdr-title">Export</div>
+  </header>
+  <div class="content">
+    <div class="success-box">
+      <div class="success-icon">✅</div>
+      <div class="success-title">Document ready!</div>
+      <div class="success-sub">Your procedure has been downloaded as a Word document.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Share</div>
+      <div class="share-grid">
+        <button class="btn btn-s" onclick="shareEmail()">✉️ Email</button>
+        <button class="btn btn-s" onclick="shareTeams()">💬 Teams</button>
+        <button class="btn btn-s" onclick="shareNative()">📤 Share</button>
+        <button class="btn btn-s" onclick="go('capture')">✏️ Edit more</button>
+      </div>
+    </div>
+    <button class="btn btn-p btn-full" onclick="go('home')" style="margin-top:8px">🏠 Back to home</button>
+  </div>
+</div>
+
+<!-- docx library -->
+<script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+const S = {
+  procs: JSON.parse(localStorage.getItem('procs')||'[]'),
+  apiKey: localStorage.getItem('apiKey')||'',
+  defaultOp: localStorage.getItem('defOp')||'',
+  cur: null,        // current procedure
+  curSecId: null,   // current section being edited
+  curStep: null,    // current step object
+  recog: null,
+  recording: false
+};
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+function go(screen){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('s-'+screen).classList.add('active');
+  if(screen==='home') renderHome();
+  if(screen==='capture') renderCapture();
+  if(screen==='settings'){
+    document.getElementById('inp-apikey').value=S.apiKey;
+    document.getElementById('inp-operator').value=S.defaultOp;
+  }
+  window.scrollTo(0,0);
+}
+
+// ═══════════════════════════════════════════════════════
+// PERSISTENCE
+// ═══════════════════════════════════════════════════════
+function save(){localStorage.setItem('procs',JSON.stringify(S.procs));}
+function uid(){return '_'+Date.now()+Math.random().toString(36).slice(2,7);}
+
+// ═══════════════════════════════════════════════════════
+// HOME
+// ═══════════════════════════════════════════════════════
+function renderHome(){
+  const el=document.getElementById('home-list');
+  if(!S.procs.length){
+    el.innerHTML=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-t">No procedures yet</div><div class="empty-s">Tap the orange + button to create your first manufacturing procedure.</div></div>`;
+    return;
+  }
+  const icons={Assembly:'🔧',Electronics:'⚡',Cabling:'🔌',Packaging:'📦',Testing:'🔬',Other:'📋'};
+  el.innerHTML=[...S.procs].reverse().map(p=>`
+    <div class="proc-item" onclick="openProc('${p.id}')">
+      <div class="proc-icon">${icons[p.cat]||'📋'}</div>
+      <div class="proc-info">
+        <div class="proc-title">${esc(p.title)}</div>
+        <div class="proc-meta">${esc(p.ref)} · ${esc(p.op||'—')} · ${new Date(p.created).toLocaleDateString()}</div>
+      </div>
+      <span class="badge badge-${p.status}">${p.status}</span>
+    </div>`).join('');
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function openProc(id){
+  S.cur=S.procs.find(p=>p.id===id);
+  if(!S.cur)return;
+  if(S.cur.status==='generated'||S.cur.status==='exported'){
+    go('review');
+    document.getElementById('review-display').textContent=S.cur.genText||'';
+    document.getElementById('review-edit').value=S.cur.genText||'';
+  } else {
+    go('capture');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════
+function saveSettings(){
+  S.apiKey=document.getElementById('inp-apikey').value.trim();
+  S.defaultOp=document.getElementById('inp-operator').value.trim();
+  localStorage.setItem('apiKey',S.apiKey);
+  localStorage.setItem('defOp',S.defaultOp);
+  toast('Settings saved ✓');
+  go('home');
+}
+
+function clearAll(){
+  if(!confirm('Delete ALL procedures? This cannot be undone.'))return;
+  localStorage.clear();
+  S.procs=[];S.cur=null;
+  toast('All data cleared');
+  go('home');
+}
+
+// ═══════════════════════════════════════════════════════
+// FORM — Create procedure
+// ═══════════════════════════════════════════════════════
+function initForm(){
+  document.getElementById('f-title').value='';
+  document.getElementById('f-ref').value='';
+  document.getElementById('f-op').value=S.defaultOp;
+}
+
+function createProc(){
+  const title=document.getElementById('f-title').value.trim();
+  const ref=document.getElementById('f-ref').value.trim();
+  if(!title||!ref){toast('Please fill in title and reference');return;}
+  const p={
+    id:uid(),title,ref,
+    op:document.getElementById('f-op').value.trim(),
+    cat:document.getElementById('f-cat').value,
+    status:'draft',
+    created:new Date().toISOString(),
+    sections:[],genText:''
+  };
+  S.procs.push(p);
+  S.cur=p;
+  S.defaultOp=p.op;
+  localStorage.setItem('defOp',p.op);
+  save();
+  go('capture');
+}
+
+// ═══════════════════════════════════════════════════════
+// CAPTURE
+// ═══════════════════════════════════════════════════════
+function renderCapture(){
+  const p=S.cur;if(!p)return;
+  document.getElementById('cap-title').textContent=p.title;
+  document.getElementById('cap-ref').textContent=p.ref;
+  const el=document.getElementById('cap-content');
+
+  if(!p.sections.length){
+    el.innerHTML=`<div class="card" style="text-align:center;padding:28px;color:var(--muted)"><div style="font-size:40px;margin-bottom:12px">📝</div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">No sections yet</div><div style="font-size:13px">Add a section first (e.g. "Board preparation")</div></div>`;
+    return;
+  }
+
+  el.innerHTML=p.sections.map((sec,si)=>`
+    <div class="sec-hdr">
+      <span class="sec-num">${roman(si+1)}.</span>
+      <span class="sec-title">${esc(sec.title||'Untitled')}</span>
+      <button class="sec-edit" onclick="editSecTitle('${sec.id}')">✏️</button>
+    </div>
+    ${sec.steps.map((st,idx)=>`
+      <div class="step-card">
+        <div class="step-top" onclick="editStep('${sec.id}','${st.id}')">
+          <div class="step-n">${idx+1}</div>
+          <div>
+            <div class="step-txt ${!st.text?'empty':''}">${st.text?esc(st.text.slice(0,90))+(st.text.length>90?'…':''):'Tap to add content...'}</div>
+            <div class="step-media">
+              ${st.photos&&st.photos.length?`<span class="step-tag tag-photo">📷 ${st.photos.length}</span>`:''}
+              ${st.voice?`<span class="step-tag tag-voice">🎙️</span>`:''}
+            </div>
+          </div>
+        </div>
+        <div class="step-btns">
+          <button class="cap-btn cv" onclick="quickVoice('${sec.id}','${st.id}')">🎙️<span>Voice</span></button>
+          <button class="cap-btn cp" onclick="quickPhoto('${sec.id}','${st.id}')">📷<span>Photo</span></button>
+          <button class="cap-btn ct" onclick="editStep('${sec.id}','${st.id}')">✍️<span>Edit</span></button>
+          <button class="cap-btn cd" onclick="deleteStep('${sec.id}','${st.id}')">🗑️<span>Del</span></button>
+        </div>
+      </div>`).join('')}
+    <div class="add-row">
+      <button class="btn btn-s btn-sm" onclick="addStepTo('${sec.id}')">＋ Add sub-step</button>
+    </div>
+  `).join('');
+}
+
+function roman(n){
+  const v=[10,'X',9,'IX',5,'V',4,'IV',1,'I'];
+  let r='';for(let i=0;i<v.length;i+=2)while(n>=v[i]){r+=v[i+1];n-=v[i];}return r;
+}
+
+// ── Sections ──
+function addSection(){
+  const title=prompt('Section name:\n(e.g. "Board preparation", "Housing assembly")');
+  if(!title||!title.trim())return;
+  const sec={id:uid(),title:title.trim(),steps:[]};
+  S.cur.sections.push(sec);
+  S.curSecId=sec.id;
+  save();renderCapture();toast('Section added ✓');
+}
+
+function editSecTitle(secId){
+  const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
+  const t=prompt('Edit section name:',sec.title);
+  if(t===null)return;
+  sec.title=t.trim();save();renderCapture();
+}
+
+// ── Steps ──
+function addStepLast(){
+  if(!S.cur.sections.length){toast('Add a section first');return;}
+  addStepTo(S.cur.sections[S.cur.sections.length-1].id);
+}
+
+function addStepTo(secId){
+  const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
+  const st={id:uid(),text:'',voice:'',photos:[]};
+  sec.steps.push(st);
+  save();
+  openStepEditor(secId,st);
+}
+
+function deleteStep(secId,stepId){
+  if(!confirm('Delete this step?'))return;
+  const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
+  sec.steps=sec.steps.filter(s=>s.id!==stepId);
+  save();renderCapture();
+}
+
+function editStep(secId,stepId){
+  const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
+  const st=sec.steps.find(s=>s.id===stepId);if(!st)return;
+  openStepEditor(secId,st);
+}
+
+function openStepEditor(secId,st){
+  const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
+  S.curSecId=secId;S.curStep=st;
+  const si=S.cur.sections.indexOf(sec)+1;
+  const idx=sec.steps.indexOf(st)+1;
+  document.getElementById('step-hdr').textContent=`${roman(si)}.${idx} — ${sec.title}`;
+  document.getElementById('step-txt').value=st.text||'';
+  const vb=document.getElementById('voice-box');
+  vb.textContent=st.voice||'Tap "Start" to begin voice dictation...';
+  vb.style.fontStyle=st.voice?'normal':'italic';
+  vb.style.color=st.voice?'var(--text)':'var(--muted)';
+  stopVoice();
+  renderPhotoGrid();
+  go('step');
+}
+
+function cancelStep(){
+  // Remove empty step
+  const sec=S.cur.sections.find(s=>s.id===S.curSecId);
+  if(sec&&S.curStep&&!S.curStep.text&&!S.curStep.voice&&(!S.curStep.photos||!S.curStep.photos.length)){
+    sec.steps=sec.steps.filter(s=>s.id!==S.curStep.id);
+    save();
+  }
+  go('capture');
+}
+
+function saveStep(){
+  const st=S.curStep;if(!st)return;
+  st.text=document.getElementById('step-txt').value.trim();
+  const vbox=document.getElementById('voice-box');
+  const vt=vbox.textContent;
+  if(vt&&vt!=='Tap "Start" to begin voice dictation...')st.voice=vt.trim();
+  if(!st.text&&st.voice)st.text=st.voice;
+  stopVoice();save();
+  toast('Step saved ✓');go('capture');
+}
+
+// ── Quick capture ──
+function quickVoice(secId,stepId){
+  editStep(secId,stepId);
+  setTimeout(startVoice,400);
+}
+
+function quickPhoto(secId,stepId){
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='image/*';inp.capture='environment';inp.multiple=true;
+  inp.style.display='none';
+  inp.onchange=e=>{
+    const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
+    const st=sec.steps.find(s=>s.id===stepId);if(!st)return;
+    if(!st.photos)st.photos=[];
+    Array.from(e.target.files).forEach(f=>{
+      const r=new FileReader();
+      r.onload=ev=>{st.photos.push({id:uid(),data:ev.target.result});save();renderCapture();toast('📷 Photo added');};
+      r.readAsDataURL(f);
+    });
+    inp.remove();
+  };
+  document.body.appendChild(inp);inp.click();
+}
+
+// ═══════════════════════════════════════════════════════
+// VOICE
+// ═══════════════════════════════════════════════════════
+function toggleVoice(){S.recording?stopVoice():startVoice();}
+
+function startVoice(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toast('Voice recognition not available on this browser');return;}
+  const r=new SR();
+  r.continuous=true;r.interimResults=true;r.lang='fr-FR';
+  const vbox=document.getElementById('voice-box');
+  const existing=vbox.style.color==='var(--muted)'?'':vbox.textContent==='Tap "Start" to begin voice dictation...'?'':vbox.textContent;
+  let final=existing;
+  r.onresult=e=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)final+=e.results[i][0].transcript+' ';
+      else interim+=e.results[i][0].transcript;
+    }
+    vbox.textContent=final+interim;
+    vbox.style.color=interim?'var(--orange)':'var(--text)';
+    vbox.style.fontStyle='normal';
+  };
+  r.onerror=()=>stopVoice();
+  r.onend=()=>{if(S.recording)r.start();};
+  r.start();S.recog=r;S.recording=true;
+  document.getElementById('voice-btn').innerHTML='■ Stop';
+  document.getElementById('voice-btn').style.background='#FEE2E2';
+  document.getElementById('rec-bar').style.display='flex';
+}
+
+function stopVoice(){
+  if(S.recog){try{S.recog.stop();}catch(e){}S.recog=null;}
+  S.recording=false;
+  const btn=document.getElementById('voice-btn');
+  if(btn){btn.innerHTML='▶ Start';btn.style.background='';}
+  const rb=document.getElementById('rec-bar');
+  if(rb)rb.style.display='none';
+  const vbox=document.getElementById('voice-box');
+  if(vbox)vbox.style.color='var(--text)';
+  // Auto-copy to text if empty
+  const stxt=document.getElementById('step-txt');
+  if(stxt&&!stxt.value.trim()&&vbox&&vbox.textContent&&vbox.textContent!=='Tap "Start" to begin voice dictation...')
+    stxt.value=vbox.textContent.trim();
+}
+
+function clearVoice(){
+  document.getElementById('voice-box').textContent='Tap "Start" to begin voice dictation...';
+  document.getElementById('voice-box').style.fontStyle='italic';
+  document.getElementById('voice-box').style.color='var(--muted)';
+}
+
+function appendVoiceToText(){
+  const vt=document.getElementById('voice-box').textContent;
+  if(!vt||vt==='Tap "Start" to begin voice dictation...')return;
+  const ta=document.getElementById('step-txt');
+  ta.value=(ta.value?ta.value+'\n':'')+vt.trim();
+  toast('Voice text copied to notes');
+}
+
+// ═══════════════════════════════════════════════════════
+// PHOTOS
+// ═══════════════════════════════════════════════════════
+function addPhoto(e){
+  const st=S.curStep;if(!st)return;
+  if(!st.photos)st.photos=[];
+  Array.from(e.target.files).forEach(f=>{
+    const r=new FileReader();
+    r.onload=ev=>{st.photos.push({id:uid(),data:ev.target.result});renderPhotoGrid();};
+    r.readAsDataURL(f);
+  });
+  e.target.value='';
+}
+
+function removePhoto(pid){
+  if(!S.curStep)return;
+  S.curStep.photos=S.curStep.photos.filter(p=>p.id!==pid);
+  renderPhotoGrid();
+}
+
+function renderPhotoGrid(){
+  const st=S.curStep;
+  const g=document.getElementById('photo-grid');if(!g)return;
+  if(!st||!st.photos||!st.photos.length){g.innerHTML='';return;}
+  g.innerHTML=st.photos.map(p=>`
+    <div class="photo-wrap">
+      <img src="${p.data}" />
+      <button class="photo-del" onclick="removePhoto('${p.id}')">×</button>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// AI GENERATION
+// ═══════════════════════════════════════════════════════
+async function generateAI(){
+  if(!S.apiKey){toast('Add your Claude API key in Settings ⚙️');go('settings');return;}
+  const p=S.cur;
+  if(!p||!p.sections.length){toast('Add sections and steps first');return;}
+
+  showOverlay('Generating with AI...');
+
+  const ctx=`You are a technical writer for Magnetic Solution, a manufacturing company.
+Write a complete, professional manufacturing procedure in ENGLISH ONLY.
+
+PROCEDURE INFO:
+Title: ${p.title}
+Reference: ${p.ref}
+Operator: ${p.op}
+Category: ${p.cat}
+Date: ${new Date().toLocaleDateString('en-GB')}
+
+CAPTURED CONTENT (translate any French to English):
+${p.sections.map((s,si)=>`
+=== SECTION ${roman(si+1)}: ${s.title} ===
+${s.steps.map((st,idx)=>`Step ${idx+1}:
+  Notes: ${st.text||st.voice||'(empty)'}
+  Photos: ${st.photos?st.photos.length:0} photo(s)`).join('\n')}`).join('\n\n')}
+
+RULES:
+- Write entirely in English
+- Translate any French content to English
+- Use clear, professional technical language
+- Format: SECTION TITLE in bold-style (e.g. "I. Board preparation")
+- Number each step (1. 2. 3.)
+- Write each step as a concise, actionable instruction
+- For steps with photos, add "(see photo)" at the end
+- Keep the same structure as the input
+
+Output the procedure text directly, no preamble:`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':S.apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-haiku-4-5',
+        max_tokens:2048,
+        messages:[{role:'user',content:ctx}]
+      })
+    });
+    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'API error '+res.status);}
+    const data=await res.json();
+    const txt=data.content[0].text;
+    p.genText=txt;p.status='generated';save();
+    hideOverlay();
+    document.getElementById('review-display').textContent=txt;
+    document.getElementById('review-edit').value=txt;
+    go('review');
+  }catch(err){
+    hideOverlay();
+    toast('Error: '+err.message);
+    console.error(err);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORT WORD
+// ═══════════════════════════════════════════════════════
+async function exportWord(){
+  const p=S.cur;
+  const txt=document.getElementById('review-edit').value;
+  p.genText=txt;p.status='exported';save();
+
+  showOverlay('Generating Word document...');
+
+  await waitDocx();
+
+  try{
+    const {Document,Packer,Paragraph,TextRun,AlignmentType,BorderStyle,WidthType,
+           Table,TableRow,TableCell,ShadingType,VerticalAlign}=window.docx;
+
+    const W=9638; // total width DXA
+    const children=[];
+
+    // ── Header info table ──
+    children.push(new Table({
+      width:{size:W,type:WidthType.DXA},
+      columnWidths:[W],
+      rows:[new TableRow({children:[
+        new TableCell({
+          borders:{top:{style:BorderStyle.NONE,size:0,color:'fff'},bottom:{style:BorderStyle.SINGLE,size:8,color:'1B3A6B'},left:{style:BorderStyle.NONE,size:0,color:'fff'},right:{style:BorderStyle.NONE,size:0,color:'fff'}},
+          width:{size:W,type:WidthType.DXA},
+          shading:{fill:'1B3A6B',type:ShadingType.CLEAR},
+          margins:{top:140,bottom:140,left:200,right:200},
+          children:[
+            new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:'MANUFACTURING PROCEDURE',bold:true,size:28,font:'Arial',color:'FFFFFF'})]}),
+            new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:p.title,bold:true,size:24,font:'Arial',color:'D6E4F0'})]}),
+          ]
+        })
+      ]})]
+    }));
+
+    // ── Meta info ──
+    children.push(new Table({
+      width:{size:W,type:WidthType.DXA},
+      columnWidths:[2409,2409,2410,2410],
+      rows:[
+        new TableRow({children:[
+          mkHCell('Reference',2409),mkHCell('Operator',2409),mkHCell('Category',2410),mkHCell('Date',2410)
+        ]}),
+        new TableRow({children:[
+          mkDCell(p.ref,2409),mkDCell(p.op||'—',2409),mkDCell(p.cat,2410),mkDCell(new Date().toLocaleDateString('en-GB'),2410)
+        ]})
+      ]
+    }));
+
+    children.push(new Paragraph({spacing:{before:300,after:0},children:[new TextRun('')]}));
+
+    // ── Content ──
+    const lines=txt.split('\n');
+    lines.forEach(line=>{
+      const t=line.trim();
+      if(!t){children.push(new Paragraph({spacing:{before:60,after:60},children:[new TextRun('')]}));return;}
+      // Section headers
+      if(/^[IVX]+\./i.test(t)||/^(I|II|III|IV|V|VI|VII|VIII|IX|X)\s/.test(t)){
+        children.push(new Table({
+          width:{size:W,type:WidthType.DXA},columnWidths:[W],
+          rows:[new TableRow({children:[new TableCell({
+            borders:{top:{style:BorderStyle.NONE,size:0,color:'fff'},bottom:{style:BorderStyle.NONE,size:0,color:'fff'},left:{style:BorderStyle.NONE,size:0,color:'fff'},right:{style:BorderStyle.NONE,size:0,color:'fff'}},
+            width:{size:W,type:WidthType.DXA},
+            shading:{fill:'1B3A6B',type:ShadingType.CLEAR},
+            margins:{top:100,bottom:100,left:200,right:200},
+            children:[new Paragraph({children:[new TextRun({text:t,bold:true,size:22,font:'Arial',color:'FFFFFF'})]})]
+          })]})]
+        }));
+        children.push(new Paragraph({spacing:{before:80,after:0},children:[new TextRun('')]}));
+      } else if(/^\d+\./.test(t)){
+        children.push(new Paragraph({
+          spacing:{before:120,after:80},
+          indent:{left:480},
+          children:[new TextRun({text:t,size:22,font:'Arial'})]
+        }));
+      } else {
+        children.push(new Paragraph({spacing:{before:80,after:60},children:[new TextRun({text:t,size:22,font:'Arial'})]}));
+      }
+    });
+
+    // ── Footer note ──
+    children.push(new Paragraph({spacing:{before:480},border:{top:{style:BorderStyle.SINGLE,size:4,color:'CCCCCC',space:4}},children:[new TextRun({text:`Generated by ProceduresApp — Magnetic Solution — ${new Date().toLocaleDateString('en-GB')}`,size:16,font:'Arial',color:'999999',italics:true})]}));
+
+    const doc=new Document({
+      sections:[{
+        properties:{page:{size:{width:11906,height:16838},margin:{top:1134,right:1134,bottom:1134,left:1134}}},
+        children
+      }]
+    });
+
+    const blob=await Packer.toBlob(doc);
+    const fname=`${p.ref}_${p.title.replace(/[^a-zA-Z0-9]/g,'_').slice(0,30)}_${new Date().toISOString().slice(0,10)}.docx`;
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=fname;a.click();
+    URL.revokeObjectURL(url);
+    hideOverlay();
+    go('export');
+  }catch(err){
+    hideOverlay();
+    toast('Export error: '+err.message);
+    console.error(err);
+  }
+}
+
+function mkHCell(t,w){
+  const {TableCell,Paragraph,TextRun,ShadingType,BorderStyle,WidthType,AlignmentType}=window.docx;
+  const b={style:BorderStyle.SINGLE,size:1,color:'C8D6E5'};
+  return new TableCell({borders:{top:b,bottom:b,left:b,right:b},width:{size:w,type:WidthType.DXA},shading:{fill:'2E75B6',type:ShadingType.CLEAR},margins:{top:80,bottom:80,left:120,right:120},children:[new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:t,bold:true,size:18,font:'Arial',color:'FFFFFF'})]})]});
+}
+
+function mkDCell(t,w){
+  const {TableCell,Paragraph,TextRun,ShadingType,BorderStyle,WidthType}=window.docx;
+  const b={style:BorderStyle.SINGLE,size:1,color:'C8D6E5'};
+  return new TableCell({borders:{top:b,bottom:b,left:b,right:b},width:{size:w,type:WidthType.DXA},shading:{fill:'F5F7FA',type:ShadingType.CLEAR},margins:{top:80,bottom:80,left:120,right:120},children:[new Paragraph({children:[new TextRun({text:t||'—',size:18,font:'Arial'})]})]}); 
+}
+
+function waitDocx(){
+  return new Promise(res=>{
+    if(window.docx){res();return;}
+    const t=setInterval(()=>{if(window.docx){clearInterval(t);res();}},100);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// SHARE
+// ═══════════════════════════════════════════════════════
+function shareEmail(){
+  const p=S.cur;
+  window.location.href=`mailto:?subject=Procedure: ${encodeURIComponent(p.title)}&body=Please find attached the manufacturing procedure for ${encodeURIComponent(p.title)} (${encodeURIComponent(p.ref)}).`;
+}
+function shareTeams(){toast('Download the .docx file and share it in Teams');}
+function shareNative(){
+  if(navigator.share)navigator.share({title:'Manufacturing Procedure',text:'Generated with ProceduresApp — Magnetic Solution'});
+  else toast('Sharing not available on this browser');
+}
+
+// ═══════════════════════════════════════════════════════
+// UI UTILS
+// ═══════════════════════════════════════════════════════
+function showOverlay(t){document.getElementById('overlay-text').textContent=t||'Loading...';document.getElementById('overlay').style.display='flex';}
+function hideOverlay(){document.getElementById('overlay').style.display='none';}
+
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('on');
+  clearTimeout(toast._t);
+  toast._t=setTimeout(()=>el.classList.remove('on'),2600);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded',()=>{
+  go('home');
+  if(!S.apiKey)setTimeout(()=>{go('settings');},600);
+});
+
+// Intercept form screen
+document.getElementById('s-form').addEventListener('transitionend',()=>{});
+document.querySelector('#s-home .btn-p').addEventListener('click',initForm,{capture:true});
+document.querySelector('.fab').addEventListener('click',initForm,{capture:true});
+</script>
+</body>
+</html>
