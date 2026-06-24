@@ -148,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.7</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.8</div>
     </div>
     <div class="login-card">
       <div class="login-title">Who are you?</div>
@@ -202,7 +202,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.7</div>
+      <div class="hdr-sub">Magnetic Solution — v1.8</div>
     </div>
     <div class="user-chip" onclick="logout()">
       <div class="user-chip-av" id="hdr-avatar"></div>
@@ -1078,30 +1078,21 @@ function exportWord(){
 
 function parseAIText(txt){
   var blocks=[];
-  // Clean markdown formatting
   txt=txt.replace(/\*\*(.*?)\*\*/g,'$1').replace(/__(.*?)__/g,'$1').replace(/\*(.*?)\*/g,'$1');
   txt.split('\n').forEach(function(line){
     var t=line.trim();
     if(!t){blocks.push({type:'empty'});return;}
-    // Strip any ## prefix first
     var clean=t.replace(/^#{1,3}\s*/,'');
-    // ONLY proper Roman numeral sections count for photo matching
+    // ONLY Roman numeral sections
     if(/^(I{1,3}|IV|V|VI{1,3}|IX|X)\.\s/i.test(clean)){
       blocks.push({type:'section',text:clean});
-    }
-    // Numbered step
-    else if(/^\d+[.)]\s/.test(t)){
+    } else if(/^\d+[.)]\s/.test(t)){
       blocks.push({type:'step',text:t});
-    }
-    // Bullet
-    else if(/^[-•*]\s/.test(t)){
-      blocks.push({type:'bullet',text:t});
-    }
-    // Separator lines → skip
-    else if(/^[-=]{3,}$/.test(t)){
-      // skip
-    }
-    else{
+    } else if(/^[-•]\s/.test(t)){
+      blocks.push({type:'bullet',text:t.slice(2)});
+    } else if(/^[-=]{3,}$/.test(t)){
+      // skip separators
+    } else {
       blocks.push({type:'text',text:clean});
     }
   });
@@ -1112,115 +1103,148 @@ function buildWordHTML(p,txt){
   var date=new Date().toLocaleDateString('en-GB');
   var users=getUsers();
   var author=users.find(function(u){return u.id===p.userId;});
-  var opName=p.op||(author?author.name:'—');
+  var opName=p.op||(author?author.name:'');
   var blocks=parseAIText(txt);
+
+  // ── Collect ALL photos from procedure data ──
+  // Used both for inline matching AND guaranteed appendix
+  var allPhotos=[]; // [{secTitle, stepNum, stepText, photos:[]}]
+  p.sections.forEach(function(sec,si){
+    sec.steps.forEach(function(st,idx){
+      if(st.photos&&st.photos.length){
+        allPhotos.push({
+          secTitle:sec.title,
+          secNum:si,
+          stepNum:idx,
+          stepText:st.text||st.voice||'',
+          photos:st.photos
+        });
+      }
+    });
+  });
+
+  // ── Build content using sections & steps ──
   var secCount=-1;
   var stepCount=0;
-  var rows='';
-
-  // Build a table of contents from sections
-  var toc='';
-  var secTitles=[];
-  blocks.forEach(function(b){if(b.type==='section')secTitles.push(b.text);});
-  if(secTitles.length>1){
-    toc='<table style="width:100%;border-collapse:collapse;margin-bottom:12px;border:1px solid #C8D6E5">';
-    toc+='<tr><td style="background:#F5F7FA;padding:8px 14px;font-weight:bold;font-size:10pt;font-family:Arial;border-bottom:1px solid #C8D6E5">Contents</td></tr>';
-    secTitles.forEach(function(st){
-      toc+='<tr><td style="padding:5px 14px 5px 28px;font-size:10pt;font-family:Arial">'+esc(st)+'</td></tr>';
-    });
-    toc+='</table>';
-  }
+  var content='';
 
   blocks.forEach(function(block){
     if(block.type==='empty')return;
+
     if(block.type==='section'){
       secCount++;stepCount=0;
-      rows+='<tr><td colspan="2" style="background:#1B3A6B;color:#fff;font-weight:bold;font-size:11pt;padding:7px 14px;font-family:Arial">'+esc(block.text)+'</td></tr>';
+      content+='<p style="font-weight:bold;font-size:12pt;font-family:Arial;margin:14px 0 4px;border-bottom:1px solid #000;padding-bottom:3px">'+esc(block.text)+'</p>';
       return;
     }
+
     if(block.type==='step'){
       var sec=p.sections[secCount];
       var st=sec?sec.steps[stepCount]:null;
-      var photos=st&&st.photos?st.photos:[];
+      var photos=st&&st.photos&&st.photos.length?st.photos:[];
       stepCount++;
+
       if(photos.length){
-        var imgHtml='';
+        // Step with photo — side by side table
+        content+='<table style="width:100%;border-collapse:collapse;margin:4px 0;border:1px solid #ddd">';
+        content+='<tr>';
+        content+='<td style="width:60%;padding:6px 8px;vertical-align:top;font-family:Arial;font-size:11pt">'+esc(block.text)+'</td>';
+        content+='<td style="width:40%;padding:4px;vertical-align:top;border-left:1px solid #ddd;text-align:center">';
         photos.forEach(function(ph){
-          imgHtml+='<img src="'+ph.data+'" style="max-width:100%;max-height:150px;display:block;margin-bottom:6px;border:1px solid #ddd">';
+          content+='<img src="'+ph.data+'" style="max-width:100%;max-height:160px;display:block;margin:2px auto">';
         });
-        rows+='<tr>'
-          +'<td style="padding:8px 14px;font-family:Arial;font-size:11pt;vertical-align:top;width:60%;border-bottom:1px solid #E2E8F0">'+esc(block.text)+'</td>'
-          +'<td style="padding:6px 8px;vertical-align:top;width:40%;border-bottom:1px solid #E2E8F0;border-left:1px solid #E2E8F0;text-align:center">'+imgHtml+'</td>'
-          +'</tr>';
-      }else{
-        rows+='<tr><td colspan="2" style="padding:7px 14px 7px 28px;font-family:Arial;font-size:11pt;border-bottom:1px solid #E2E8F0">'+esc(block.text)+'</td></tr>';
+        content+='</td>';
+        content+='</tr></table>';
+      } else {
+        content+='<p style="margin:3px 0 3px 24px;font-family:Arial;font-size:11pt">'+esc(block.text)+'</p>';
       }
       return;
     }
+
     if(block.type==='bullet'){
-      rows+='<tr><td colspan="2" style="padding:4px 14px 4px 42px;font-family:Arial;font-size:10pt;color:#333;border-bottom:1px solid #F0F0F0">'+esc(block.text)+'</td></tr>';
+      content+='<p style="margin:2px 0 2px 48px;font-family:Arial;font-size:10pt">&bull; '+esc(block.text)+'</p>';
       return;
     }
-    // regular text
-    rows+='<tr><td colspan="2" style="padding:5px 14px;font-family:Arial;font-size:10pt;color:#555">'+esc(block.text)+'</td></tr>';
+    if(block.type==='text'){
+      content+='<p style="margin:2px 0;font-family:Arial;font-size:10pt;color:#333">'+esc(block.text)+'</p>';
+    }
   });
 
+  // ── Photo appendix (guaranteed, in case inline matching missed some) ──
+  var photoAppendix='';
+  if(allPhotos.length){
+    photoAppendix+='<p style="font-weight:bold;font-size:12pt;font-family:Arial;margin:20px 0 4px;border-bottom:1px solid #000;padding-bottom:3px">Photos</p>';
+    allPhotos.forEach(function(item){
+      photoAppendix+='<p style="font-weight:bold;font-size:10pt;font-family:Arial;margin:10px 0 4px">'+esc(item.secTitle)+' &mdash; Step '+(item.stepNum+1)+'</p>';
+      if(item.stepText)photoAppendix+='<p style="font-size:10pt;font-family:Arial;margin:0 0 4px;color:#333">'+esc(item.stepText.slice(0,120))+'</p>';
+      photoAppendix+='<table style="border-collapse:collapse"><tr>';
+      item.photos.forEach(function(ph){
+        photoAppendix+='<td style="padding:4px"><img src="'+ph.data+'" style="max-width:220px;max-height:180px;display:block;border:1px solid #ccc"></td>';
+      });
+      photoAppendix+='</tr></table>';
+    });
+  }
+
+  // ── Signatures ──
+  var signatures='';
+  signatures+='<table style="width:100%;border-collapse:collapse;margin-top:24px;border:1px solid #999">';
+  signatures+='<tr>';
+  signatures+='<td style="width:50%;padding:20px 10px;font-family:Arial;font-size:10pt;border-right:1px solid #999">';
+  signatures+='Etablit par : '+esc(opName)+'</td>';
+  signatures+='<td style="width:50%;padding:20px 10px;font-family:Arial;font-size:10pt">';
+  signatures+='Contr&ocirc;l&eacute; par :</td>';
+  signatures+='</tr></table>';
+
+  // ── Estimate pages ──
   var totalSteps=p.sections.reduce(function(a,s){return a+s.steps.length;},0);
-  var estPages=Math.max(1,Math.ceil((secTitles.length*2+totalSteps)/10));
+  var estPages=Math.max(1,Math.ceil((totalSteps+allPhotos.length*2)/12));
 
-  // Build HTML matching CDVI template structure
-  var H='<!DOCTYPE html><html><head><meta charset="UTF-8"></head>';
-  H+='<body style="font-family:Arial;font-size:11pt;margin:0;padding:16px">';
+  // ── Assemble full document ──
+  // Match CDVI template: plain, no blue banners, correct footer
+  var H='<!DOCTYPE html><html><head><meta charset="UTF-8">';
+  H+='<style>';
+  H+='body{font-family:Arial;font-size:11pt;margin:2cm}';
+  H+='table{border-collapse:collapse;width:100%}';
+  H+='p{margin:4px 0}';
+  H+='<\/style><\/head><body>';
 
-  // ── HEADER (matching CDVI template) ──
-  H+='<table style="width:100%;border-collapse:collapse;border:1px solid #999;margin-bottom:0">';
+  // Title block (matching CDVI template layout)
+  H+='<table style="width:100%;border-collapse:collapse;border:1px solid #999;margin-bottom:12px">';
   H+='<tr>';
-  H+='<td colspan="2" style="text-align:center;padding:10px 14px;border-bottom:1px solid #999">';
+  H+='<td colspan="2" style="text-align:center;padding:8px 14px;border-bottom:1px solid #999">';
   H+='<p style="font-size:14pt;font-weight:bold;margin:0;font-family:Arial">Proc&eacute;dure de fabrication</p>';
-  H+='<p style="font-size:11pt;margin:4px 0 0;font-family:Arial">&laquo;&nbsp;'+esc(p.title)+' &ndash; '+esc(p.ref)+'&nbsp;&raquo;</p>';
-  H+='</td>';
+  H+='<p style="font-size:11pt;margin:4px 0 0;font-family:Arial">&laquo; '+esc(p.title)+' &ndash; '+esc(p.ref)+' &raquo;</p>';
+  H+='</td></tr></table>';
+
+  // Content
+  H+=content;
+
+  // Photo appendix
+  H+=photoAppendix;
+
+  // Signatures
+  H+=signatures;
+
+  // Footer — matching CDVI template EXACTLY
+  H+='<table style="width:100%;border-collapse:collapse;margin-top:20px;border-top:1px solid #000;padding-top:4px">';
+  H+='<tr>';
+  H+='<td style="font-size:8.5pt;font-family:Arial;padding:3px 0;width:60%">';
+  H+='Doc. : Fabrication '+esc(p.ref)+' &ndash; '+esc(p.title)+'</td>';
+  H+='<td style="font-size:8.5pt;font-family:Arial;padding:3px 0;text-align:center;width:25%">';
+  H+='Date : '+date+'</td>';
+  H+='<td style="font-size:8.5pt;font-family:Arial;padding:3px 0;text-align:right;width:15%">';
+  H+='Version :01 / Ed doc :</td>';
+  H+='</tr>';
+  H+='<tr>';
+  H+='<td style="font-size:8.5pt;font-family:Arial;padding:2px 0">';
+  H+='Etablit par : '+esc(opName)+'</td>';
+  H+='<td style="font-size:8.5pt;font-family:Arial;padding:2px 0;text-align:center">';
+  H+='Contr&ocirc;l&eacute; par :</td>';
+  H+='<td style="font-size:8.5pt;font-family:Arial;padding:2px 0;text-align:right">';
+  H+='Page 1 sur '+estPages+'</td>';
   H+='</tr>';
   H+='</table>';
 
-  // ── TABLE OF CONTENTS ──
-  if(toc)H+=toc;
-
-  // ── CONTENT ──
-  H+='<table style="width:100%;border-collapse:collapse;border:1px solid #C8D6E5">'+rows+'</table>';
-
-  // ── SIGNATURES ──
-  H+='<table style="width:100%;border-collapse:collapse;margin-top:20px;border:1px solid #999">';
-  H+='<tr>';
-  H+='<td style="width:50%;padding:6px 10px;font-size:9pt;font-family:Arial;border-right:1px solid #999"><b>Etablit par :</b> '+esc(opName)+'</td>';
-  H+='<td style="width:50%;padding:6px 10px;font-size:9pt;font-family:Arial"><b>Contr&ocirc;l&eacute; par :</b></td>';
-  H+='</tr>';
-  H+='<tr>';
-  H+='<td style="padding:28px 10px;font-size:11pt;font-family:Arial;border-right:1px solid #999;text-align:center">'+esc(opName)+'</td>';
-  H+='<td style="padding:28px 10px;font-size:11pt;font-family:Arial;text-align:center"></td>';
-  H+='</tr>';
-  H+='</table>';
-
-  // ── FOOTER (matching CDVI template exactly) ──
-  H+='<table style="width:100%;border-collapse:collapse;margin-top:16px;border-top:2px solid #000">';
-  H+='<tr>';
-  H+='<td style="font-size:8pt;font-family:Arial;padding:4px 6px;width:55%">'
-    +'Doc. : Fabrication '+esc(p.ref)+' &ndash; '+esc(p.title)+'</td>';
-  H+='<td style="font-size:8pt;font-family:Arial;padding:4px 6px;text-align:center;width:30%">'
-    +'Date : '+date+'&nbsp;&nbsp;&nbsp; Version :01 / Ed doc :</td>';
-  H+='<td style="font-size:8pt;font-family:Arial;padding:4px 6px;text-align:right;width:15%">'
-    +'&nbsp;</td>';
-  H+='</tr>';
-  H+='<tr>';
-  H+='<td style="font-size:8pt;font-family:Arial;padding:2px 6px;border-top:1px solid #999">'
-    +'Etablit par : '+esc(opName)+'</td>';
-  H+='<td style="font-size:8pt;font-family:Arial;padding:2px 6px;text-align:center;border-top:1px solid #999">'
-    +'Contr&ocirc;l&eacute; par :</td>';
-  H+='<td style="font-size:8pt;font-family:Arial;padding:2px 6px;text-align:right;border-top:1px solid #999">'
-    +'Page 1 sur '+estPages+'</td>';
-  H+='</tr>';
-  H+='</table>';
-
-  H+='</body></html>';
+  H+='<\/body><\/html>';
   return H;
 }
 
