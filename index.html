@@ -387,7 +387,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- docx library -->
-<script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js"></script>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -831,9 +831,9 @@ async function exportWord(){
   p.genText=txt;p.status='exported';save();
 
   showOverlay('Generating Word document...');
-
+  console.log('Export started, docx available:', !!window.docx);
   await waitDocx();
-
+  console.log('docx loaded:', !!window.docx, Object.keys(window.docx||{}).slice(0,5));
   try{
     const {Document,Packer,Paragraph,TextRun,AlignmentType,BorderStyle,WidthType,
            Table,TableRow,TableCell,ShadingType,VerticalAlign}=window.docx;
@@ -918,8 +918,12 @@ async function exportWord(){
     const fname=`${p.ref}_${p.title.replace(/[^a-zA-Z0-9]/g,'_').slice(0,30)}_${new Date().toISOString().slice(0,10)}.docx`;
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
-    a.href=url;a.download=fname;a.click();
-    URL.revokeObjectURL(url);
+    a.href=url;
+    a.download=fname;
+    a.style.display='none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{URL.revokeObjectURL(url);document.body.removeChild(a);},2000);
     hideOverlay();
     go('export');
   }catch(err){
