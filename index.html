@@ -148,25 +148,40 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.10</div>
-    </div>
-    <div class="login-card">
-      <div class="login-title">Who are you?</div>
-      <div id="user-list"></div>
-      <div style="text-align:center;margin-top:16px">
-        <button class="btn btn-s btn-sm" onclick="showAddUser()" style="font-size:13px">+ Add user</button>
-      </div>
+      <div class="login-logo-sub">Magnetic Solution — v1.11</div>
     </div>
 
-    <!-- Password prompt -->
-    <div id="pwd-box" style="display:none;width:100%;max-width:380px;margin-top:16px">
+    <!-- Step 1: Site access code -->
+    <div id="site-code-box" class="login-card">
+      <div class="login-title">Site access code</div>
+      <div class="fg">
+        <input type="password" id="site-code-inp" class="fi" placeholder="••••••••"
+          onkeydown="if(event.key==='Enter')checkSiteCode()" autocomplete="off" />
+      </div>
+      <button class="btn btn-p btn-full" onclick="checkSiteCode()">Enter →</button>
+    </div>
+
+    <!-- Step 2: User selection (shown after correct code) -->
+    <div id="user-selection-box" style="display:none;width:100%;max-width:380px">
       <div class="login-card">
-        <div class="login-title" id="pwd-title">Enter password</div>
-        <div class="fg">
-          <input type="password" id="pwd-inp" class="fi" placeholder="Password" onkeydown="if(event.key==='Enter')checkPwd()" />
+        <div class="login-title">Select your account</div>
+        <div id="user-list"></div>
+        <div style="text-align:center;margin-top:16px">
+          <button class="btn btn-s btn-sm" onclick="showAddUser()">+ Create account</button>
         </div>
-        <button class="btn btn-p btn-full" onclick="checkPwd()">Login →</button>
-        <button class="btn btn-s btn-full" style="margin-top:8px" onclick="cancelLogin()">Back</button>
+      </div>
+
+      <!-- Password prompt -->
+      <div id="pwd-box" style="display:none;margin-top:16px">
+        <div class="login-card">
+          <div class="login-title" id="pwd-title">Enter password</div>
+          <div class="fg">
+            <input type="password" id="pwd-inp" class="fi" placeholder="Password"
+              onkeydown="if(event.key==='Enter')checkPwd()" />
+          </div>
+          <button class="btn btn-p btn-full" onclick="checkPwd()">Login →</button>
+          <button class="btn btn-s btn-full" style="margin-top:8px" onclick="cancelLogin()">← Back</button>
+        </div>
       </div>
     </div>
 
@@ -186,10 +201,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <label class="fl">Repeat password</label>
           <input type="password" id="new-pwd2" class="fi" placeholder="Repeat password" />
         </div>
-        <div class="fg" style="margin-bottom:0;margin-top:14px">
-          <label class="fl">Access code *</label>
-          <input type="text" id="new-code" class="fi" placeholder="Ask your admin for the code" autocomplete="off" />
-        </div>
         <div style="display:flex;gap:8px;margin-top:14px">
           <button class="btn btn-s" style="flex:1" onclick="cancelLogin()">Cancel</button>
           <button class="btn btn-p" style="flex:1" onclick="createUser()">Create →</button>
@@ -206,7 +217,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.10</div>
+      <div class="hdr-sub">Magnetic Solution — v1.11</div>
     </div>
     <div class="user-chip" onclick="logout()">
       <div class="user-chip-av" id="hdr-avatar"></div>
@@ -232,33 +243,54 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="hdr-title">Settings</div>
   </header>
   <div class="content">
+    <!-- GitHub token -->
     <div class="card">
       <div class="card-title">GitHub Token (AI + Sync)</div>
       <div class="fg">
         <label class="fl">Token</label>
         <input type="password" id="inp-apikey" class="fi" placeholder="ghp_..." style="font-family:monospace;font-size:13px" />
         <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5">
-          Get at <strong>github.com/settings/tokens</strong><br>
-          ⚠️ For cross-device sync, the token needs <strong>repo</strong> scope.<br>
-          API key stays on your device only — not synced to GitHub.
+          Get at <strong>github.com/settings/tokens</strong> — scope <strong>repo</strong> required
         </div>
       </div>
       <button class="btn btn-s btn-sm btn-full" style="margin-top:8px" onclick="manualSync()">🔄 Sync now</button>
     </div>
+    <!-- Change password -->
+    <div class="card">
+      <div class="card-title">Change password</div>
+      <div class="fg">
+        <label class="fl">Current password</label>
+        <input type="password" id="pwd-old" class="fi" placeholder="Current password" />
+      </div>
+      <div class="fg">
+        <label class="fl">New password</label>
+        <input type="password" id="pwd-new1" class="fi" placeholder="New password" />
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="fl">Confirm new password</label>
+        <input type="password" id="pwd-new2" class="fi" placeholder="Repeat new password" />
+      </div>
+      <button class="btn btn-s btn-sm btn-full" style="margin-top:10px" onclick="changePassword()">Change password</button>
+    </div>
+    <!-- Admin: manage users -->
+    <div class="card" id="admin-panel" style="display:none">
+      <div class="card-title">👑 Manage users (admin)</div>
+      <div id="admin-user-list"></div>
+    </div>
+    <!-- Danger zone -->
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0">
         <div>
-          <div style="font-size:14px;font-weight:600">🗑️ Clear my procedures</div>
+          <div style="font-size:14px;font-weight:600">🗑️ Delete my procedures</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px">Delete only your procedures</div>
         </div>
-        <button class="btn btn-sm btn-danger" onclick="clearMyData()">Clear</button>
+        <button class="btn btn-sm btn-danger" onclick="clearMyData()">Delete</button>
       </div>
     </div>
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0">
         <div>
           <div style="font-size:14px;font-weight:600">🚪 Logout</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Go back to user selection</div>
         </div>
         <button class="btn btn-sm btn-s" onclick="logout()">Logout</button>
       </div>
@@ -446,6 +478,7 @@ const COLORS=['#2E75B6','#E8610A','#16A34A','#7C3AED','#DC2626','#0891B2'];
 
 // ─── Access code (change this to control who can sign up) ────────────────────
 var ACCESS_CODE='MAGNETIC';
+var siteCodeVerified=false; // gates the user list
 
 // ─── API key encryption (XOR with pwdHash — prevents GitHub token scanning) ──
 function encryptKey(k,h){if(!k)return '';var r='';for(var i=0;i<k.length;i++)r+=String.fromCharCode(k.charCodeAt(i)^h.charCodeAt(i%h.length));return 'enc:'+btoa(r);}
@@ -548,6 +581,10 @@ function go(screen){
   if(screen==='capture')renderCapture();
   if(screen==='settings'){
     document.getElementById('inp-apikey').value=S.user?.apiKey||'';
+    document.getElementById('pwd-old').value='';
+    document.getElementById('pwd-new1').value='';
+    document.getElementById('pwd-new2').value='';
+    renderAdminPanel();
   }
   window.scrollTo(0,0);
 }
@@ -557,17 +594,27 @@ function go(screen){
 // ═══════════════════════════════════════════════════════
 let loginTarget=null;
 
+function checkSiteCode(){
+  var code=document.getElementById('site-code-inp').value.trim().toUpperCase();
+  if(code!==ACCESS_CODE){toast('Invalid code ❌');return;}
+  siteCodeVerified=true;
+  document.getElementById('site-code-box').style.display='none';
+  document.getElementById('user-selection-box').style.display='block';
+  renderLoginUsers();
+}
+
 function renderLoginUsers(){
   const users=getUsers();
   const el=document.getElementById('user-list');
+  if(!el)return;
   if(!users.length){
-    el.innerHTML='<div style="text-align:center;color:var(--muted);font-size:14px;padding:16px 0">No users yet — create one below</div>';
+    el.innerHTML='<div style="text-align:center;color:var(--muted);font-size:14px;padding:16px 0">No accounts yet — create one below</div>';
     return;
   }
   el.innerHTML=users.map((u,i)=>`
     <button class="user-btn" onclick="selectUser('${u.id}')">
       <div class="user-avatar" style="background:${u.color||COLORS[i%COLORS.length]}">${u.name[0].toUpperCase()}</div>
-      <span>${esc(u.name)}</span>
+      <span>${esc(u.name)}${u.isAdmin?' 👑':''}</span>
     </button>`).join('');
 }
 
@@ -587,22 +634,16 @@ function checkPwd(){
   if(!pwd){toast('Enter your password');return;}
   if(hashPwd(pwd)!==loginTarget.pwdHash){toast('Wrong password ❌');return;}
   S.user=loginTarget;
-  // Decrypt API key if it was loaded from GitHub (encrypted)
   if(!S.user.apiKey&&S.user.encApiKey){
     S.user.apiKey=decryptKey(S.user.encApiKey,S.user.pwdHash);
-    // Save decrypted key to localStorage for this device
     var users=getUsers();
     var idx=users.findIndex(function(u){return u.id===S.user.id;});
     if(idx>=0){users[idx].apiKey=S.user.apiKey;localStorage.setItem('ms_users',JSON.stringify(users));}
   }
   updateHeaderUser();
   go('home');
-  // Only prompt for API key if still not available after decryption
   if(!S.user.apiKey){
-    setTimeout(function(){
-      toast('⚙️ Enter your GitHub token in Settings to enable AI and sync');
-      go('settings');
-    },1000);
+    setTimeout(function(){toast('⚙️ Enter your GitHub token in Settings');go('settings');},1000);
   }
 }
 
@@ -624,25 +665,21 @@ function createUser(){
   const name=document.getElementById('new-name').value.trim();
   const pwd=document.getElementById('new-pwd').value;
   const pwd2=document.getElementById('new-pwd2').value;
-  const code=document.getElementById('new-code').value.trim().toUpperCase();
   if(!name){toast('Enter a name');return;}
   if(pwd.length<4){toast('Password must be at least 4 characters');return;}
   if(pwd!==pwd2){toast('Passwords do not match');return;}
-  if(code!==ACCESS_CODE){toast('Invalid access code ❌');return;}
   const users=getUsers();
   if(users.find(u=>u.name.toLowerCase()===name.toLowerCase())){toast('Name already taken');return;}
-  const u={id:uid(),name,pwdHash:hashPwd(pwd),color:COLORS[users.length%COLORS.length],apiKey:''};
+  // First user created is admin
+  const isAdmin=users.length===0;
+  const u={id:uid(),name,pwdHash:hashPwd(pwd),color:COLORS[users.length%COLORS.length],apiKey:'',isAdmin};
   users.push(u);
   saveUsers(users);
   S.user=u;
   updateHeaderUser();
   document.getElementById('add-user-box').style.display='none';
   go('home');
-  // Prompt for token
-  setTimeout(function(){
-    toast('⚙️ Enter your GitHub token in Settings');
-    go('settings');
-  },800);
+  setTimeout(function(){toast('⚙️ Enter your GitHub token in Settings');go('settings');},800);
 }
 
 function updateHeaderUser(){
@@ -654,10 +691,65 @@ function updateHeaderUser(){
   nm.textContent=S.user.name;
 }
 
+function changePassword(){
+  const oldPwd=document.getElementById('pwd-old').value;
+  const newPwd=document.getElementById('pwd-new1').value;
+  const newPwd2=document.getElementById('pwd-new2').value;
+  if(hashPwd(oldPwd)!==S.user.pwdHash){toast('Wrong current password ❌');return;}
+  if(newPwd.length<4){toast('New password must be at least 4 characters');return;}
+  if(newPwd!==newPwd2){toast('Passwords do not match');return;}
+  const newHash=hashPwd(newPwd);
+  const newEncApiKey=S.user.apiKey?encryptKey(S.user.apiKey,newHash):'';
+  S.user.pwdHash=newHash;
+  const users=getUsers();
+  const idx=users.findIndex(u=>u.id===S.user.id);
+  if(idx>=0){
+    users[idx].pwdHash=newHash;
+    users[idx].encApiKey=newEncApiKey;
+    saveUsers(users);
+  }
+  document.getElementById('pwd-old').value='';
+  document.getElementById('pwd-new1').value='';
+  document.getElementById('pwd-new2').value='';
+  toast('Password changed ✓');
+}
+
+function deleteUser(id){
+  if(id===S.user.id){toast('You cannot delete your own account');return;}
+  if(!confirm('Delete this account and all their procedures?'))return;
+  var users=getUsers().filter(u=>u.id!==id);
+  var procs=getProcs().filter(p=>p.userId!==id);
+  saveUsers(users);
+  saveProcs(procs);
+  renderAdminPanel();
+  toast('Account deleted ✓');
+}
+
+function renderAdminPanel(){
+  const panel=document.getElementById('admin-panel');
+  const list=document.getElementById('admin-user-list');
+  if(!panel||!list)return;
+  if(!S.user||!S.user.isAdmin){panel.style.display='none';return;}
+  panel.style.display='block';
+  const users=getUsers();
+  list.innerHTML=users.map(u=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="width:32px;height:32px;border-radius:50%;background:${u.color||'#ccc'};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0">${u.name[0].toUpperCase()}</div>
+      <div style="flex:1;font-size:14px;font-weight:500">${esc(u.name)}${u.isAdmin?' 👑':''}</div>
+      ${u.id!==S.user.id?`<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')">Delete</button>`:'<span style="font-size:12px;color:var(--muted)">You</span>'}
+    </div>`).join('');
+}
+
 function logout(){
   S.user=null;S.cur=null;S.curStep=null;
+  siteCodeVerified=false;
   stopVoice();
-  renderLoginUsers();
+  // Reset login screen to site code step
+  document.getElementById('site-code-box').style.display='block';
+  document.getElementById('user-selection-box').style.display='none';
+  document.getElementById('pwd-box').style.display='none';
+  document.getElementById('add-user-box').style.display='none';
+  document.getElementById('site-code-inp').value='';
   go('login');
 }
 
@@ -794,6 +886,7 @@ function renderCapture(){
       <span class="sec-num">${roman(si+1)}.</span>
       <span class="sec-title">${esc(sec.title||'Untitled')}</span>
       <button class="sec-edit" onclick="editSecTitle('${sec.id}')">✏️</button>
+      <button class="sec-edit" onclick="deleteSection('${sec.id}')" style="opacity:.7">🗑️</button>
     </div>
     ${sec.steps.map((st,idx)=>`
       <div class="step-card">
@@ -831,6 +924,13 @@ function editSecTitle(secId){
   const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
   const t=prompt('Edit section name:',sec.title);
   if(t===null)return;sec.title=t.trim();syncCur();renderCapture();
+}
+
+function deleteSection(secId){
+  const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
+  if(!confirm('Delete section "'+sec.title+'" and all its steps?'))return;
+  S.cur.sections=S.cur.sections.filter(s=>s.id!==secId);
+  syncCur();renderCapture();toast('Section deleted');
 }
 
 function addStepLast(){
@@ -945,7 +1045,11 @@ function startVoice(){
     vbox.style.fontStyle='normal';
   };
   r.onerror=()=>stopVoice();
-  r.onend=()=>{if(S.recording)r.start();};
+  r.onend=()=>{
+    // Don't auto-restart — causes duplicate text
+    // If still recording state, just stop gracefully
+    if(S.recording)stopVoice();
+  };
   r.start();S.recog=r;S.recording=true;
   document.getElementById('voice-btn').innerHTML='■ Stop';
   document.getElementById('voice-btn').style.background='#FEE2E2';
