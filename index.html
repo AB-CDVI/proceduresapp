@@ -562,24 +562,36 @@ async function ghLoad(){
     var raw=atob(meta.content.replace(/\s/g,''));
     var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
     var data=JSON.parse(decoded);
+
+    // ── Token sync (always safe) ─────────────────────────────────────────────
     if(data.st){var tok=deobfuscate(data.st);if(tok){sharedToken=tok;localStorage.setItem('shared_token',tok);}}
-    if(data.users){
-      // Restore obfuscated per-user tokens
-      var restoredUsers=data.users.map(function(u){
-        var apiKey=u.oApiKey?deobfuscate(u.oApiKey):'';
-        return Object.assign({},u,{apiKey:apiKey});
-      });
-      localStorage.setItem('ms_users',JSON.stringify(restoredUsers));
-    }
-    if(data.procs)localStorage.setItem('ms_procs',JSON.stringify(data.procs));
-    // Refresh S.user.apiKey if logged in
-    if(S.user){
-      var updatedUser=data.users&&data.users.find(function(u){return u.id===S.user.id;});
-      if(updatedUser&&updatedUser.oApiKey&&!S.user.apiKey){
-        S.user.apiKey=deobfuscate(updatedUser.oApiKey);
+
+    // ── Timestamp-based merge: only replace if GitHub is NEWER than local ────
+    var ghTime=data.updated?new Date(data.updated).getTime():0;
+    var localTime=parseInt(localStorage.getItem('last_save_time')||'0');
+
+    if(ghTime>localTime){
+      // GitHub has newer data — safe to replace
+      if(data.users){
+        var restoredUsers=data.users.map(function(u){
+          var apiKey=u.oApiKey?deobfuscate(u.oApiKey):'';
+          return Object.assign({},u,{apiKey:apiKey});
+        });
+        localStorage.setItem('ms_users',JSON.stringify(restoredUsers));
+        // Refresh logged-in user
+        if(S.user){
+          var ghUser=restoredUsers.find(function(u){return u.id===S.user.id;});
+          if(ghUser){Object.assign(S.user,ghUser);}
+        }
       }
+      if(data.procs)localStorage.setItem('ms_procs',JSON.stringify(data.procs));
+      localStorage.setItem('last_save_time',String(ghTime));
+      return{ok:true,action:'replaced'};
+    }else{
+      // Local is newer or equal — push local to GitHub instead
+      ghSave();
+      return{ok:true,action:'pushed'};
     }
-    return{ok:true};
   }catch(e){console.warn('ghLoad error:',e);return{ok:false,reason:'parse_error',detail:e.message};}
 }
 
@@ -631,7 +643,7 @@ async function ghSave(){
       resp=await put();
     }
 
-    if(resp.ok){var r=await resp.json();GH_SHA=r.content.sha;}
+    if(resp.ok){var r=await resp.json();GH_SHA=r.content.sha;localStorage.setItem('last_save_time',String(Date.now()));}
     else console.warn('ghSave failed:',resp.status,await resp.text().catch(()=>''));
   }catch(e){console.warn('ghSave error:',e);}
 }
@@ -1421,26 +1433,29 @@ async function exportWord(){
     });
     if(!resp.ok){
       const e=await resp.json().catch(()=>({}));
-      throw new Error(e.message||'HTTP '+resp.status+' — check your token has repo scope');
+      var status=resp.status;
+      var msg=e.message||'HTTP '+status;
+      if(status===422)msg='Workflow not found — check generate-doc.yml is in .github/workflows/';
+      if(status===403||status===404)msg='Token missing "workflow" scope — go to github.com/settings/tokens and add the "workflow" scope to your token';
+      throw new Error(msg);
     }
   }catch(err){
     hideOverlay();
-    toast('Error: '+err.message);
+    toast('Export error: '+err.message);
     p.status='generated';syncCur();
     return;
   }
 
-  // Step 3: Poll for the generated file
+  // Step 3: Poll for the generated file (max 3 min)
   var attempt=0;
-  var maxAttempts=18; // 3 minutes max (18 × 10s)
+  var maxAttempts=18;
 
   async function poll(){
     attempt++;
     var elapsed=attempt*10;
-    showOverlay('3/3 — Generating document... ('+elapsed+'s)\nThis takes about 45-60 seconds.');
+    showOverlay('3/3 — Generating Word document... ('+elapsed+'s / ~60s total)');
 
     try{
-      // Check via GitHub API if the docx was committed after we triggered
       var userName=(S.user?S.user.name:'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
       var docPath='docs/'+userName+'/'+p.id+'.docx';
       var checkResp=await fetch('https://api.github.com/repos/AB-CDVI/proceduresapp/commits?path='+docPath+'&per_page=1',{
@@ -1451,7 +1466,6 @@ async function exportWord(){
         if(commits.length>0){
           var commitTime=new Date(commits[0].commit.author.date);
           if(commitTime>triggerTime){
-            // File is ready — download it
             await downloadDocx(p,token);
             return;
           }
@@ -1463,12 +1477,12 @@ async function exportWord(){
       setTimeout(poll,10000);
     }else{
       hideOverlay();
-      toast('Generation timeout — check GitHub Actions in your repo');
+      toast('Timeout — check GitHub Actions tab in your repo for errors');
       p.status='generated';syncCur();
     }
   }
 
-  setTimeout(poll,20000); // Wait 20s before first poll
+  setTimeout(poll,20000);
 }
 
 async function downloadDocx(p,token){
