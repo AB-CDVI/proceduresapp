@@ -243,6 +243,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="hdr-title">Settings</div>
   </header>
   <div class="content">
+    <!-- Personal token — visible to ALL users -->
+    <div class="card" id="personal-token-card">
+      <div class="card-title">🔑 GitHub Token (AI + Word export)</div>
+      <div id="personal-token-status" style="padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:12px;font-weight:500"></div>
+      <div class="fg">
+        <label class="fl">Your token</label>
+        <input type="text" id="inp-personal-apikey" class="fi" placeholder="ghp_..." style="font-family:monospace;font-size:13px" autocomplete="off" />
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5">
+          Get it at <strong>github.com/settings/tokens</strong> — scope <strong>repo</strong> required.
+        </div>
+      </div>
+      <button class="btn btn-s btn-sm btn-full" style="margin-top:8px" onclick="testPersonalToken()">🔌 Test connection</button>
+    </div>
     <!-- GitHub shared token (admin only) -->
     <div class="card" id="admin-token-card" style="display:none">
       <div class="card-title">🔑 Shared GitHub Token (admin)</div>
@@ -550,8 +563,22 @@ async function ghLoad(){
     var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
     var data=JSON.parse(decoded);
     if(data.st){var tok=deobfuscate(data.st);if(tok){sharedToken=tok;localStorage.setItem('shared_token',tok);}}
-    if(data.users)localStorage.setItem('ms_users',JSON.stringify(data.users));
+    if(data.users){
+      // Restore obfuscated per-user tokens
+      var restoredUsers=data.users.map(function(u){
+        var apiKey=u.oApiKey?deobfuscate(u.oApiKey):'';
+        return Object.assign({},u,{apiKey:apiKey});
+      });
+      localStorage.setItem('ms_users',JSON.stringify(restoredUsers));
+    }
     if(data.procs)localStorage.setItem('ms_procs',JSON.stringify(data.procs));
+    // Refresh S.user.apiKey if logged in
+    if(S.user){
+      var updatedUser=data.users&&data.users.find(function(u){return u.id===S.user.id;});
+      if(updatedUser&&updatedUser.oApiKey&&!S.user.apiKey){
+        S.user.apiKey=deobfuscate(updatedUser.oApiKey);
+      }
+    }
     return{ok:true};
   }catch(e){console.warn('ghLoad error:',e);return{ok:false,reason:'parse_error',detail:e.message};}
 }
@@ -574,10 +601,15 @@ async function ghSave(){
   try{
     if(!GH_SHA)GH_SHA=await getDataSHA();
 
+    var rawUsers=getUsers();
+    // Obfuscate per-user API keys before storing to GitHub
+    var safeUsers=rawUsers.map(function(u){
+      return Object.assign({},u,{apiKey:''},{oApiKey:u.apiKey?obfuscate(u.apiKey):''});
+    });
     var data={
-      users:getUsers(),
+      users:safeUsers,
       procs:getProcs(),
-      st:obfuscate(sharedToken), // token stored obfuscated in data.json
+      st:sharedToken?obfuscate(sharedToken):'',
       updated:new Date().toISOString()
     };
     var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
@@ -635,21 +667,35 @@ function go(screen){
   if(screen==='home')renderHome();
   if(screen==='capture')renderCapture();
   if(screen==='settings'){
+    // Personal token status (all users)
+    const pStatus=document.getElementById('personal-token-status');
+    const userTok=S.user&&S.user.apiKey||'';
+    if(pStatus){
+      if(userTok){
+        pStatus.style.background='#DCFCE7';pStatus.style.color='#15803D';
+        pStatus.textContent='✓ Token configured — '+userTok.slice(0,8)+'••••••••';
+      }else{
+        pStatus.style.background='#FEE2E2';pStatus.style.color='#DC2626';
+        pStatus.textContent='⚠️ No token — enter it below';
+      }
+    }
+    const pInp=document.getElementById('inp-personal-apikey');
+    if(pInp)pInp.value='';
+    // Admin shared token
     const tokenCard=document.getElementById('admin-token-card');
     if(tokenCard)tokenCard.style.display=S.user&&S.user.isAdmin?'block':'none';
-    // Show token status clearly
     const status=document.getElementById('token-status');
     if(status){
       if(sharedToken){
         status.style.background='#DCFCE7';status.style.color='#15803D';
-        status.textContent='✓ Token configured — '+sharedToken.slice(0,8)+'••••••••';
+        status.textContent='✓ Shared token — '+sharedToken.slice(0,8)+'••••••••';
       }else{
-        status.style.background='#FEE2E2';status.style.color='#DC2626';
-        status.textContent='⚠️ No token — enter it below to enable sync and AI';
+        status.style.background='#FFF3CD';status.style.color='#856404';
+        status.textContent='No shared token (optional — admin can set for team)';
       }
     }
     const apiInp=document.getElementById('inp-apikey');
-    if(apiInp){apiInp.value='';apiInp.placeholder='Enter new token to replace...';}
+    if(apiInp){apiInp.value='';apiInp.placeholder='Enter to set/replace shared token...';}
     document.getElementById('pwd-old').value='';
     document.getElementById('pwd-new1').value='';
     document.getElementById('pwd-new2').value='';
@@ -817,32 +863,53 @@ function logout(){
 // ═══════════════════════════════════════════════════════
 async function saveSettings(){
   if(!S.user)return;
+
+  // ── Personal token (all users) ─────────────────────────────────────────────
+  const personalTok=document.getElementById('inp-personal-apikey').value.trim();
+  if(personalTok&&personalTok.length>10){
+    S.user.apiKey=personalTok;
+    const users=getUsers();
+    const idx=users.findIndex(u=>u.id===S.user.id);
+    if(idx>=0){users[idx].apiKey=personalTok;}
+    localStorage.setItem('ms_users',JSON.stringify(users));
+    await ghSave(); // syncs token to GitHub with obfuscation
+    // Update status
+    const pStatus=document.getElementById('personal-token-status');
+    if(pStatus){pStatus.style.background='#DCFCE7';pStatus.style.color='#15803D';pStatus.textContent='✓ Token saved — '+personalTok.slice(0,8)+'••••••••';}
+    document.getElementById('inp-personal-apikey').value='';
+    toast('✓ Token saved');
+    return;
+  }
+
+  // ── Shared token (admin only) ──────────────────────────────────────────────
   if(S.user.isAdmin){
     const newToken=document.getElementById('inp-apikey').value.trim();
-    // Accept any non-empty token that doesn't look like placeholder text
     if(newToken&&newToken.length>10){
-      showOverlay('Saving token...');
-      // Always save locally first — never fails
       sharedToken=newToken;
       localStorage.setItem('shared_token',newToken);
-      // Push to GitHub best-effort
       await ghSave();
-      hideOverlay();
-      // Update status display
       const status=document.getElementById('token-status');
-      if(status){
-        status.style.background='#DCFCE7';status.style.color='#15803D';
-        status.textContent='✓ Token saved — '+newToken.slice(0,8)+'••••••••';
-      }
+      if(status){status.style.background='#DCFCE7';status.style.color='#15803D';status.textContent='✓ Shared token saved — '+newToken.slice(0,8)+'••••••••';}
       document.getElementById('inp-apikey').value='';
-      toast('✓ Token saved and pushed to GitHub');
-      return; // stay on settings so user can see the status
-    }else if(newToken){
-      toast('Token too short — paste the full ghp_... token');
+      toast('✓ Shared token saved');
       return;
     }
   }
   go('home');
+}
+
+async function testPersonalToken(){
+  const tok=document.getElementById('inp-personal-apikey').value.trim()||S.user?.apiKey||'';
+  if(!tok){toast('Enter your token first');return;}
+  showOverlay('Testing...');
+  try{
+    var r=await fetch('https://api.github.com/repos/'+GH_REPO,{headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}});
+    hideOverlay();
+    if(r.ok){var d=await r.json();toast('✓ Token works — '+d.full_name);}
+    else if(r.status===401)toast('❌ Token invalid or expired');
+    else if(r.status===403)toast('❌ Token missing repo scope');
+    else toast('❌ Error '+r.status);
+  }catch(e){hideOverlay();toast('❌ Network error');}
 }
 
 async function testToken(){
@@ -1245,8 +1312,9 @@ function renderPhotoGrid(){
 // AI GENERATION
 // ═══════════════════════════════════════════════════════
 async function generateAI(){
-  const apiKey=S.user?.apiKey||'';
-  if(!apiKey){toast('No shared token — admin must configure it in Settings');go('settings');return;}
+  // Personal token first, shared token as fallback
+  const apiKey=S.user?.apiKey||sharedToken||'';
+  if(!apiKey){toast('Enter your GitHub token in Settings ⚙️');go('settings');return;}
   const p=S.cur;
   if(!p||!p.sections.length){toast('Add sections and steps first');return;}
   showOverlay('Generating with AI...');
@@ -1330,8 +1398,9 @@ async function exportWord(){
   const txt=document.getElementById('review-edit').value;
   p.genText=txt;p.status='generating';syncCur();
 
-  const token=sharedToken;
-  if(!token){toast('No shared token — admin must configure it in Settings');go('settings');return;}
+  // Personal token first, shared token as fallback
+  const token=S.user?.apiKey||sharedToken||'';
+  if(!token){toast('Enter your GitHub token in Settings ⚙️');go('settings');return;}
 
   // Step 1: Save latest data to GitHub
   showOverlay('1/3 — Saving procedure data...');
