@@ -166,8 +166,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="login-card">
         <div class="login-title">Select your account</div>
         <div id="user-list"></div>
-        <div style="text-align:center;margin-top:16px">
+        <div style="text-align:center;margin-top:16px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-s btn-sm" onclick="showAddUser()">+ Create account</button>
+          <button class="btn btn-s btn-sm" id="btn-load-gh" style="display:none" onclick="loadFromGitHubLogin()">☁️ Load accounts from GitHub</button>
         </div>
       </div>
 
@@ -734,8 +735,12 @@ function renderLoginUsers(){
   const users=getUsers();
   const el=document.getElementById('user-list');
   if(!el)return;
+  // Show/hide Load from GitHub button
+  const ghBtn=document.getElementById('btn-load-gh');
+  if(ghBtn)ghBtn.style.display=users.length===0?'block':'none';
+
   if(!users.length){
-    el.innerHTML='<div style="text-align:center;color:var(--muted);font-size:14px;padding:16px 0">No accounts yet — create one below</div>';
+    el.innerHTML='<div style="text-align:center;color:var(--muted);font-size:14px;padding:16px 0">No accounts — create one or load from GitHub ☁️</div>';
     return;
   }
   el.innerHTML=users.map((u,i)=>`
@@ -743,6 +748,17 @@ function renderLoginUsers(){
       <div class="user-avatar" style="background:${u.color||COLORS[i%COLORS.length]}">${u.name[0].toUpperCase()}</div>
       <span>${esc(u.name)}${u.isAdmin?' 👑':''}</span>
     </button>`).join('');
+}
+
+async function loadFromGitHubLogin(){
+  showOverlay('Loading accounts from GitHub...');
+  await loadSharedToken();
+  if(!sharedToken){hideOverlay();toast('No token available — enter it after creating an account');return;}
+  const result=await ghLoad();
+  hideOverlay();
+  if(result.ok){renderLoginUsers();toast('✓ Accounts loaded from GitHub');}
+  else if(result.reason==='not_found'){toast('No data on GitHub yet');}
+  else toast('Error: '+result.reason);
 }
 
 function selectUser(id){
@@ -1414,9 +1430,13 @@ async function exportWord(){
   const token=S.user?.apiKey||sharedToken||'';
   if(!token){toast('Enter your GitHub token in Settings ⚙️');go('settings');return;}
 
-  // Step 1: Save latest data to GitHub
-  showOverlay('1/3 — Saving procedure data...');
-  await ghSave(token);
+  // Step 1: Save latest data to GitHub (MUST succeed before triggering Action)
+  showOverlay('1/3 — Saving procedure data to GitHub...');
+  // Ensure sharedToken is set before ghSave
+  if(!sharedToken)sharedToken=token;
+  await ghSave();
+  // Wait a moment for GitHub to process the file
+  await new Promise(r=>setTimeout(r,2000));
 
   // Step 2: Trigger GitHub Action
   showOverlay('2/3 — Requesting document generation...');
@@ -1706,25 +1726,19 @@ function toast(msg){const el=document.getElementById('toast');el.textContent=msg
 window.addEventListener('DOMContentLoaded',async function(){
   showOverlay('Connecting...');
 
-  // 1. Try to get shared token (from localStorage or public data.json)
-  await loadSharedToken();
+  // Load shared token only (from localStorage — fast, no network needed)
+  // We do NOT pull from GitHub automatically — local data is the source of truth
+  // GitHub is a push-only backup; users pull explicitly via "Load from GitHub"
+  if(!sharedToken) sharedToken=localStorage.getItem('shared_token')||'';
 
-  // 2. If we have a token, load fresh data from GitHub
-  if(sharedToken){
-    showOverlay('Loading data...');
-    var loadResult=await ghLoad();
-    if(!loadResult.ok&&loadResult.reason==='not_found'){
-      // data.json doesn't exist yet on GitHub
-      console.log('No data.json on GitHub yet');
-    }
+  // Also try to get token from data.json if not in localStorage (new device, no accounts yet)
+  var localUsers=getUsers();
+  if(!sharedToken||localUsers.length===0){
+    await loadSharedToken();
   }
 
   hideOverlay();
   renderLoginUsers();
-
-  if(!sharedToken){
-    toast('⚙️ Admin: enter the GitHub token in Settings after login');
-  }
 });
 
 </script>
