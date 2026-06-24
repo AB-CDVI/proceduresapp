@@ -148,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.5</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.6</div>
     </div>
     <div class="login-card">
       <div class="login-title">Who are you?</div>
@@ -202,7 +202,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.5</div>
+      <div class="hdr-sub">Magnetic Solution — v1.6</div>
     </div>
     <div class="user-chip" onclick="logout()">
       <div class="user-chip-av" id="hdr-avatar"></div>
@@ -899,32 +899,28 @@ async function generateAI(){
   const p=S.cur;
   if(!p||!p.sections.length){toast('Add sections and steps first');return;}
   showOverlay('Generating with AI...');
-  const ctx=`You are a technical writer for Magnetic Solution, a manufacturing company.
-Write a complete, professional manufacturing procedure in ENGLISH ONLY.
-
-PROCEDURE INFO:
-Title: ${p.title}
-Reference: ${p.ref}
-Operator: ${p.op}
-Category: ${p.cat}
-Date: ${new Date().toLocaleDateString('en-GB')}
-
-CAPTURED CONTENT (translate any French to English):
-${p.sections.map((s,si)=>`
-=== SECTION ${roman(si+1)}: ${s.title} ===
-${s.steps.map((st,idx)=>`Step ${idx+1}:
-  Notes: ${st.text||st.voice||'(empty)'}
-  Photos: ${st.photos?st.photos.length:0} photo(s) — write "(see photo)" if photos present`).join('\n')}`).join('\n\n')}
-
-RULES:
-- Write entirely in English, translate any French
-- Format sections as: "I. Section title" "II. Section title" etc.
-- Number steps: 1. 2. 3.
-- Write concise, actionable technical instructions
-- Add "(see photo)" where photos exist
-- Professional manufacturing language
-
-Output the procedure directly:`;
+  const ctx='You are a technical writer for Magnetic Solution, a manufacturing company.\n'
+    +'Write a complete, professional manufacturing procedure in ENGLISH ONLY.\n\n'
+    +'PROCEDURE INFO:\n'
+    +'Title: '+p.title+'\nReference: '+p.ref+'\nOperator: '+p.op+'\nCategory: '+p.cat+'\nDate: '+new Date().toLocaleDateString('en-GB')+'\n\n'
+    +'CAPTURED CONTENT (translate any French to English):\n'
+    +p.sections.map(function(s,si){
+      return '=== SECTION '+roman(si+1)+': '+s.title+' ===\n'
+        +s.steps.map(function(st,idx){
+          return 'Step '+(idx+1)+':\n'
+            +'  Notes: '+(st.text||st.voice||'(empty)')+'\n'
+            +'  Photos: '+(st.photos?st.photos.length:0)+' photo(s)';
+        }).join('\n');
+    }).join('\n\n')+'\n\n'
+    +'STRICT OUTPUT FORMAT — follow exactly:\n'
+    +'- Start directly with the first section, no title header, no preamble\n'
+    +'- Sections: EXACTLY "I. Title" "II. Title" "III. Title" (Roman numeral + dot + space + title)\n'
+    +'- Steps: EXACTLY "1. instruction" "2. instruction" (number + dot + space + text)\n'
+    +'- Sub-items: "- item" (dash + space)\n'
+    +'- NO markdown: no ##, no **, no ---, no _\n'
+    +'- Add "(see photo)" at end of steps that have photos\n'
+    +'- Translate any French content to English\n\n'
+    +'Output the procedure now:';
 
   try{
     const res=await fetch('https://models.inference.ai.azure.com/chat/completions',{
@@ -998,17 +994,33 @@ function exportWord(){
 
 function parseAIText(txt){
   var blocks=[];
+  // Strip markdown bold/italic/horizontal rules
+  txt=txt.replace(/\*\*(.*?)\*\*/g,'$1').replace(/__(.*?)__/g,'$1');
+  txt=txt.replace(/^---+$/gm,'').replace(/^===+$/gm,'');
   txt.split('\n').forEach(function(line){
     var t=line.trim();
     if(!t){blocks.push({type:'empty'});return;}
-    if(/^(I{1,3}|IV|V|VI{1,3}|IX|X)[.\s]/i.test(t))
+    // Section: "I. Title" or "## I. Title" or "## Title"
+    if(/^#{1,3}\s*(I{1,3}|IV|V|VI{1,3}|IX|X)[.\s]/i.test(t)||/^#{1,3}\s+\w/.test(t)){
+      // Strip ## prefix
+      t=t.replace(/^#{1,3}\s*/,'');
       blocks.push({type:'section',text:t});
-    else if(/^\d+[.)]\s/.test(t))
+    }
+    // Roman numeral section: "I. Title"
+    else if(/^(I{1,3}|IV|V|VI{1,3}|IX|X)\.\s/i.test(t)){
+      blocks.push({type:'section',text:t});
+    }
+    // Numbered step: "1. text" or "1) text"
+    else if(/^\d+[.)]\s/.test(t)){
       blocks.push({type:'step',text:t});
-    else if(/^[-•]\s/.test(t))
+    }
+    // Bullet
+    else if(/^[-•*]\s/.test(t)){
       blocks.push({type:'bullet',text:t});
-    else
+    }
+    else{
       blocks.push({type:'text',text:t});
+    }
   });
   return blocks;
 }
