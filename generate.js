@@ -10,18 +10,33 @@ const procId = process.argv[2];
 if (!procId) { console.error('No procedure ID provided'); process.exit(1); }
 
 const dataPath = path.join(__dirname, 'data.json');
-if (!fs.existsSync(dataPath)) { console.error('data.json not found'); process.exit(1); }
+if (!fs.existsSync(dataPath)) { console.error('data.json not found in repo root'); process.exit(1); }
 
-const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+// Read and parse data.json
+let data;
+try {
+  const raw = fs.readFileSync(dataPath, 'utf8');
+  data = JSON.parse(raw);
+} catch(e) {
+  console.error('Failed to parse data.json:', e.message);
+  process.exit(1);
+}
+
+console.log('data.json loaded — users:', (data.users||[]).length, 'procs:', (data.procs||[]).length);
+
 const proc = (data.procs || []).find(p => p.id === procId);
-if (!proc) { console.error('Procedure not found:', procId); process.exit(1); }
+if (!proc) {
+  console.error('Procedure not found:', procId);
+  console.error('Available IDs:', (data.procs||[]).map(p=>p.id).join(', ')||'none');
+  process.exit(1);
+}
 
 const users = data.users || [];
 const author = users.find(u => u.id === proc.userId);
 const opName = proc.op || (author ? author.name : '');
 const date = new Date().toLocaleDateString('en-GB');
 
-console.log('Generating document for:', proc.title, '/', proc.ref);
+console.log('Generating:', proc.title, '/', proc.ref, '— sections:', (proc.sections||[]).length);
 
 // ─── Parse AI text ────────────────────────────────────────────────────────────
 function parseText(txt) {
