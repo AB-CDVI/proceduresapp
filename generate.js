@@ -75,7 +75,7 @@ function cell(children, width, opts) {
 }
 
 // ─── Build document body ──────────────────────────────────────────────────────
-const children = [];
+const contentChildren = [];
 const blocks = parseText(proc.genText);
 let secCount = -1;
 let stepCount = 0;
@@ -83,7 +83,7 @@ let stepCount = 0;
 blocks.forEach(block => {
   if (block.type === 'section') {
     secCount++; stepCount = 0;
-    children.push(new Paragraph({
+    contentChildren.push(new Paragraph({
       spacing: { before: 360, after: 120 },
       border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '1B3A6B', space: 3 } },
       children: [new TextRun({ text: block.text, bold: true, size: 26, font: 'Arial', color: '1B3A6B' })]
@@ -99,11 +99,11 @@ blocks.forEach(block => {
 
     if (photos.length) {
       const imgCells = photos.slice(0, 2).map(ph => {
-        const img = makeImage(ph, 200, 150);
+        const img = makeImage(ph, 260, 195); // larger inline photos
         return img ? new Paragraph({ alignment: AlignmentType.CENTER, children: [img] }) : null;
       }).filter(Boolean);
 
-      children.push(new Table({
+      contentChildren.push(new Table({
         width: { size: 9638, type: WidthType.DXA },
         columnWidths: [5638, 4000],
         rows: [new TableRow({ children: [
@@ -111,9 +111,9 @@ blocks.forEach(block => {
           cell(imgCells.length ? imgCells : [new Paragraph({ children: [] })], 4000)
         ]})]
       }));
-      children.push(new Paragraph({ spacing: { before: 60 }, children: [] }));
+      contentChildren.push(new Paragraph({ spacing: { before: 60 }, children: [] }));
     } else {
-      children.push(new Paragraph({
+      contentChildren.push(new Paragraph({
         indent: { left: 480 },
         spacing: { before: 80, after: 60 },
         children: [new TextRun({ text: block.text, size: 22, font: 'Arial' })]
@@ -123,7 +123,7 @@ blocks.forEach(block => {
   }
 
   if (block.type === 'bullet') {
-    children.push(new Paragraph({
+    contentChildren.push(new Paragraph({
       indent: { left: 720, hanging: 240 },
       spacing: { before: 40, after: 40 },
       children: [new TextRun({ text: '• ' + block.text, size: 20, font: 'Arial' })]
@@ -131,11 +131,30 @@ blocks.forEach(block => {
     return;
   }
 
-  children.push(new Paragraph({
+  contentChildren.push(new Paragraph({
     spacing: { before: 40, after: 40 },
     children: [new TextRun({ text: block.text, size: 20, font: 'Arial', color: '444444' })]
   }));
 });
+
+// ─── Table of contents ────────────────────────────────────────────────────────
+const secTitles = blocks.filter(b => b.type === 'section').map(b => b.text);
+const tocChildren = [];
+if (secTitles.length > 0) {
+  tocChildren.push(new Paragraph({
+    spacing: { before: 0, after: 120 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: '999999', space: 3 } },
+    children: [new TextRun({ text: 'Sommaire', bold: true, size: 24, font: 'Arial', color: '333333' })]
+  }));
+  secTitles.forEach(title => {
+    tocChildren.push(new Paragraph({
+      indent: { left: 480 },
+      spacing: { before: 60, after: 60 },
+      children: [new TextRun({ text: title, size: 22, font: 'Arial' })]
+    }));
+  });
+  tocChildren.push(new Paragraph({ spacing: { before: 120, after: 0 }, children: [] }));
+}
 
 // ─── Photo appendix ───────────────────────────────────────────────────────────
 const allPhotos = [];
@@ -145,52 +164,32 @@ const allPhotos = [];
   });
 });
 
-if (allPhotos.length) {
-  children.push(new Paragraph({ spacing: { before: 600, after: 120 },
+const photoChildren = [];
+// Only add appendix if there are photos NOT already shown inline
+const inlinePhotoCount = contentChildren.filter(c => c instanceof Table).length;
+if (allPhotos.length > inlinePhotoCount) {
+  photoChildren.push(new Paragraph({ spacing: { before: 600, after: 120 },
     border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '1B3A6B', space: 3 } },
-    children: [new TextRun({ text: 'Photos', bold: true, size: 26, font: 'Arial', color: '1B3A6B' })]
+    children: [new TextRun({ text: 'Annexe photos', bold: true, size: 26, font: 'Arial', color: '1B3A6B' })]
   }));
-
   allPhotos.forEach(item => {
-    children.push(new Paragraph({ spacing: { before: 200, after: 60 },
-      children: [new TextRun({ text: item.sec.title + ' — Step ' + (item.idx + 1), bold: true, size: 22, font: 'Arial' })]
+    photoChildren.push(new Paragraph({ spacing: { before: 200, after: 60 },
+      children: [new TextRun({ text: item.sec.title + ' — Étape ' + (item.idx + 1), bold: true, size: 22, font: 'Arial' })]
     }));
     if (item.st.text) {
-      children.push(new Paragraph({ spacing: { before: 0, after: 80 },
+      photoChildren.push(new Paragraph({ spacing: { before: 0, after: 80 },
         children: [new TextRun({ text: item.st.text.slice(0, 200), size: 20, font: 'Arial', color: '555555' })]
       }));
     }
-    const photoParagraphs = [];
     item.st.photos.forEach(ph => {
-      const img = makeImage(ph, 320, 240);
-      if (img) photoParagraphs.push(new Paragraph({ spacing: { before: 40, after: 40 }, children: [img] }));
+      const img = makeImage(ph, 400, 300); // larger appendix photos
+      if (img) photoChildren.push(new Paragraph({ spacing: { before: 40, after: 40 }, children: [img] }));
     });
-    children.push(...photoParagraphs);
   });
 }
 
-// ─── Signatures ───────────────────────────────────────────────────────────────
-children.push(new Paragraph({ spacing: { before: 480 }, children: [] }));
-children.push(new Table({
-  width: { size: 9638, type: WidthType.DXA },
-  columnWidths: [4819, 4819],
-  rows: [
-    new TableRow({ children: [
-      cell([new Paragraph({ children: [new TextRun({ text: 'Etablit par :', bold: true, size: 20, font: 'Arial' })] })], 4819),
-      cell([new Paragraph({ children: [new TextRun({ text: 'Contrôlé par :', bold: true, size: 20, font: 'Arial' })] })], 4819)
-    ]}),
-    new TableRow({ children: [
-      new TableCell({ borders: allBorders, width: { size: 4819, type: WidthType.DXA },
-        margins: { top: 400, bottom: 400, left: 140, right: 140 },
-        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: opName, size: 22, font: 'Arial' })] })]
-      }),
-      new TableCell({ borders: allBorders, width: { size: 4819, type: WidthType.DXA },
-        margins: { top: 400, bottom: 400, left: 140, right: 140 },
-        children: [new Paragraph({ children: [] })]
-      })
-    ]})
-  ]
-}));
+// ─── Assemble final children (TOC → content → photos, NO signatures in body) ──
+const children = [...tocChildren, ...contentChildren, ...photoChildren];
 
 // ─── Header ──────────────────────────────────────────────────────────────────
 const headerTable = new Table({
