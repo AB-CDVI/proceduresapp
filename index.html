@@ -148,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.6</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.7</div>
     </div>
     <div class="login-card">
       <div class="login-title">Who are you?</div>
@@ -202,7 +202,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.6</div>
+      <div class="hdr-sub">Magnetic Solution — v1.7</div>
     </div>
     <div class="user-chip" onclick="logout()">
       <div class="user-chip-av" id="hdr-avatar"></div>
@@ -229,15 +229,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </header>
   <div class="content">
     <div class="card">
-      <div class="card-title">GitHub Models API Token</div>
+      <div class="card-title">GitHub Token (AI + Sync)</div>
       <div class="fg">
         <label class="fl">Token</label>
         <input type="password" id="inp-apikey" class="fi" placeholder="ghp_..." style="font-family:monospace;font-size:13px" />
         <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5">
-          Get your token at <strong>github.com/settings/tokens</strong><br>
-          Free — no subscription needed.
+          Get at <strong>github.com/settings/tokens</strong><br>
+          ⚠️ For cross-device sync, the token needs <strong>repo</strong> scope.<br>
+          API key stays on your device only — not synced to GitHub.
         </div>
       </div>
+      <button class="btn btn-s btn-sm btn-full" style="margin-top:8px" onclick="manualSync()">🔄 Sync now</button>
     </div>
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0">
@@ -442,14 +444,72 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function hashPwd(s){let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return h.toString(36);}
 
 // ═══════════════════════════════════════════════════════
-// STORAGE — shared across users
+// GITHUB SYNC — cross-device data
+// ═══════════════════════════════════════════════════════
+var GH_REPO='AB-CDVI/proceduresapp';
+var GH_FILE='data.json';
+var GH_SHA=localStorage.getItem('gh_sha')||null; // SHA needed for GitHub file update
+
+async function ghLoad(token){
+  try{
+    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_FILE,{
+      headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(!resp.ok)return null;
+    var meta=await resp.json();
+    GH_SHA=meta.sha;
+    localStorage.setItem('gh_sha',GH_SHA);
+    var content=JSON.parse(decodeURIComponent(escape(atob(meta.content.replace(/\s/g,'')))));
+    return content;
+  }catch(e){return null;}
+}
+
+async function ghSave(token){
+  if(!token)return;
+  try{
+    var users=getUsers();
+    var procs=getProcs();
+    // Don't store API keys in GitHub (security)
+    var safeUsers=users.map(function(u){return {id:u.id,name:u.name,pwdHash:u.pwdHash,color:u.color};});
+    var data={users:safeUsers,procs:procs,updated:new Date().toISOString()};
+    var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+    var payload={message:'Update procedures '+new Date().toISOString().slice(0,10),content:encoded};
+    if(GH_SHA)payload.sha=GH_SHA;
+    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_FILE,{
+      method:'PUT',
+      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
+      body:JSON.stringify(payload)
+    });
+    if(resp.ok){
+      var result=await resp.json();
+      GH_SHA=result.content.sha;
+      localStorage.setItem('gh_sha',GH_SHA);
+    }
+  }catch(e){console.warn('GitHub sync error:',e);}
+}
+
+function getSyncToken(){
+  // Use any user's token, or the one stored in localStorage
+  var users=getUsers();
+  for(var i=0;i<users.length;i++){if(users[i].apiKey)return users[i].apiKey;}
+  return localStorage.getItem('apiKey')||'';
+}
+
+// ═══════════════════════════════════════════════════════
+// STORAGE — localStorage + GitHub sync
 // ═══════════════════════════════════════════════════════
 // users: [{id, name, pwdHash, color, apiKey}]
 // procs: [{id, title, ref, op, cat, status, created, userId, sections, genText}]
 function getUsers(){return JSON.parse(localStorage.getItem('ms_users')||'[]');}
-function saveUsers(u){localStorage.setItem('ms_users',JSON.stringify(u));}
+function saveUsers(u){
+  localStorage.setItem('ms_users',JSON.stringify(u));
+  ghSave(getSyncToken());
+}
 function getProcs(){return JSON.parse(localStorage.getItem('ms_procs')||'[]');}
-function saveProcs(p){localStorage.setItem('ms_procs',JSON.stringify(p));}
+function saveProcs(p){
+  localStorage.setItem('ms_procs',JSON.stringify(p));
+  ghSave(getSyncToken());
+}
 
 // ═══════════════════════════════════════════════════════
 // SESSION STATE
@@ -572,8 +632,32 @@ function saveSettings(){
   S.user.apiKey=document.getElementById('inp-apikey').value.trim();
   const users=getUsers();
   const idx=users.findIndex(u=>u.id===S.user.id);
-  if(idx>=0){users[idx]=S.user;saveUsers(users);}
+  if(idx>=0){users[idx]=S.user;localStorage.setItem('ms_users',JSON.stringify(users));}
   toast('Settings saved ✓');go('home');
+}
+
+async function manualSync(){
+  var token=S.user?S.user.apiKey:getSyncToken();
+  if(!token){toast('Enter your GitHub token first');return;}
+  showOverlay('Syncing...');
+  var ghData=await ghLoad(token);
+  if(ghData){
+    var localUsers=JSON.parse(localStorage.getItem('ms_users')||'[]');
+    var mergedUsers=ghData.users.map(function(gu){
+      var lu=localUsers.find(function(u){return u.id===gu.id;});
+      return Object.assign({},gu,{apiKey:lu?lu.apiKey||'':''});
+    });
+    localUsers.forEach(function(lu){
+      if(!mergedUsers.find(function(u){return u.id===lu.id;}))mergedUsers.push(lu);
+    });
+    localStorage.setItem('ms_users',JSON.stringify(mergedUsers));
+    localStorage.setItem('ms_procs',JSON.stringify(ghData.procs||[]));
+    toast('✓ Synced from GitHub');
+  } else {
+    await ghSave(token);
+    toast('✓ Data pushed to GitHub');
+  }
+  hideOverlay();
 }
 
 function clearMyData(){
@@ -994,23 +1078,18 @@ function exportWord(){
 
 function parseAIText(txt){
   var blocks=[];
-  // Strip markdown bold/italic/horizontal rules
-  txt=txt.replace(/\*\*(.*?)\*\*/g,'$1').replace(/__(.*?)__/g,'$1');
-  txt=txt.replace(/^---+$/gm,'').replace(/^===+$/gm,'');
+  // Clean markdown formatting
+  txt=txt.replace(/\*\*(.*?)\*\*/g,'$1').replace(/__(.*?)__/g,'$1').replace(/\*(.*?)\*/g,'$1');
   txt.split('\n').forEach(function(line){
     var t=line.trim();
     if(!t){blocks.push({type:'empty'});return;}
-    // Section: "I. Title" or "## I. Title" or "## Title"
-    if(/^#{1,3}\s*(I{1,3}|IV|V|VI{1,3}|IX|X)[.\s]/i.test(t)||/^#{1,3}\s+\w/.test(t)){
-      // Strip ## prefix
-      t=t.replace(/^#{1,3}\s*/,'');
-      blocks.push({type:'section',text:t});
+    // Strip any ## prefix first
+    var clean=t.replace(/^#{1,3}\s*/,'');
+    // ONLY proper Roman numeral sections count for photo matching
+    if(/^(I{1,3}|IV|V|VI{1,3}|IX|X)\.\s/i.test(clean)){
+      blocks.push({type:'section',text:clean});
     }
-    // Roman numeral section: "I. Title"
-    else if(/^(I{1,3}|IV|V|VI{1,3}|IX|X)\.\s/i.test(t)){
-      blocks.push({type:'section',text:t});
-    }
-    // Numbered step: "1. text" or "1) text"
+    // Numbered step
     else if(/^\d+[.)]\s/.test(t)){
       blocks.push({type:'step',text:t});
     }
@@ -1018,8 +1097,12 @@ function parseAIText(txt){
     else if(/^[-•*]\s/.test(t)){
       blocks.push({type:'bullet',text:t});
     }
+    // Separator lines → skip
+    else if(/^[-=]{3,}$/.test(t)){
+      // skip
+    }
     else{
-      blocks.push({type:'text',text:t});
+      blocks.push({type:'text',text:clean});
     }
   });
   return blocks;
@@ -1029,19 +1112,30 @@ function buildWordHTML(p,txt){
   var date=new Date().toLocaleDateString('en-GB');
   var users=getUsers();
   var author=users.find(function(u){return u.id===p.userId;});
+  var opName=p.op||(author?author.name:'—');
   var blocks=parseAIText(txt);
   var secCount=-1;
   var stepCount=0;
   var rows='';
 
+  // Build a table of contents from sections
+  var toc='';
+  var secTitles=[];
+  blocks.forEach(function(b){if(b.type==='section')secTitles.push(b.text);});
+  if(secTitles.length>1){
+    toc='<table style="width:100%;border-collapse:collapse;margin-bottom:12px;border:1px solid #C8D6E5">';
+    toc+='<tr><td style="background:#F5F7FA;padding:8px 14px;font-weight:bold;font-size:10pt;font-family:Arial;border-bottom:1px solid #C8D6E5">Contents</td></tr>';
+    secTitles.forEach(function(st){
+      toc+='<tr><td style="padding:5px 14px 5px 28px;font-size:10pt;font-family:Arial">'+esc(st)+'</td></tr>';
+    });
+    toc+='</table>';
+  }
+
   blocks.forEach(function(block){
-    if(block.type==='empty'){
-      rows+='<tr><td colspan="2" style="padding:3px"></td></tr>';
-      return;
-    }
+    if(block.type==='empty')return;
     if(block.type==='section'){
       secCount++;stepCount=0;
-      rows+='<tr><td colspan="2" style="background:#1B3A6B;color:#fff;font-weight:bold;font-size:12pt;padding:8px 14px;font-family:Arial">'+esc(block.text)+'</td></tr>';
+      rows+='<tr><td colspan="2" style="background:#1B3A6B;color:#fff;font-weight:bold;font-size:11pt;padding:7px 14px;font-family:Arial">'+esc(block.text)+'</td></tr>';
       return;
     }
     if(block.type==='step'){
@@ -1052,65 +1146,80 @@ function buildWordHTML(p,txt){
       if(photos.length){
         var imgHtml='';
         photos.forEach(function(ph){
-          imgHtml+='<img src="'+ph.data+'" style="max-width:100%;max-height:130px;display:block;margin-bottom:4px;border:1px solid #ddd;border-radius:3px">';
+          imgHtml+='<img src="'+ph.data+'" style="max-width:100%;max-height:150px;display:block;margin-bottom:6px;border:1px solid #ddd">';
         });
         rows+='<tr>'
-          +'<td style="padding:8px 14px;font-family:Arial;font-size:11pt;vertical-align:top;width:58%;border-bottom:1px solid #E2E8F0">'+esc(block.text)+'</td>'
-          +'<td style="padding:6px 8px;vertical-align:top;width:42%;border-bottom:1px solid #E2E8F0;border-left:1px solid #E2E8F0">'+imgHtml+'</td>'
+          +'<td style="padding:8px 14px;font-family:Arial;font-size:11pt;vertical-align:top;width:60%;border-bottom:1px solid #E2E8F0">'+esc(block.text)+'</td>'
+          +'<td style="padding:6px 8px;vertical-align:top;width:40%;border-bottom:1px solid #E2E8F0;border-left:1px solid #E2E8F0;text-align:center">'+imgHtml+'</td>'
           +'</tr>';
       }else{
-        rows+='<tr><td colspan="2" style="padding:8px 14px 8px 28px;font-family:Arial;font-size:11pt;border-bottom:1px solid #E2E8F0">'+esc(block.text)+'</td></tr>';
+        rows+='<tr><td colspan="2" style="padding:7px 14px 7px 28px;font-family:Arial;font-size:11pt;border-bottom:1px solid #E2E8F0">'+esc(block.text)+'</td></tr>';
       }
       return;
     }
     if(block.type==='bullet'){
-      rows+='<tr><td colspan="2" style="padding:5px 14px 5px 42px;font-family:Arial;font-size:10pt;color:#444;border-bottom:1px solid #F0F0F0">'+esc(block.text)+'</td></tr>';
+      rows+='<tr><td colspan="2" style="padding:4px 14px 4px 42px;font-family:Arial;font-size:10pt;color:#333;border-bottom:1px solid #F0F0F0">'+esc(block.text)+'</td></tr>';
       return;
     }
-    rows+='<tr><td colspan="2" style="padding:6px 14px;font-family:Arial;font-size:10pt;color:#555">'+esc(block.text)+'</td></tr>';
+    // regular text
+    rows+='<tr><td colspan="2" style="padding:5px 14px;font-family:Arial;font-size:10pt;color:#555">'+esc(block.text)+'</td></tr>';
   });
 
   var totalSteps=p.sections.reduce(function(a,s){return a+s.steps.length;},0);
-  var estPages=Math.max(1,Math.ceil(totalSteps/6));
-  var opName=p.op||(author?author.name:'—');
+  var estPages=Math.max(1,Math.ceil((secTitles.length*2+totalSteps)/10));
 
-  var H='<!DOCTYPE html>';
-  H+='<html>';
-  H+='<head><meta charset="UTF-8"></head>';
-  H+='<body style="font-family:Arial;font-size:11pt;margin:0;padding:20px;color:#1A1A2E">';
-  // Header
-  H+='<table style="width:100%;border-collapse:collapse;border:1px solid #C8D6E5;margin-bottom:0">';
-  H+='<tr><td colspan="3" style="background:#1B3A6B;text-align:center;padding:10px 14px">';
-  H+='<p style="font-size:15pt;font-weight:bold;color:#fff;margin:0">Proc&eacute;dure de fabrication</p>';
-  H+='<p style="font-size:11pt;color:#D6E4F0;margin:4px 0 0">&laquo; '+esc(p.title)+' &ndash; '+esc(p.ref)+' &raquo;</p>';
-  H+='</td></tr>';
+  // Build HTML matching CDVI template structure
+  var H='<!DOCTYPE html><html><head><meta charset="UTF-8"></head>';
+  H+='<body style="font-family:Arial;font-size:11pt;margin:0;padding:16px">';
+
+  // ── HEADER (matching CDVI template) ──
+  H+='<table style="width:100%;border-collapse:collapse;border:1px solid #999;margin-bottom:0">';
   H+='<tr>';
-  H+='<td style="padding:6px 10px;font-family:Arial;font-size:9pt;background:#F5F7FA;width:33%;border:1px solid #C8D6E5"><b style="color:#2E75B6">Operator:</b> '+esc(opName)+'</td>';
-  H+='<td style="padding:6px 10px;font-family:Arial;font-size:9pt;background:#F5F7FA;width:33%;border:1px solid #C8D6E5;text-align:center"><b style="color:#2E75B6">Category:</b> '+esc(p.cat)+'</td>';
-  H+='<td style="padding:6px 10px;font-family:Arial;font-size:9pt;background:#F5F7FA;width:34%;border:1px solid #C8D6E5;text-align:right"><b style="color:#2E75B6">Date:</b> '+date+' &nbsp;|&nbsp; <b style="color:#2E75B6">Version:</b> 01</td>';
-  H+='</tr></table>';
-  // Content
-  H+='<table style="width:100%;border-collapse:collapse;border:1px solid #C8D6E5;border-top:none">'+rows+'</table>';
-  // Signatures
-  H+='<table style="width:100%;border-collapse:collapse;margin-top:16px;border:1px solid #C8D6E5">';
+  H+='<td colspan="2" style="text-align:center;padding:10px 14px;border-bottom:1px solid #999">';
+  H+='<p style="font-size:14pt;font-weight:bold;margin:0;font-family:Arial">Proc&eacute;dure de fabrication</p>';
+  H+='<p style="font-size:11pt;margin:4px 0 0;font-family:Arial">&laquo;&nbsp;'+esc(p.title)+' &ndash; '+esc(p.ref)+'&nbsp;&raquo;</p>';
+  H+='</td>';
+  H+='</tr>';
+  H+='</table>';
+
+  // ── TABLE OF CONTENTS ──
+  if(toc)H+=toc;
+
+  // ── CONTENT ──
+  H+='<table style="width:100%;border-collapse:collapse;border:1px solid #C8D6E5">'+rows+'</table>';
+
+  // ── SIGNATURES ──
+  H+='<table style="width:100%;border-collapse:collapse;margin-top:20px;border:1px solid #999">';
   H+='<tr>';
-  H+='<th style="background:#2E75B6;color:#fff;padding:7px 10px;font-size:9pt;width:50%;text-align:center">Established by</th>';
-  H+='<th style="background:#2E75B6;color:#fff;padding:7px 10px;font-size:9pt;width:50%;text-align:center">Approved by</th>';
-  H+='</tr><tr>';
-  H+='<td style="padding:28px 10px;text-align:center;border:1px solid #C8D6E5">'+esc(opName)+'</td>';
-  H+='<td style="padding:28px 10px;text-align:center;border:1px solid #C8D6E5"></td>';
-  H+='</tr></table>';
-  // Footer
-  H+='<table style="width:100%;border-collapse:collapse;margin-top:12px;border-top:1px solid #C8D6E5;padding-top:6px">';
+  H+='<td style="width:50%;padding:6px 10px;font-size:9pt;font-family:Arial;border-right:1px solid #999"><b>Etablit par :</b> '+esc(opName)+'</td>';
+  H+='<td style="width:50%;padding:6px 10px;font-size:9pt;font-family:Arial"><b>Contr&ocirc;l&eacute; par :</b></td>';
+  H+='</tr>';
   H+='<tr>';
-  H+='<td style="font-size:8pt;color:#555;width:45%">Doc. : Fabrication '+esc(p.ref)+' &ndash; '+esc(p.title)+'</td>';
-  H+='<td style="font-size:8pt;color:#555;text-align:center;width:30%">Date : '+date+' &nbsp; Version : 01 / Ed doc :</td>';
-  H+='<td style="font-size:8pt;color:#555;text-align:right;width:25%">Page 1 sur '+estPages+'</td>';
-  H+='</tr><tr>';
-  H+='<td style="font-size:8pt;color:#555;padding-top:2px">Etablit par : '+esc(opName)+'</td>';
-  H+='<td style="font-size:8pt;color:#555;text-align:center;padding-top:2px">Contr&ocirc;l&eacute; par :</td>';
-  H+='<td style="font-size:8pt;color:#555;text-align:right;padding-top:2px">Generated by ProceduresApp</td>';
-  H+='</tr></table>';
+  H+='<td style="padding:28px 10px;font-size:11pt;font-family:Arial;border-right:1px solid #999;text-align:center">'+esc(opName)+'</td>';
+  H+='<td style="padding:28px 10px;font-size:11pt;font-family:Arial;text-align:center"></td>';
+  H+='</tr>';
+  H+='</table>';
+
+  // ── FOOTER (matching CDVI template exactly) ──
+  H+='<table style="width:100%;border-collapse:collapse;margin-top:16px;border-top:2px solid #000">';
+  H+='<tr>';
+  H+='<td style="font-size:8pt;font-family:Arial;padding:4px 6px;width:55%">'
+    +'Doc. : Fabrication '+esc(p.ref)+' &ndash; '+esc(p.title)+'</td>';
+  H+='<td style="font-size:8pt;font-family:Arial;padding:4px 6px;text-align:center;width:30%">'
+    +'Date : '+date+'&nbsp;&nbsp;&nbsp; Version :01 / Ed doc :</td>';
+  H+='<td style="font-size:8pt;font-family:Arial;padding:4px 6px;text-align:right;width:15%">'
+    +'&nbsp;</td>';
+  H+='</tr>';
+  H+='<tr>';
+  H+='<td style="font-size:8pt;font-family:Arial;padding:2px 6px;border-top:1px solid #999">'
+    +'Etablit par : '+esc(opName)+'</td>';
+  H+='<td style="font-size:8pt;font-family:Arial;padding:2px 6px;text-align:center;border-top:1px solid #999">'
+    +'Contr&ocirc;l&eacute; par :</td>';
+  H+='<td style="font-size:8pt;font-family:Arial;padding:2px 6px;text-align:right;border-top:1px solid #999">'
+    +'Page 1 sur '+estPages+'</td>';
+  H+='</tr>';
+  H+='</table>';
+
   H+='</body></html>';
   return H;
 }
@@ -1132,9 +1241,31 @@ function toast(msg){const el=document.getElementById('toast');el.textContent=msg
 // ═══════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════
-window.addEventListener('DOMContentLoaded',()=>{
+window.addEventListener('DOMContentLoaded',async function(){
   renderLoginUsers();
-  // Stay on login screen
+  // Try to sync from GitHub on startup
+  var token=getSyncToken();
+  if(token){
+    showOverlay('Syncing data...');
+    var ghData=await ghLoad(token);
+    if(ghData){
+      // Merge GitHub data — keep local API keys
+      var localUsers=JSON.parse(localStorage.getItem('ms_users')||'[]');
+      var mergedUsers=ghData.users.map(function(gu){
+        var lu=localUsers.find(function(u){return u.id===gu.id;});
+        return Object.assign({},gu,{apiKey:lu?lu.apiKey||'':''});
+      });
+      // Add any local-only users
+      localUsers.forEach(function(lu){
+        if(!mergedUsers.find(function(u){return u.id===lu.id;}))mergedUsers.push(lu);
+      });
+      localStorage.setItem('ms_users',JSON.stringify(mergedUsers));
+      localStorage.setItem('ms_procs',JSON.stringify(ghData.procs||[]));
+      renderLoginUsers();
+      toast('✓ Synced from GitHub');
+    }
+    hideOverlay();
+  }
 });
 </script>
 </body>
