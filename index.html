@@ -997,15 +997,14 @@ function exportWord(){
 }
 
 function parseAIText(txt){
-  // Parse AI-generated text into typed blocks
-  const blocks=[];
-  txt.split('\n').forEach(line=>{
-    const t=line.trim();
+  var blocks=[];
+  txt.split('\n').forEach(function(line){
+    var t=line.trim();
     if(!t){blocks.push({type:'empty'});return;}
     if(/^(I{1,3}|IV|V|VI{1,3}|IX|X)[.\s]/i.test(t))
       blocks.push({type:'section',text:t});
     else if(/^\d+[.)]\s/.test(t))
-      blocks.push({type:'step',text:t,num:parseInt(t)});
+      blocks.push({type:'step',text:t});
     else if(/^[-•]\s/.test(t))
       blocks.push({type:'bullet',text:t});
     else
@@ -1015,172 +1014,94 @@ function parseAIText(txt){
 }
 
 function buildWordHTML(p,txt){
-  const date=new Date().toLocaleDateString('en-GB');
-  const users=getUsers();
-  const author=users.find(u=>u.id===p.userId);
+  var date=new Date().toLocaleDateString('en-GB');
+  var users=getUsers();
+  var author=users.find(function(u){return u.id===p.userId;});
+  var blocks=parseAIText(txt);
+  var secCount=-1;
+  var stepCount=0;
+  var rows='';
 
-  // Parse AI text
-  const blocks=parseAIText(txt);
-
-  // Track section/step counters to match photos
-  let secCount=-1;
-  let stepCount=0;
-
-  // Build content rows
-  let rows='';
-  blocks.forEach(block=>{
+  blocks.forEach(function(block){
     if(block.type==='empty'){
-      rows+=`<tr><td colspan="2" style="padding:3px"></td></tr>`;
+      rows+='<tr><td colspan="2" style="padding:3px"></td></tr>';
       return;
     }
     if(block.type==='section'){
       secCount++;stepCount=0;
-      rows+=`<tr>
-        <td colspan="2" style="background:#1B3A6B;color:#fff;font-weight:bold;font-size:12pt;padding:8px 14px;font-family:Arial">
-          ${esc(block.text)}
-        </td>
-      </tr>`;
+      rows+='<tr><td colspan="2" style="background:#1B3A6B;color:#fff;font-weight:bold;font-size:12pt;padding:8px 14px;font-family:Arial">'+esc(block.text)+'</td></tr>';
       return;
     }
     if(block.type==='step'){
-      // Get matching photos from procedure structure
-      const sec=p.sections[secCount];
-      const st=sec?sec.steps[stepCount]:null;
-      const photos=st?.photos||[];
+      var sec=p.sections[secCount];
+      var st=sec?sec.steps[stepCount]:null;
+      var photos=st&&st.photos?st.photos:[];
       stepCount++;
-
       if(photos.length){
-        // Step with photos — text left, photo right
-        rows+=`<tr>
-          <td style="padding:8px 14px;font-family:Arial;font-size:11pt;vertical-align:top;width:58%;border-bottom:1px solid #E2E8F0">
-            ${esc(block.text)}
-          </td>
-          <td style="padding:6px 8px;vertical-align:top;width:42%;border-bottom:1px solid #E2E8F0;border-left:1px solid #E2E8F0">
-            ${photos.map(ph=>`<img src="${ph.data}" style="max-width:100%;max-height:130px;display:block;margin-bottom:4px;border:1px solid #ddd;border-radius:3px">`).join('')}
-          </td>
-        </tr>`;
+        var imgHtml='';
+        photos.forEach(function(ph){
+          imgHtml+='<img src="'+ph.data+'" style="max-width:100%;max-height:130px;display:block;margin-bottom:4px;border:1px solid #ddd;border-radius:3px">';
+        });
+        rows+='<tr>'
+          +'<td style="padding:8px 14px;font-family:Arial;font-size:11pt;vertical-align:top;width:58%;border-bottom:1px solid #E2E8F0">'+esc(block.text)+'</td>'
+          +'<td style="padding:6px 8px;vertical-align:top;width:42%;border-bottom:1px solid #E2E8F0;border-left:1px solid #E2E8F0">'+imgHtml+'</td>'
+          +'</tr>';
       }else{
-        // Step without photo — full width
-        rows+=`<tr>
-          <td colspan="2" style="padding:8px 14px 8px 28px;font-family:Arial;font-size:11pt;border-bottom:1px solid #E2E8F0">
-            ${esc(block.text)}
-          </td>
-        </tr>`;
+        rows+='<tr><td colspan="2" style="padding:8px 14px 8px 28px;font-family:Arial;font-size:11pt;border-bottom:1px solid #E2E8F0">'+esc(block.text)+'</td></tr>';
       }
       return;
     }
     if(block.type==='bullet'){
-      rows+=`<tr>
-        <td colspan="2" style="padding:5px 14px 5px 42px;font-family:Arial;font-size:10pt;color:#444;border-bottom:1px solid #F0F0F0">
-          ${esc(block.text)}
-        </td>
-      </tr>`;
+      rows+='<tr><td colspan="2" style="padding:5px 14px 5px 42px;font-family:Arial;font-size:10pt;color:#444;border-bottom:1px solid #F0F0F0">'+esc(block.text)+'</td></tr>';
       return;
     }
-    // Normal text
-    rows+=`<tr>
-      <td colspan="2" style="padding:6px 14px;font-family:Arial;font-size:10pt;color:#555">
-        ${esc(block.text)}
-      </td>
-    </tr>`;
+    rows+='<tr><td colspan="2" style="padding:6px 14px;font-family:Arial;font-size:10pt;color:#555">'+esc(block.text)+'</td></tr>';
   });
 
-  // Total pages estimate
-  const totalSteps=p.sections.reduce((a,s)=>a+s.steps.length,0);
-  const estPages=Math.max(1,Math.ceil(totalSteps/6));
+  var totalSteps=p.sections.reduce(function(a,s){return a+s.steps.length;},0);
+  var estPages=Math.max(1,Math.ceil(totalSteps/6));
+  var opName=p.op||(author?author.name:'—');
 
-  return `<!DOCTYPE html>
-<html xmlns:o="urn:schemas-microsoft-com:office:office"
-      xmlns:w="urn:schemas-microsoft-com:office:word"
-      xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-<meta charset="UTF-8">
-<meta name="ProgId" content="Word.Document">
-<!--[if gte mso 9]><xml>
-<w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom>
-<w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
-<style>
-  @page{size:A4 portrait;margin:1.5cm 1.8cm 2cm 1.8cm;
-    mso-header-margin:1cm;mso-footer-margin:1.2cm;
-    mso-page-numbers:1;}
-  body{font-family:Arial;font-size:11pt;margin:0;padding:0;color:#1A1A2E}
-  table{border-collapse:collapse;width:100%}
-  p{margin:0;padding:0}
-  .hdr-table{width:100%;margin-bottom:0}
-  .content-table{width:100%;border:1px solid #C8D6E5;border-top:none}
-  .footer-table{width:100%;margin-top:0}
-</style>
-</head>
-<body>
-
-<!--====== HEADER — CDVI TEMPLATE STYLE ======-->
-<table class="hdr-table" style="border:1px solid #C8D6E5">
-<tr>
-  <!-- Title block -->
-  <td colspan="3" style="background:#1B3A6B;text-align:center;padding:10px 14px;border-bottom:1px solid #2E75B6">
-    <p style="font-size:15pt;font-weight:bold;color:#fff;font-family:Arial">Procédure de fabrication</p>
-    <p style="font-size:11pt;color:#D6E4F0;font-family:Arial;margin-top:4px">
-      &laquo; ${esc(p.title)} &ndash; ${esc(p.ref)} &raquo;
-    </p>
-  </td>
-</tr>
-<tr>
-  <td style="padding:6px 10px;font-family:Arial;font-size:9pt;background:#F5F7FA;width:33%;border-right:1px solid #C8D6E5">
-    <b style="color:#2E75B6">Operator :</b> ${esc(p.op||author?.name||'—')}
-  </td>
-  <td style="padding:6px 10px;font-family:Arial;font-size:9pt;background:#F5F7FA;width:33%;border-right:1px solid #C8D6E5;text-align:center">
-    <b style="color:#2E75B6">Category :</b> ${esc(p.cat)}
-  </td>
-  <td style="padding:6px 10px;font-family:Arial;font-size:9pt;background:#F5F7FA;width:34%;text-align:right">
-    <b style="color:#2E75B6">Date :</b> ${date} &nbsp;|&nbsp; <b style="color:#2E75B6">Version :</b> 01
-  </td>
-</tr>
-</table>
-
-<!--====== CONTENT ======-->
-<table class="content-table">
-${rows}
-</table>
-
-<!--====== SIGNATURES ======-->
-<table style="width:100%;margin-top:16px;border:1px solid #C8D6E5">
-<tr>
-  <th style="background:#2E75B6;color:#fff;padding:7px 10px;font-family:Arial;font-size:9pt;width:50%;text-align:center">Established by</th>
-  <th style="background:#2E75B6;color:#fff;padding:7px 10px;font-family:Arial;font-size:9pt;width:50%;text-align:center">Approved by</th>
-</tr>
-<tr>
-  <td style="padding:28px 10px;font-family:Arial;font-size:10pt;text-align:center;border:1px solid #C8D6E5">${esc(p.op||author?.name||'—')}</td>
-  <td style="padding:28px 10px;font-family:Arial;font-size:10pt;text-align:center;border:1px solid #C8D6E5"></td>
-</tr>
-</table>
-
-<!--====== FOOTER — CDVI TEMPLATE STYLE ======-->
-<table style="width:100%;margin-top:12px;border-top:1px solid #C8D6E5;padding-top:6px">
-<tr>
-  <td style="font-family:Arial;font-size:8pt;color:#555;width:45%">
-    Doc. : Fabrication ${esc(p.ref)} &ndash; ${esc(p.title)}
-  </td>
-  <td style="font-family:Arial;font-size:8pt;color:#555;text-align:center;width:30%">
-    Date : ${date} &nbsp;&nbsp; Version : 01 / Ed doc :
-  </td>
-  <td style="font-family:Arial;font-size:8pt;color:#555;text-align:right;width:25%">
-    Page 1 sur ${estPages}
-  </td>
-</tr>
-<tr>
-  <td style="font-family:Arial;font-size:8pt;color:#555;padding-top:2px">
-    Etablit par : ${esc(p.op||author?.name||'—')}
-  </td>
-  <td style="font-family:Arial;font-size:8pt;color:#555;text-align:center;padding-top:2px">
-    Contrôlé par :
-  </td>
-  <td style="font-family:Arial;font-size:8pt;color:#555;text-align:right;padding-top:2px">
-    Generated by ProceduresApp
-  </td>
-</tr>
-</table>
-
-</body></html>`;
+  var H='<!DOCTYPE html>';
+  H+='<html>';
+  H+='<head><meta charset="UTF-8"></head>';
+  H+='<body style="font-family:Arial;font-size:11pt;margin:0;padding:20px;color:#1A1A2E">';
+  // Header
+  H+='<table style="width:100%;border-collapse:collapse;border:1px solid #C8D6E5;margin-bottom:0">';
+  H+='<tr><td colspan="3" style="background:#1B3A6B;text-align:center;padding:10px 14px">';
+  H+='<p style="font-size:15pt;font-weight:bold;color:#fff;margin:0">Proc&eacute;dure de fabrication</p>';
+  H+='<p style="font-size:11pt;color:#D6E4F0;margin:4px 0 0">&laquo; '+esc(p.title)+' &ndash; '+esc(p.ref)+' &raquo;</p>';
+  H+='</td></tr>';
+  H+='<tr>';
+  H+='<td style="padding:6px 10px;font-family:Arial;font-size:9pt;background:#F5F7FA;width:33%;border:1px solid #C8D6E5"><b style="color:#2E75B6">Operator:</b> '+esc(opName)+'</td>';
+  H+='<td style="padding:6px 10px;font-family:Arial;font-size:9pt;background:#F5F7FA;width:33%;border:1px solid #C8D6E5;text-align:center"><b style="color:#2E75B6">Category:</b> '+esc(p.cat)+'</td>';
+  H+='<td style="padding:6px 10px;font-family:Arial;font-size:9pt;background:#F5F7FA;width:34%;border:1px solid #C8D6E5;text-align:right"><b style="color:#2E75B6">Date:</b> '+date+' &nbsp;|&nbsp; <b style="color:#2E75B6">Version:</b> 01</td>';
+  H+='</tr></table>';
+  // Content
+  H+='<table style="width:100%;border-collapse:collapse;border:1px solid #C8D6E5;border-top:none">'+rows+'</table>';
+  // Signatures
+  H+='<table style="width:100%;border-collapse:collapse;margin-top:16px;border:1px solid #C8D6E5">';
+  H+='<tr>';
+  H+='<th style="background:#2E75B6;color:#fff;padding:7px 10px;font-size:9pt;width:50%;text-align:center">Established by</th>';
+  H+='<th style="background:#2E75B6;color:#fff;padding:7px 10px;font-size:9pt;width:50%;text-align:center">Approved by</th>';
+  H+='</tr><tr>';
+  H+='<td style="padding:28px 10px;text-align:center;border:1px solid #C8D6E5">'+esc(opName)+'</td>';
+  H+='<td style="padding:28px 10px;text-align:center;border:1px solid #C8D6E5"></td>';
+  H+='</tr></table>';
+  // Footer
+  H+='<table style="width:100%;border-collapse:collapse;margin-top:12px;border-top:1px solid #C8D6E5;padding-top:6px">';
+  H+='<tr>';
+  H+='<td style="font-size:8pt;color:#555;width:45%">Doc. : Fabrication '+esc(p.ref)+' &ndash; '+esc(p.title)+'</td>';
+  H+='<td style="font-size:8pt;color:#555;text-align:center;width:30%">Date : '+date+' &nbsp; Version : 01 / Ed doc :</td>';
+  H+='<td style="font-size:8pt;color:#555;text-align:right;width:25%">Page 1 sur '+estPages+'</td>';
+  H+='</tr><tr>';
+  H+='<td style="font-size:8pt;color:#555;padding-top:2px">Etablit par : '+esc(opName)+'</td>';
+  H+='<td style="font-size:8pt;color:#555;text-align:center;padding-top:2px">Contr&ocirc;l&eacute; par :</td>';
+  H+='<td style="font-size:8pt;color:#555;text-align:right;padding-top:2px">Generated by ProceduresApp</td>';
+  H+='</tr></table>';
+  H+='</body></html>';
+  return H;
+}
 
 // ═══════════════════════════════════════════════════════
 // SHARE
