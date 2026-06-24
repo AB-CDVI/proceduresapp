@@ -246,15 +246,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <!-- GitHub shared token (admin only) -->
     <div class="card" id="admin-token-card" style="display:none">
       <div class="card-title">🔑 Shared GitHub Token (admin)</div>
+      <!-- Token status indicator -->
+      <div id="token-status" style="padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:12px;font-weight:500"></div>
       <div class="fg">
-        <label class="fl">Token (shared by all team members)</label>
-        <input type="password" id="inp-apikey" class="fi" placeholder="ghp_..." style="font-family:monospace;font-size:13px" />
+        <label class="fl">Enter / replace token</label>
+        <input type="text" id="inp-apikey" class="fi" placeholder="ghp_..." style="font-family:monospace;font-size:13px" autocomplete="off" />
         <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5">
-          One token for the whole team. Get it at <strong>github.com/settings/tokens</strong> — scope <strong>repo</strong> required.
-          <br>Once saved, all devices load it automatically.
+          Get it at <strong>github.com/settings/tokens</strong> — scope <strong>repo</strong> required.
+          One token for the whole team — all devices sync automatically once set.
         </div>
       </div>
-      <button class="btn btn-s btn-sm btn-full" style="margin-top:8px" onclick="manualSync()">🔄 Sync now</button>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-s btn-sm" style="flex:1" onclick="testToken()">🔌 Test connection</button>
+        <button class="btn btn-s btn-sm" style="flex:1" onclick="manualSync()">🔄 Force sync</button>
+      </div>
     </div>
     <!-- Change password -->
     <div class="card">
@@ -630,12 +635,19 @@ function go(screen){
   if(screen==='settings'){
     const tokenCard=document.getElementById('admin-token-card');
     if(tokenCard)tokenCard.style.display=S.user&&S.user.isAdmin?'block':'none';
-    const apiInp=document.getElementById('inp-apikey');
-    // Show empty field — admin must re-enter token to change it
-    if(apiInp){
-      apiInp.value='';
-      apiInp.placeholder=sharedToken?'Token configured — enter to change':'ghp_...';
+    // Show token status clearly
+    const status=document.getElementById('token-status');
+    if(status){
+      if(sharedToken){
+        status.style.background='#DCFCE7';status.style.color='#15803D';
+        status.textContent='✓ Token configured — '+sharedToken.slice(0,8)+'••••••••';
+      }else{
+        status.style.background='#FEE2E2';status.style.color='#DC2626';
+        status.textContent='⚠️ No token — enter it below to enable sync and AI';
+      }
     }
+    const apiInp=document.getElementById('inp-apikey');
+    if(apiInp){apiInp.value='';apiInp.placeholder='Enter new token to replace...';}
     document.getElementById('pwd-old').value='';
     document.getElementById('pwd-new1').value='';
     document.getElementById('pwd-new2').value='';
@@ -805,41 +817,79 @@ async function saveSettings(){
   if(!S.user)return;
   if(S.user.isAdmin){
     const newToken=document.getElementById('inp-apikey').value.trim();
-    const isReal=newToken.length>20&&!newToken.includes('•');
-    if(isReal&&newToken!==sharedToken){
-      // Save locally FIRST (always works, no GitHub needed)
+    // Accept any non-empty token that doesn't look like placeholder text
+    if(newToken&&newToken.length>10){
+      showOverlay('Saving token...');
+      // Always save locally first — never fails
       sharedToken=newToken;
       localStorage.setItem('shared_token',newToken);
-      // Then push to GitHub (best-effort)
-      showOverlay('Syncing to GitHub...');
+      // Push to GitHub best-effort
       await ghSave();
       hideOverlay();
-      toast('✓ Token saved — synced to GitHub');
-    }else if(newToken&&!isReal){
-      toast('Enter a valid token (ghp_...)');
+      // Update status display
+      const status=document.getElementById('token-status');
+      if(status){
+        status.style.background='#DCFCE7';status.style.color='#15803D';
+        status.textContent='✓ Token saved — '+newToken.slice(0,8)+'••••••••';
+      }
+      document.getElementById('inp-apikey').value='';
+      toast('✓ Token saved and pushed to GitHub');
+      return; // stay on settings so user can see the status
+    }else if(newToken){
+      toast('Token too short — paste the full ghp_... token');
       return;
     }
   }
   go('home');
 }
 
+async function testToken(){
+  const testTok=document.getElementById('inp-apikey').value.trim()||sharedToken;
+  if(!testTok){toast('Enter a token first');return;}
+  showOverlay('Testing connection...');
+  try{
+    var resp=await fetch('https://api.github.com/repos/'+GH_REPO,{
+      headers:{'Authorization':'Bearer '+testTok,'Accept':'application/vnd.github.v3+json'}
+    });
+    hideOverlay();
+    if(resp.ok){
+      var r=await resp.json();
+      toast('✓ Token works — repo: '+r.full_name);
+    }else if(resp.status===401){
+      toast('❌ Token invalid or expired');
+    }else if(resp.status===403){
+      toast('❌ Token valid but missing repo scope');
+    }else{
+      toast('❌ Error '+resp.status);
+    }
+  }catch(e){hideOverlay();toast('❌ Network error: '+e.message);}
+}
+
 async function manualSync(){
-  if(!sharedToken){toast('No token — admin must enter it in Settings');return;}
+  if(!sharedToken){
+    toast('No token — enter it in Settings (admin)');
+    go('settings');
+    return;
+  }
   showOverlay('Syncing from GitHub...');
   var result=await ghLoad();
   if(result.ok){
-    renderLoginUsers();go('home');hideOverlay();
+    renderLoginUsers();
+    hideOverlay();
+    go('home');
     toast('✓ Synced from GitHub');
   }else if(result.reason==='not_found'){
-    showOverlay('No data on GitHub yet — pushing...');
-    await ghSave();hideOverlay();
-    toast('✓ Data pushed to GitHub');
+    showOverlay('No data on GitHub yet — pushing local data...');
+    await ghSave();
+    hideOverlay();
+    toast('✓ Local data pushed to GitHub');
   }else if(result.reason==='auth_error'){
     hideOverlay();
-    toast('Auth error ('+result.status+') — check token has repo scope');
+    toast('Auth error '+result.status+' — check token scope');
+    go('settings');
   }else{
     hideOverlay();
-    toast('Sync failed: '+result.reason+(result.detail?' ('+result.detail+')':''));
+    toast('Sync failed: '+result.reason+(result.detail?' — '+result.detail:''));
   }
 }
 
