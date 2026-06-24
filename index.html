@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1B3A6B">
 <title>ProceduresApp</title>
 <style>
@@ -19,20 +19,12 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;overflow-x:hidden}
 .screen{display:none;flex-direction:column;min-height:100vh}
 .screen.active{display:flex}
-
-/* HEADER */
 .hdr{background:var(--blue);color:#fff;padding:0 16px;height:58px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .hdr-title{font-size:17px;font-weight:700;flex:1;line-height:1.2}
 .hdr-sub{font-size:11px;opacity:.75;font-weight:400}
 .btn-back{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:6px;line-height:1}
-
-/* CONTENT */
 .content{flex:1;overflow-y:auto;padding:16px;padding-bottom:86px}
-
-/* FOOTER */
 .ftr{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;border-top:1px solid var(--border);padding:10px 14px;display:flex;gap:8px;z-index:100}
-
-/* BUTTONS */
 .btn{padding:12px 18px;border-radius:var(--r);border:none;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:opacity .15s,transform .1s;font-family:inherit}
 .btn:active{transform:scale(.97)}
 .btn-p{background:var(--blue-mid);color:#fff;flex:1}
@@ -41,20 +33,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .btn-full{width:100%}
 .btn-sm{padding:8px 14px;font-size:13px}
 .btn-danger{background:var(--red);color:#fff}
-
-/* CARDS */
 .card{background:#fff;border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
 .card-title{font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
-
-/* FORM */
 .fg{margin-bottom:14px}
 .fl{display:block;font-size:12px;font-weight:700;color:var(--blue);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
 .fi,.fs,.fta{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:15px;font-family:inherit;background:#fff;color:var(--text);transition:border-color .2s}
 .fi:focus,.fs:focus,.fta:focus{outline:none;border-color:var(--blue-mid)}
-.fs{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%237A8AA0' d='M6 8L0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center}
+.fs{appearance:none}
 .fta{resize:none;line-height:1.5}
 
-/* PROCEDURE LIST */
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:var(--blue)}
+.login-logo{text-align:center;margin-bottom:32px}
+.login-logo-title{font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px}
+.login-logo-sub{font-size:14px;color:rgba(255,255,255,.7);margin-top:4px}
+.login-card{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.25)}
+.login-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px}
+.user-btn{width:100%;padding:14px;border-radius:10px;border:2px solid var(--border);background:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:12px;margin-bottom:10px;transition:border-color .2s,background .2s;text-align:left;font-family:inherit}
+.user-btn:hover,.user-btn:active{border-color:var(--blue-mid);background:var(--blue-pale)}
+.user-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0}
+
+/* HOME */
 .proc-item{background:#fff;border-radius:var(--r);padding:14px 15px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;cursor:pointer;border-left:4px solid var(--blue-mid);transition:transform .1s}
 .proc-item:active{transform:scale(.99)}
 .proc-icon{font-size:28px;flex-shrink:0}
@@ -71,27 +70,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sec-num{font-size:12px;opacity:.7;flex-shrink:0}
 .sec-title{font-size:14px;font-weight:700;flex:1}
 .sec-edit{background:none;border:none;color:#fff;opacity:.8;font-size:16px;cursor:pointer;padding:2px}
-
 .step-card{background:#fff;border-radius:9px;margin-bottom:8px;margin-left:16px;border:1px solid var(--border);overflow:hidden}
 .step-top{padding:10px 13px;display:flex;align-items:flex-start;gap:10px;cursor:pointer}
 .step-n{width:26px;height:26px;background:var(--blue-pale);color:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px}
 .step-txt{font-size:13px;color:var(--text);flex:1;line-height:1.45}
 .step-txt.empty{color:var(--muted);font-style:italic}
-.step-media{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.step-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
 .step-tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600}
 .tag-photo{background:#E0F2FE;color:#0369A1}
 .tag-voice{background:#FEF3C7;color:#92400E}
-
-.step-btns{display:flex;gap:0;border-top:1px solid var(--border)}
-.cap-btn{flex:1;padding:9px 6px;border:none;font-size:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;background:#fff;border-right:1px solid var(--border);transition:background .1s}
+.step-btns{display:flex;border-top:1px solid var(--border)}
+.cap-btn{flex:1;padding:9px 6px;border:none;font-size:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;background:#fff;border-right:1px solid var(--border);transition:background .1s;font-family:inherit}
 .cap-btn:last-child{border-right:none}
 .cap-btn:active{background:var(--bg)}
 .cap-btn span{font-size:10px;font-weight:600;color:var(--muted)}
-.cap-btn.cv{background:#FFFBEB}
-.cap-btn.cp{background:#F0F9FF}
-.cap-btn.ct{background:#F0FFF4}
-.cap-btn.cd{background:#FFF1F2}
-
+.cap-btn.cv{background:#FFFBEB}.cap-btn.cp{background:#F0F9FF}.cap-btn.ct{background:#F0FFF4}.cap-btn.cd{background:#FFF1F2}
 .add-row{display:flex;gap:8px;margin-top:4px;margin-bottom:16px;margin-left:16px}
 
 /* STEP DETAIL */
@@ -99,7 +92,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .rec-bar{display:flex;align-items:center;gap:8px;padding:10px 13px;background:#FEF3C7;border-radius:9px;margin-top:8px}
 .rec-dot{width:10px;height:10px;background:var(--red);border-radius:50%;animation:blink 1s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
-
 .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
 .photo-wrap{position:relative;aspect-ratio:1}
 .photo-wrap img{width:100%;height:100%;object-fit:cover;border-radius:7px;display:block}
@@ -110,7 +102,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .review-label{font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
 .review-text{font-size:13px;line-height:1.75;color:var(--text);white-space:pre-wrap;word-break:break-word}
 
-/* EXPORT SUCCESS */
+/* SUCCESS */
 .success-box{text-align:center;padding:32px 20px}
 .success-icon{font-size:72px;margin-bottom:16px}
 .success-title{font-size:22px;font-weight:700;margin-bottom:8px}
@@ -124,10 +116,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .empty-s{font-size:14px;color:var(--muted);line-height:1.5}
 
 /* FAB */
-.fab{position:fixed;bottom:82px;right:16px;width:54px;height:54px;background:var(--orange);color:#fff;border:none;border-radius:50%;font-size:28px;cursor:pointer;box-shadow:0 4px 16px rgba(232,97,10,.45);display:flex;align-items:center;justify-content:center;z-index:50;transition:transform .15s}
+.fab{position:fixed;bottom:82px;right:16px;width:54px;height:54px;background:var(--orange);color:#fff;border:none;border-radius:50%;font-size:28px;cursor:pointer;box-shadow:0 4px 16px rgba(232,97,10,.45);display:flex;align-items:center;justify-content:center;z-index:50;transition:transform .15s;font-family:inherit}
 .fab:active{transform:scale(.9)}
 
-/* LOADING */
+/* OVERLAY */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px;color:#fff;font-size:15px;font-weight:500}
 .spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -136,11 +128,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .toast{position:fixed;bottom:86px;left:50%;transform:translateX(-50%);background:rgba(26,26,46,.92);color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;font-weight:500;z-index:998;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;max-width:320px;text-align:center}
 .toast.on{opacity:1}
 
-/* SETTINGS */
-.settings-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
-.settings-row:last-child{border-bottom:none}
-.settings-label{flex:1;font-size:14px;font-weight:500}
-.settings-sub{font-size:12px;color:var(--muted);margin-top:2px}
+/* USER BADGE */
+.user-chip{background:rgba(255,255,255,.2);border-radius:20px;padding:4px 10px 4px 6px;display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:600}
+.user-chip-av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
 </style>
 </head>
 <body>
@@ -152,22 +142,80 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- ══════════════════════════════════════════
+     LOGIN
+══════════════════════════════════════════ -->
+<div id="s-login" class="screen active">
+  <div class="login-wrap">
+    <div class="login-logo">
+      <div class="login-logo-title">ProceduresApp</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.4</div>
+    </div>
+    <div class="login-card">
+      <div class="login-title">Who are you?</div>
+      <div id="user-list"></div>
+      <div style="text-align:center;margin-top:16px">
+        <button class="btn btn-s btn-sm" onclick="showAddUser()" style="font-size:13px">+ Add user</button>
+      </div>
+    </div>
+
+    <!-- Password prompt -->
+    <div id="pwd-box" style="display:none;width:100%;max-width:380px;margin-top:16px">
+      <div class="login-card">
+        <div class="login-title" id="pwd-title">Enter password</div>
+        <div class="fg">
+          <input type="password" id="pwd-inp" class="fi" placeholder="Password" onkeydown="if(event.key==='Enter')checkPwd()" />
+        </div>
+        <button class="btn btn-p btn-full" onclick="checkPwd()">Login →</button>
+        <button class="btn btn-s btn-full" style="margin-top:8px" onclick="cancelLogin()">Back</button>
+      </div>
+    </div>
+
+    <!-- Add user form -->
+    <div id="add-user-box" style="display:none;width:100%;max-width:380px;margin-top:16px">
+      <div class="login-card">
+        <div class="login-title">Create account</div>
+        <div class="fg">
+          <label class="fl">Name</label>
+          <input type="text" id="new-name" class="fi" placeholder="Your name" />
+        </div>
+        <div class="fg">
+          <label class="fl">Password</label>
+          <input type="password" id="new-pwd" class="fi" placeholder="Choose a password" />
+        </div>
+        <div class="fg" style="margin-bottom:0">
+          <label class="fl">Confirm password</label>
+          <input type="password" id="new-pwd2" class="fi" placeholder="Repeat password" />
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn btn-s" style="flex:1" onclick="cancelLogin()">Cancel</button>
+          <button class="btn btn-p" style="flex:1" onclick="createUser()">Create →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
      HOME
 ══════════════════════════════════════════ -->
 <div id="s-home" class="screen">
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.3</div>
+      <div class="hdr-sub">Magnetic Solution — v1.4</div>
     </div>
-    <button onclick="go('settings')" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px">⚙️</button>
+    <div class="user-chip" onclick="logout()">
+      <div class="user-chip-av" id="hdr-avatar"></div>
+      <span id="hdr-username" style="color:#fff"></span>
+    </div>
+    <button onclick="go('settings')" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:4px;margin-left:4px">⚙️</button>
   </header>
   <div class="content">
     <div id="home-list"></div>
   </div>
-  <button class="fab" onclick="go('form')">+</button>
+  <button class="fab" onclick="initForm();go('form')">+</button>
   <div class="ftr">
-    <button class="btn btn-p" onclick="go('form')">＋ New procedure</button>
+    <button class="btn btn-p" onclick="initForm();go('form')">＋ New procedure</button>
   </div>
 </div>
 
@@ -181,29 +229,32 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </header>
   <div class="content">
     <div class="card">
-      <div class="card-title">Claude API Key</div>
+      <div class="card-title">GitHub Models API Token</div>
       <div class="fg">
-        <label class="fl">API Key</label>
-        <input type="password" id="inp-apikey" class="fi" placeholder="sk-ant-api03-..." style="font-family:monospace;font-size:13px" />
+        <label class="fl">Token</label>
+        <input type="password" id="inp-apikey" class="fi" placeholder="ghp_..." style="font-family:monospace;font-size:13px" />
         <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5">
           Get your token at <strong>github.com/settings/tokens</strong><br>
-          Free with your GitHub account — no subscription needed.
+          Free — no subscription needed.
         </div>
       </div>
     </div>
     <div class="card">
-      <div class="card-title">Default operator</div>
-      <div class="fg" style="margin-bottom:0">
-        <input type="text" id="inp-operator" class="fi" placeholder="Your name" />
-      </div>
-    </div>
-    <div class="card">
-      <div class="settings-row">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0">
         <div>
-          <div class="settings-label">🗑️ Clear all data</div>
-          <div class="settings-sub">Delete all procedures (irreversible)</div>
+          <div style="font-size:14px;font-weight:600">🗑️ Clear my procedures</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Delete only your procedures</div>
         </div>
-        <button class="btn btn-sm btn-danger" onclick="clearAll()">Clear</button>
+        <button class="btn btn-sm btn-danger" onclick="clearMyData()">Clear</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0">
+        <div>
+          <div style="font-size:14px;font-weight:600">🚪 Logout</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Go back to user selection</div>
+        </div>
+        <button class="btn btn-sm btn-s" onclick="logout()">Logout</button>
       </div>
     </div>
   </div>
@@ -214,7 +265,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- ══════════════════════════════════════════
-     FORM — New procedure
+     FORM
 ══════════════════════════════════════════ -->
 <div id="s-form" class="screen">
   <header class="hdr">
@@ -255,7 +306,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- ══════════════════════════════════════════
-     CAPTURE — Sections & Steps
+     CAPTURE
 ══════════════════════════════════════════ -->
 <div id="s-capture" class="screen">
   <header class="hdr">
@@ -264,7 +315,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="hdr-title" id="cap-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Procedure</div>
       <div class="hdr-sub" id="cap-ref"></div>
     </div>
-    <button onclick="generateAI()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px" title="Generate with AI">🤖</button>
+    <button onclick="generateAI()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px">🤖</button>
   </header>
   <div class="content">
     <div id="cap-content"></div>
@@ -288,8 +339,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="hdr-title" id="step-hdr">Step</div>
   </header>
   <div class="content">
-
-    <!-- Voice -->
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div class="card-title" style="margin-bottom:0">🎙️ Voice dictation</div>
@@ -298,18 +347,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div id="rec-bar" class="rec-bar" style="display:none">
         <div class="rec-dot"></div>
         <span style="font-size:13px;font-weight:500">Recording — speak now</span>
-        <span style="font-size:12px;color:var(--muted);margin-left:auto" id="rec-lang">FR</span>
       </div>
-      <div id="voice-box" class="voice-box" style="color:var(--muted);font-style:italic">
-        Tap "Start" to begin voice dictation...
-      </div>
+      <div id="voice-box" class="voice-box" style="color:var(--muted);font-style:italic">Tap "Start" to begin...</div>
       <div style="display:flex;gap:6px;margin-top:8px">
-        <button class="btn btn-s btn-sm btn-full" onclick="clearVoice()">Clear voice</button>
+        <button class="btn btn-s btn-sm btn-full" onclick="clearVoice()">Clear</button>
         <button class="btn btn-s btn-sm btn-full" onclick="appendVoiceToText()">→ Copy to notes</button>
       </div>
     </div>
-
-    <!-- Photos -->
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div class="card-title" style="margin-bottom:0">📷 Photos</div>
@@ -320,13 +364,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
       <div id="photo-grid" class="photo-grid"></div>
     </div>
-
-    <!-- Text -->
     <div class="card">
-      <div class="card-title">✍️ Notes & description</div>
-      <textarea id="step-txt" class="fta" rows="6" placeholder="Write here in French or English — AI will translate to English..."></textarea>
+      <div class="card-title">✍️ Notes</div>
+      <textarea id="step-txt" class="fta" rows="6" placeholder="French or English — AI will translate..."></textarea>
     </div>
-
   </div>
   <div class="ftr">
     <button class="btn btn-s" onclick="cancelStep()">Cancel</button>
@@ -335,17 +376,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- ══════════════════════════════════════════
-     REVIEW — AI generated
+     REVIEW
 ══════════════════════════════════════════ -->
 <div id="s-review" class="screen">
   <header class="hdr">
     <button class="btn-back" onclick="go('capture')">←</button>
     <div class="hdr-title">AI Review</div>
-    <button onclick="generateAI()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:4px" title="Regenerate">🔄</button>
+    <button onclick="generateAI()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:4px">🔄</button>
   </header>
   <div class="content">
     <div class="review-box">
-      <div class="review-label">Generated procedure — English only</div>
+      <div class="review-label">Generated procedure — English</div>
       <div id="review-display" class="review-text"></div>
     </div>
     <div class="card">
@@ -371,7 +412,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="success-box">
       <div class="success-icon">✅</div>
       <div class="success-title">Document ready!</div>
-      <div class="success-sub">Your procedure has been downloaded as a Word document.</div>
+      <div class="success-sub">Your procedure has been downloaded.<br>Open it with Word or any Office app.</div>
     </div>
     <div class="card">
       <div class="card-title">Share</div>
@@ -386,21 +427,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
-<!-- no external dependency needed -->
-
 <script>
 // ═══════════════════════════════════════════════════════
-// STATE
+// HELPERS
 // ═══════════════════════════════════════════════════════
-const S = {
-  procs: JSON.parse(localStorage.getItem('procs')||'[]'),
-  apiKey: localStorage.getItem('apiKey')||'',
-  defaultOp: localStorage.getItem('defOp')||'',
-  cur: null,        // current procedure
-  curSecId: null,   // current section being edited
-  curStep: null,    // current step object
-  recog: null,
-  recording: false
+const COLORS=['#2E75B6','#E8610A','#16A34A','#7C3AED','#DC2626','#0891B2'];
+function uid(){return '_'+Date.now()+Math.random().toString(36).slice(2,7);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function hashPwd(s){let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return h.toString(36);}
+
+// ═══════════════════════════════════════════════════════
+// STORAGE — shared across users
+// ═══════════════════════════════════════════════════════
+// users: [{id, name, pwdHash, color, apiKey}]
+// procs: [{id, title, ref, op, cat, status, created, userId, sections, genText}]
+function getUsers(){return JSON.parse(localStorage.getItem('ms_users')||'[]');}
+function saveUsers(u){localStorage.setItem('ms_users',JSON.stringify(u));}
+function getProcs(){return JSON.parse(localStorage.getItem('ms_procs')||'[]');}
+function saveProcs(p){localStorage.setItem('ms_procs',JSON.stringify(p));}
+
+// ═══════════════════════════════════════════════════════
+// SESSION STATE
+// ═══════════════════════════════════════════════════════
+const S={
+  user:null,      // current logged-in user
+  cur:null,       // current procedure
+  curSecId:null,
+  curStep:null,
+  recog:null,
+  recording:false
 };
 
 // ═══════════════════════════════════════════════════════
@@ -409,83 +464,165 @@ const S = {
 function go(screen){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('s-'+screen).classList.add('active');
-  if(screen==='home') renderHome();
-  if(screen==='capture') renderCapture();
+  if(screen==='home')renderHome();
+  if(screen==='capture')renderCapture();
   if(screen==='settings'){
-    document.getElementById('inp-apikey').value=S.apiKey;
-    document.getElementById('inp-operator').value=S.defaultOp;
+    document.getElementById('inp-apikey').value=S.user?.apiKey||'';
   }
   window.scrollTo(0,0);
 }
 
 // ═══════════════════════════════════════════════════════
-// PERSISTENCE
+// LOGIN
 // ═══════════════════════════════════════════════════════
-function save(){localStorage.setItem('procs',JSON.stringify(S.procs));}
-function uid(){return '_'+Date.now()+Math.random().toString(36).slice(2,7);}
+let loginTarget=null;
 
-// ═══════════════════════════════════════════════════════
-// HOME
-// ═══════════════════════════════════════════════════════
-function renderHome(){
-  const el=document.getElementById('home-list');
-  if(!S.procs.length){
-    el.innerHTML=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-t">No procedures yet</div><div class="empty-s">Tap the orange + button to create your first manufacturing procedure.</div></div>`;
+function renderLoginUsers(){
+  const users=getUsers();
+  const el=document.getElementById('user-list');
+  if(!users.length){
+    el.innerHTML='<div style="text-align:center;color:var(--muted);font-size:14px;padding:16px 0">No users yet — create one below</div>';
     return;
   }
-  const icons={Assembly:'🔧',Electronics:'⚡',Cabling:'🔌',Packaging:'📦',Testing:'🔬',Other:'📋'};
-  el.innerHTML=[...S.procs].reverse().map(p=>`
-    <div class="proc-item" onclick="openProc('${p.id}')">
-      <div class="proc-icon">${icons[p.cat]||'📋'}</div>
-      <div class="proc-info">
-        <div class="proc-title">${esc(p.title)}</div>
-        <div class="proc-meta">${esc(p.ref)} · ${esc(p.op||'—')} · ${new Date(p.created).toLocaleDateString()}</div>
-      </div>
-      <span class="badge badge-${p.status}">${p.status}</span>
-    </div>`).join('');
+  el.innerHTML=users.map((u,i)=>`
+    <button class="user-btn" onclick="selectUser('${u.id}')">
+      <div class="user-avatar" style="background:${u.color||COLORS[i%COLORS.length]}">${u.name[0].toUpperCase()}</div>
+      <span>${esc(u.name)}</span>
+    </button>`).join('');
 }
 
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function selectUser(id){
+  const users=getUsers();
+  loginTarget=users.find(u=>u.id===id);
+  if(!loginTarget)return;
+  document.getElementById('pwd-title').textContent=`Hello ${loginTarget.name} 👋`;
+  document.getElementById('pwd-inp').value='';
+  document.getElementById('pwd-box').style.display='block';
+  document.getElementById('add-user-box').style.display='none';
+  setTimeout(()=>document.getElementById('pwd-inp').focus(),100);
+}
 
-function openProc(id){
-  S.cur=S.procs.find(p=>p.id===id);
-  if(!S.cur)return;
-  if(S.cur.status==='generated'||S.cur.status==='exported'){
-    go('review');
-    document.getElementById('review-display').textContent=S.cur.genText||'';
-    document.getElementById('review-edit').value=S.cur.genText||'';
-  } else {
-    go('capture');
-  }
+function checkPwd(){
+  const pwd=document.getElementById('pwd-inp').value;
+  if(!pwd){toast('Enter your password');return;}
+  if(hashPwd(pwd)!==loginTarget.pwdHash){toast('Wrong password ❌');return;}
+  S.user=loginTarget;
+  updateHeaderUser();
+  go('home');
+}
+
+function cancelLogin(){
+  document.getElementById('pwd-box').style.display='none';
+  document.getElementById('add-user-box').style.display='none';
+  loginTarget=null;
+}
+
+function showAddUser(){
+  document.getElementById('pwd-box').style.display='none';
+  document.getElementById('add-user-box').style.display='block';
+  document.getElementById('new-name').value='';
+  document.getElementById('new-pwd').value='';
+  document.getElementById('new-pwd2').value='';
+}
+
+function createUser(){
+  const name=document.getElementById('new-name').value.trim();
+  const pwd=document.getElementById('new-pwd').value;
+  const pwd2=document.getElementById('new-pwd2').value;
+  if(!name){toast('Enter a name');return;}
+  if(pwd.length<4){toast('Password must be at least 4 characters');return;}
+  if(pwd!==pwd2){toast('Passwords do not match');return;}
+  const users=getUsers();
+  if(users.find(u=>u.name.toLowerCase()===name.toLowerCase())){toast('Name already taken');return;}
+  const u={id:uid(),name,pwdHash:hashPwd(pwd),color:COLORS[users.length%COLORS.length],apiKey:''};
+  users.push(u);
+  saveUsers(users);
+  S.user=u;
+  updateHeaderUser();
+  document.getElementById('add-user-box').style.display='none';
+  go('home');
+}
+
+function updateHeaderUser(){
+  if(!S.user)return;
+  const av=document.getElementById('hdr-avatar');
+  const nm=document.getElementById('hdr-username');
+  av.textContent=S.user.name[0].toUpperCase();
+  av.style.background=S.user.color||COLORS[0];
+  nm.textContent=S.user.name;
+}
+
+function logout(){
+  S.user=null;S.cur=null;S.curStep=null;
+  stopVoice();
+  renderLoginUsers();
+  go('login');
 }
 
 // ═══════════════════════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════════════════════
 function saveSettings(){
-  S.apiKey=document.getElementById('inp-apikey').value.trim();
-  S.defaultOp=document.getElementById('inp-operator').value.trim();
-  localStorage.setItem('apiKey',S.apiKey);
-  localStorage.setItem('defOp',S.defaultOp);
-  toast('Settings saved ✓');
-  go('home');
+  if(!S.user)return;
+  S.user.apiKey=document.getElementById('inp-apikey').value.trim();
+  const users=getUsers();
+  const idx=users.findIndex(u=>u.id===S.user.id);
+  if(idx>=0){users[idx]=S.user;saveUsers(users);}
+  toast('Settings saved ✓');go('home');
 }
 
-function clearAll(){
-  if(!confirm('Delete ALL procedures? This cannot be undone.'))return;
-  localStorage.clear();
-  S.procs=[];S.cur=null;
-  toast('All data cleared');
+function clearMyData(){
+  if(!confirm('Delete all YOUR procedures? Cannot be undone.'))return;
+  const procs=getProcs().filter(p=>p.userId!==S.user.id);
+  saveProcs(procs);
+  toast('Your procedures deleted');
   go('home');
 }
 
 // ═══════════════════════════════════════════════════════
-// FORM — Create procedure
+// HOME
+// ═══════════════════════════════════════════════════════
+function renderHome(){
+  const el=document.getElementById('home-list');
+  const procs=getProcs();
+  const users=getUsers();
+  if(!procs.length){
+    el.innerHTML=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-t">No procedures yet</div><div class="empty-s">Tap + to create the first manufacturing procedure.</div></div>`;
+    return;
+  }
+  const icons={Assembly:'🔧',Electronics:'⚡',Cabling:'🔌',Packaging:'📦',Testing:'🔬',Other:'📋'};
+  el.innerHTML=[...procs].reverse().map(p=>{
+    const author=users.find(u=>u.id===p.userId);
+    const isMe=p.userId===S.user?.id;
+    return `<div class="proc-item" onclick="openProc('${p.id}')" style="border-left-color:${author?.color||'var(--blue-mid)'}">
+      <div class="proc-icon">${icons[p.cat]||'📋'}</div>
+      <div class="proc-info">
+        <div class="proc-title">${esc(p.title)}</div>
+        <div class="proc-meta">${esc(p.ref)} · ${esc(author?.name||'Unknown')}${isMe?' (you)':''} · ${new Date(p.created).toLocaleDateString()}</div>
+      </div>
+      <span class="badge badge-${p.status}">${p.status}</span>
+    </div>`;
+  }).join('');
+}
+
+function openProc(id){
+  const procs=getProcs();
+  S.cur=procs.find(p=>p.id===id);
+  if(!S.cur)return;
+  if(S.cur.status==='generated'||S.cur.status==='exported'){
+    go('review');
+    document.getElementById('review-display').textContent=S.cur.genText||'';
+    document.getElementById('review-edit').value=S.cur.genText||'';
+  }else{go('capture');}
+}
+
+// ═══════════════════════════════════════════════════════
+// FORM
 // ═══════════════════════════════════════════════════════
 function initForm(){
   document.getElementById('f-title').value='';
   document.getElementById('f-ref').value='';
-  document.getElementById('f-op').value=S.defaultOp;
+  document.getElementById('f-op').value=S.user?.name||'';
 }
 
 function createProc(){
@@ -496,32 +633,35 @@ function createProc(){
     id:uid(),title,ref,
     op:document.getElementById('f-op').value.trim(),
     cat:document.getElementById('f-cat').value,
-    status:'draft',
+    status:'draft',userId:S.user?.id||'',
     created:new Date().toISOString(),
     sections:[],genText:''
   };
-  S.procs.push(p);
-  S.cur=p;
-  S.defaultOp=p.op;
-  localStorage.setItem('defOp',p.op);
-  save();
-  go('capture');
+  const procs=getProcs();procs.push(p);saveProcs(procs);
+  S.cur=p;go('capture');
+}
+
+function syncCur(){
+  if(!S.cur)return;
+  const procs=getProcs();
+  const idx=procs.findIndex(p=>p.id===S.cur.id);
+  if(idx>=0){procs[idx]=S.cur;saveProcs(procs);}
 }
 
 // ═══════════════════════════════════════════════════════
 // CAPTURE
 // ═══════════════════════════════════════════════════════
+function roman(n){const v=[10,'X',9,'IX',5,'V',4,'IV',1,'I'];let r='';for(let i=0;i<v.length;i+=2)while(n>=v[i]){r+=v[i+1];n-=v[i];}return r;}
+
 function renderCapture(){
   const p=S.cur;if(!p)return;
   document.getElementById('cap-title').textContent=p.title;
   document.getElementById('cap-ref').textContent=p.ref;
   const el=document.getElementById('cap-content');
-
   if(!p.sections.length){
-    el.innerHTML=`<div class="card" style="text-align:center;padding:28px;color:var(--muted)"><div style="font-size:40px;margin-bottom:12px">📝</div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">No sections yet</div><div style="font-size:13px">Add a section first (e.g. "Board preparation")</div></div>`;
+    el.innerHTML=`<div class="card" style="text-align:center;padding:28px;color:var(--muted)"><div style="font-size:40px;margin-bottom:12px">📝</div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">No sections yet</div><div style="font-size:13px">Add a section first</div></div>`;
     return;
   }
-
   el.innerHTML=p.sections.map((sec,si)=>`
     <div class="sec-hdr">
       <span class="sec-num">${roman(si+1)}.</span>
@@ -532,9 +672,9 @@ function renderCapture(){
       <div class="step-card">
         <div class="step-top" onclick="editStep('${sec.id}','${st.id}')">
           <div class="step-n">${idx+1}</div>
-          <div>
+          <div style="flex:1">
             <div class="step-txt ${!st.text?'empty':''}">${st.text?esc(st.text.slice(0,90))+(st.text.length>90?'…':''):'Tap to add content...'}</div>
-            <div class="step-media">
+            <div class="step-tags">
               ${st.photos&&st.photos.length?`<span class="step-tag tag-photo">📷 ${st.photos.length}</span>`:''}
               ${st.voice?`<span class="step-tag tag-voice">🎙️</span>`:''}
             </div>
@@ -549,33 +689,23 @@ function renderCapture(){
       </div>`).join('')}
     <div class="add-row">
       <button class="btn btn-s btn-sm" onclick="addStepTo('${sec.id}')">＋ Add sub-step</button>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
-function roman(n){
-  const v=[10,'X',9,'IX',5,'V',4,'IV',1,'I'];
-  let r='';for(let i=0;i<v.length;i+=2)while(n>=v[i]){r+=v[i+1];n-=v[i];}return r;
-}
-
-// ── Sections ──
 function addSection(){
-  const title=prompt('Section name:\n(e.g. "Board preparation", "Housing assembly")');
+  const title=prompt('Section name:\n(e.g. "Board preparation")');
   if(!title||!title.trim())return;
   const sec={id:uid(),title:title.trim(),steps:[]};
-  S.cur.sections.push(sec);
-  S.curSecId=sec.id;
-  save();renderCapture();toast('Section added ✓');
+  S.cur.sections.push(sec);S.curSecId=sec.id;
+  syncCur();renderCapture();toast('Section added ✓');
 }
 
 function editSecTitle(secId){
   const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
   const t=prompt('Edit section name:',sec.title);
-  if(t===null)return;
-  sec.title=t.trim();save();renderCapture();
+  if(t===null)return;sec.title=t.trim();syncCur();renderCapture();
 }
 
-// ── Steps ──
 function addStepLast(){
   if(!S.cur.sections.length){toast('Add a section first');return;}
   addStepTo(S.cur.sections[S.cur.sections.length-1].id);
@@ -584,8 +714,7 @@ function addStepLast(){
 function addStepTo(secId){
   const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
   const st={id:uid(),text:'',voice:'',photos:[]};
-  sec.steps.push(st);
-  save();
+  sec.steps.push(st);syncCur();
   openStepEditor(secId,st);
 }
 
@@ -593,7 +722,7 @@ function deleteStep(secId,stepId){
   if(!confirm('Delete this step?'))return;
   const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
   sec.steps=sec.steps.filter(s=>s.id!==stepId);
-  save();renderCapture();
+  syncCur();renderCapture();
 }
 
 function editStep(secId,stepId){
@@ -610,20 +739,16 @@ function openStepEditor(secId,st){
   document.getElementById('step-hdr').textContent=`${roman(si)}.${idx} — ${sec.title}`;
   document.getElementById('step-txt').value=st.text||'';
   const vb=document.getElementById('voice-box');
-  vb.textContent=st.voice||'Tap "Start" to begin voice dictation...';
+  vb.textContent=st.voice||'Tap "Start" to begin...';
   vb.style.fontStyle=st.voice?'normal':'italic';
   vb.style.color=st.voice?'var(--text)':'var(--muted)';
-  stopVoice();
-  renderPhotoGrid();
-  go('step');
+  stopVoice();renderPhotoGrid();go('step');
 }
 
 function cancelStep(){
-  // Remove empty step
   const sec=S.cur.sections.find(s=>s.id===S.curSecId);
   if(sec&&S.curStep&&!S.curStep.text&&!S.curStep.voice&&(!S.curStep.photos||!S.curStep.photos.length)){
-    sec.steps=sec.steps.filter(s=>s.id!==S.curStep.id);
-    save();
+    sec.steps=sec.steps.filter(s=>s.id!==S.curStep.id);syncCur();
   }
   go('capture');
 }
@@ -631,31 +756,38 @@ function cancelStep(){
 function saveStep(){
   const st=S.curStep;if(!st)return;
   st.text=document.getElementById('step-txt').value.trim();
-  const vbox=document.getElementById('voice-box');
-  const vt=vbox.textContent;
-  if(vt&&vt!=='Tap "Start" to begin voice dictation...')st.voice=vt.trim();
+  const vt=document.getElementById('voice-box').textContent;
+  if(vt&&vt!=='Tap "Start" to begin...')st.voice=vt.trim();
   if(!st.text&&st.voice)st.text=st.voice;
-  stopVoice();save();
-  toast('Step saved ✓');go('capture');
+  stopVoice();syncCur();toast('Step saved ✓');go('capture');
 }
 
-// ── Quick capture ──
-function quickVoice(secId,stepId){
-  editStep(secId,stepId);
-  setTimeout(startVoice,400);
-}
+function quickVoice(secId,stepId){editStep(secId,stepId);setTimeout(startVoice,400);}
 
 function quickPhoto(secId,stepId){
   const inp=document.createElement('input');
-  inp.type='file';inp.accept='image/*';inp.capture='environment';inp.multiple=true;
-  inp.style.display='none';
+  inp.type='file';inp.accept='image/*';inp.capture='environment';inp.multiple=true;inp.style.display='none';
   inp.onchange=e=>{
     const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
     const st=sec.steps.find(s=>s.id===stepId);if(!st)return;
     if(!st.photos)st.photos=[];
+    let done=0;
     Array.from(e.target.files).forEach(f=>{
       const r=new FileReader();
-      r.onload=ev=>{st.photos.push({id:uid(),data:ev.target.result});save();renderCapture();toast('📷 Photo added');};
+      r.onload=ev=>{
+        // Resize image to max 800px to keep storage manageable
+        const img=new Image();
+        img.onload=()=>{
+          const MAX=800;
+          let w=img.width,h=img.height;
+          if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+          const c=document.createElement('canvas');c.width=w;c.height=h;
+          c.getContext('2d').drawImage(img,0,0,w,h);
+          st.photos.push({id:uid(),data:c.toDataURL('image/jpeg',0.7)});
+          done++;if(done===e.target.files.length){syncCur();renderCapture();toast('📷 Photo added');}
+        };
+        img.src=ev.target.result;
+      };
       r.readAsDataURL(f);
     });
     inp.remove();
@@ -670,11 +802,10 @@ function toggleVoice(){S.recording?stopVoice():startVoice();}
 
 function startVoice(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){toast('Voice recognition not available on this browser');return;}
-  const r=new SR();
-  r.continuous=true;r.interimResults=true;r.lang='fr-FR';
+  if(!SR){toast('Voice not available on this browser — use Chrome or Safari');return;}
+  const r=new SR();r.continuous=true;r.interimResults=true;r.lang='fr-FR';
   const vbox=document.getElementById('voice-box');
-  const existing=vbox.style.color==='var(--muted)'?'':vbox.textContent==='Tap "Start" to begin voice dictation...'?'':vbox.textContent;
+  const existing=vbox.style.color.includes('muted')||vbox.textContent==='Tap "Start" to begin...'?'':vbox.textContent;
   let final=existing;
   r.onresult=e=>{
     let interim='';
@@ -699,28 +830,24 @@ function stopVoice(){
   S.recording=false;
   const btn=document.getElementById('voice-btn');
   if(btn){btn.innerHTML='▶ Start';btn.style.background='';}
-  const rb=document.getElementById('rec-bar');
-  if(rb)rb.style.display='none';
-  const vbox=document.getElementById('voice-box');
-  if(vbox)vbox.style.color='var(--text)';
-  // Auto-copy to text if empty
+  const rb=document.getElementById('rec-bar');if(rb)rb.style.display='none';
+  const vbox=document.getElementById('voice-box');if(vbox)vbox.style.color='var(--text)';
   const stxt=document.getElementById('step-txt');
-  if(stxt&&!stxt.value.trim()&&vbox&&vbox.textContent&&vbox.textContent!=='Tap "Start" to begin voice dictation...')
+  if(stxt&&!stxt.value.trim()&&vbox&&vbox.textContent&&vbox.textContent!=='Tap "Start" to begin...')
     stxt.value=vbox.textContent.trim();
 }
 
 function clearVoice(){
-  document.getElementById('voice-box').textContent='Tap "Start" to begin voice dictation...';
-  document.getElementById('voice-box').style.fontStyle='italic';
-  document.getElementById('voice-box').style.color='var(--muted)';
+  const vb=document.getElementById('voice-box');
+  vb.textContent='Tap "Start" to begin...';vb.style.fontStyle='italic';vb.style.color='var(--muted)';
 }
 
 function appendVoiceToText(){
   const vt=document.getElementById('voice-box').textContent;
-  if(!vt||vt==='Tap "Start" to begin voice dictation...')return;
+  if(!vt||vt==='Tap "Start" to begin...')return;
   const ta=document.getElementById('step-txt');
   ta.value=(ta.value?ta.value+'\n':'')+vt.trim();
-  toast('Voice text copied to notes');
+  toast('Voice copied to notes');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -731,21 +858,24 @@ function addPhoto(e){
   if(!st.photos)st.photos=[];
   Array.from(e.target.files).forEach(f=>{
     const r=new FileReader();
-    r.onload=ev=>{st.photos.push({id:uid(),data:ev.target.result});renderPhotoGrid();};
-    r.readAsDataURL(f);
-  });
-  e.target.value='';
+    r.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        const MAX=800;let w=img.width,h=img.height;
+        if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        st.photos.push({id:uid(),data:c.toDataURL('image/jpeg',0.7)});
+        renderPhotoGrid();
+      };img.src=ev.target.result;
+    };r.readAsDataURL(f);
+  });e.target.value='';
 }
 
-function removePhoto(pid){
-  if(!S.curStep)return;
-  S.curStep.photos=S.curStep.photos.filter(p=>p.id!==pid);
-  renderPhotoGrid();
-}
+function removePhoto(pid){if(!S.curStep)return;S.curStep.photos=S.curStep.photos.filter(p=>p.id!==pid);renderPhotoGrid();}
 
 function renderPhotoGrid(){
-  const st=S.curStep;
-  const g=document.getElementById('photo-grid');if(!g)return;
+  const st=S.curStep;const g=document.getElementById('photo-grid');if(!g)return;
   if(!st||!st.photos||!st.photos.length){g.innerHTML='';return;}
   g.innerHTML=st.photos.map(p=>`
     <div class="photo-wrap">
@@ -758,12 +888,11 @@ function renderPhotoGrid(){
 // AI GENERATION
 // ═══════════════════════════════════════════════════════
 async function generateAI(){
-  if(!S.apiKey){toast('Add your Claude API key in Settings ⚙️');go('settings');return;}
+  const apiKey=S.user?.apiKey||'';
+  if(!apiKey){toast('Add your GitHub token in Settings ⚙️');go('settings');return;}
   const p=S.cur;
   if(!p||!p.sections.length){toast('Add sections and steps first');return;}
-
   showOverlay('Generating with AI...');
-
   const ctx=`You are a technical writer for Magnetic Solution, a manufacturing company.
 Write a complete, professional manufacturing procedure in ENGLISH ONLY.
 
@@ -779,169 +908,214 @@ ${p.sections.map((s,si)=>`
 === SECTION ${roman(si+1)}: ${s.title} ===
 ${s.steps.map((st,idx)=>`Step ${idx+1}:
   Notes: ${st.text||st.voice||'(empty)'}
-  Photos: ${st.photos?st.photos.length:0} photo(s)`).join('\n')}`).join('\n\n')}
+  Photos: ${st.photos?st.photos.length:0} photo(s) — write "(see photo)" if photos present`).join('\n')}`).join('\n\n')}
 
 RULES:
-- Write entirely in English
-- Translate any French content to English
-- Use clear, professional technical language
-- Format: SECTION TITLE in bold-style (e.g. "I. Board preparation")
-- Number each step (1. 2. 3.)
-- Write each step as a concise, actionable instruction
-- For steps with photos, add "(see photo)" at the end
-- Keep the same structure as the input
+- Write entirely in English, translate any French
+- Format sections as: "I. Section title" "II. Section title" etc.
+- Number steps: 1. 2. 3.
+- Write concise, actionable technical instructions
+- Add "(see photo)" where photos exist
+- Professional manufacturing language
 
-Output the procedure text directly, no preamble:`;
+Output the procedure directly:`;
 
   try{
     const res=await fetch('https://models.inference.ai.azure.com/chat/completions',{
       method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':'Bearer '+S.apiKey
-      },
-      body:JSON.stringify({
-        model:'gpt-4o-mini',
-        max_tokens:2048,
-        messages:[{role:'user',content:ctx}]
-      })
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body:JSON.stringify({model:'gpt-4o-mini',max_tokens:2048,messages:[{role:'user',content:ctx}]})
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'API error '+res.status);}
     const data=await res.json();
     const txt=data.choices[0].message.content;
-    p.genText=txt;p.status='generated';save();
+    p.genText=txt;p.status='generated';syncCur();
     hideOverlay();
     document.getElementById('review-display').textContent=txt;
     document.getElementById('review-edit').value=txt;
     go('review');
-  }catch(err){
-    hideOverlay();
-    toast('Error: '+err.message);
-    console.error(err);
-  }
+  }catch(err){hideOverlay();toast('Error: '+err.message);console.error(err);}
 }
 
 // ═══════════════════════════════════════════════════════
-// EXPORT WORD
+// EXPORT — HTML→Word with embedded photos
 // ═══════════════════════════════════════════════════════
-async function exportWord(){
+function exportWord(){
   const p=S.cur;
   const txt=document.getElementById('review-edit').value;
-  p.genText=txt;p.status='exported';save();
+  p.genText=txt;p.status='exported';syncCur();
 
   showOverlay('Generating Word document...');
 
   try{
-    // Generate RTF — opens perfectly in Word, no CDN needed
-    const rtf=buildRTF(p,txt);
-    const blob=new Blob([rtf],{type:'application/rtf'});
-    const fname=`${p.ref}_${p.title.replace(/[^a-zA-Z0-9]/g,'_').slice(0,30)}_${new Date().toISOString().slice(0,10)}.rtf`;
+    const html=buildWordHTML(p,txt);
+    const blob=new Blob([html],{type:'application/msword'});
+    const fname=`${p.ref}_${p.title.replace(/[^a-zA-Z0-9]/g,'_').slice(0,30)}_${new Date().toISOString().slice(0,10)}.doc`;
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
     a.href=url;a.download=fname;a.style.display='none';
     document.body.appendChild(a);a.click();
     setTimeout(()=>{URL.revokeObjectURL(url);document.body.removeChild(a);},2000);
-    hideOverlay();
-    go('export');
+    hideOverlay();go('export');
   }catch(err){
-    hideOverlay();
-    toast('Export error: '+err.message);
-    console.error(err);
+    hideOverlay();toast('Export error: '+err.message);console.error(err);
   }
 }
 
-function buildRTF(p,txt){
+function buildWordHTML(p,txt){
   const date=new Date().toLocaleDateString('en-GB');
-  const esc=s=>String(s||'').replace(/\\/g,'\\\\').replace(/\{/g,'\\{').replace(/\}/g,'\\}').replace(/[^\x00-\x7F]/g,c=>{
-    const code=c.charCodeAt(0);
-    return code<32768?`\\u${code}?`:`\\u${code-65536}?`;
+  const users=getUsers();
+  const author=users.find(u=>u.id===p.userId);
+
+  // Collect all photos from all steps with their step context
+  const stepPhotos={};
+  p.sections.forEach((sec,si)=>{
+    sec.steps.forEach((st,idx)=>{
+      if(st.photos&&st.photos.length){
+        const key=`${roman(si+1)}.${idx+1}`;
+        stepPhotos[key]=st.photos;
+      }
+    });
   });
 
-  let body='';
-
-  // Title block
-  body+=`{\\pard\\qc\\sb400\\sa120{\\b\\fs36\\cf1 MANUFACTURING PROCEDURE}\\par}\n`;
-  body+=`{\\pard\\qc\\sb0\\sa200{\\b\\fs28\\cf3 ${esc(p.title)}}\\par}\n`;
-
-  // Meta table-like info
-  body+=`{\\pard\\sb200\\sa0\\brdrb\\brdrs\\brdrw10\\brdrcf1\\fs20 }\\par\n`;
-  body+=`{\\pard\\sb80\\sa80{\\b\\cf1 Reference: }{\\cf0 ${esc(p.ref)}}\\tab{\\b\\cf1 Operator: }{\\cf0 ${esc(p.op||'—')}}\\tab{\\b\\cf1 Category: }{\\cf0 ${esc(p.cat)}}\\tab{\\b\\cf1 Date: }{\\cf0 ${date}}\\par}\n`;
-  body+=`{\\pard\\sb0\\sa200\\brdrb\\brdrs\\brdrw10\\brdrcf1\\fs20 }\\par\n`;
-
-  // Content
+  // Build content rows
+  let rows='';
+  let photoInsertIdx=0;
   const lines=txt.split('\n');
+  const stepPhotoKeys=Object.keys(stepPhotos);
+
   lines.forEach(line=>{
     const t=line.trim();
-    if(!t){body+=`{\\pard\\sb60\\sa60\\par}\n`;return;}
+    if(!t){rows+=`<tr><td colspan="2" style="padding:4px"></td></tr>`;return;}
 
     // Section header
     if(/^(I|II|III|IV|V|VI|VII|VIII|IX|X)[.\s]/.test(t)){
-      body+=`{\\pard\\sb360\\sa120\\highlight1\\cb1{\\b\\fs24\\cf2\\highlight1  ${esc(t)} }\\par}\n`;
+      rows+=`<tr>
+        <td colspan="2" style="background:#1B3A6B;color:white;font-weight:bold;font-size:13pt;padding:8px 12px;font-family:Arial">
+          ${t}
+        </td>
+      </tr>`;
     }
     // Numbered step
     else if(/^\d+\./.test(t)){
-      body+=`{\\pard\\sb100\\sa80\\li480\\fi-480{\\b\\cf1 ${esc(t.match(/^\d+\./)[0])}}  ${esc(t.replace(/^\d+\.\s*/,''))}\\par}\n`;
+      // Find matching photo for this step
+      const stepNum=t.match(/^(\d+)\./)?.[1];
+      const currentSection=lines.slice(0,lines.indexOf(line)).reverse().find(l=>/^(I|II|III|IV|V|VI|VII|VIII|IX|X)[.\s]/.test(l.trim()));
+      let sectionRoman='';
+      if(currentSection){
+        const m=currentSection.trim().match(/^([IVX]+)/i);
+        if(m)sectionRoman=m[1];
+      }
+      const photoKey=`${sectionRoman}.${stepNum}`;
+      const photos=stepPhotos[photoKey];
+
+      if(photos&&photos.length){
+        rows+=`<tr>
+          <td style="padding:8px 12px;font-family:Arial;font-size:11pt;vertical-align:top;width:55%">${t}</td>
+          <td style="padding:8px 4px;vertical-align:top;width:45%">
+            ${photos.slice(0,2).map(ph=>`<img src="${ph.data}" style="max-width:100%;max-height:120px;display:block;margin-bottom:4px;border:1px solid #ddd" />`).join('')}
+          </td>
+        </tr>`;
+      }else{
+        rows+=`<tr>
+          <td colspan="2" style="padding:8px 12px 8px 28px;font-family:Arial;font-size:11pt">${t}</td>
+        </tr>`;
+      }
     }
     // Normal text
     else{
-      body+=`{\\pard\\sb80\\sa60 ${esc(t)}\\par}\n`;
+      rows+=`<tr><td colspan="2" style="padding:6px 12px;font-family:Arial;font-size:11pt;color:#444">${t}</td></tr>`;
     }
   });
 
-  // Footer
-  body+=`{\\pard\\sb480\\sa0\\brdt\\brdrs\\brdrw5\\brdrcf4{\\i\\fs18\\cf4 Generated by ProceduresApp — Magnetic Solution — ${date}}\\par}\n`;
+  return `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="UTF-8">
+<meta name:ProgId content="Word.Document">
+<meta name:Generator content="Microsoft Word 15">
+<!--[if gte mso 9]>
+<xml><w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom></w:WordDocument></xml>
+<![endif]-->
+<style>
+body{font-family:Arial;font-size:11pt;margin:0;padding:0}
+table{border-collapse:collapse;width:100%}
+@page{size:A4;margin:2cm}
+</style>
+</head>
+<body>
 
-  return `{\\rtf1\\ansi\\deff0
-{\\fonttbl{\\f0\\fswiss\\fcharset0 Arial;}}
-{\\colortbl;\\red27\\green58\\blue107;\\red255\\green255\\blue255;\\red214\\green228\\blue240;\\red153\\green153\\blue153;}
-\\paperw11906\\paperh16838
-\\margl1440\\margr1440\\margt1440\\margb1440
-\\f0\\fs22\\cf0
-${body}}`;
+<!-- HEADER -->
+<table style="width:100%;margin-bottom:12px">
+<tr>
+  <td style="background:#1B3A6B;color:white;text-align:center;padding:12px;font-family:Arial">
+    <div style="font-size:16pt;font-weight:bold">MANUFACTURING PROCEDURE</div>
+    <div style="font-size:13pt;margin-top:4px;color:#D6E4F0">${p.title}</div>
+  </td>
+</tr>
+</table>
+
+<!-- META -->
+<table style="width:100%;margin-bottom:16px;border:1px solid #C8D6E5">
+<tr>
+  <th style="background:#2E75B6;color:white;padding:6px 10px;font-family:Arial;font-size:10pt;text-align:center">Reference</th>
+  <th style="background:#2E75B6;color:white;padding:6px 10px;font-family:Arial;font-size:10pt;text-align:center">Operator</th>
+  <th style="background:#2E75B6;color:white;padding:6px 10px;font-family:Arial;font-size:10pt;text-align:center">Category</th>
+  <th style="background:#2E75B6;color:white;padding:6px 10px;font-family:Arial;font-size:10pt;text-align:center">Date</th>
+</tr>
+<tr>
+  <td style="padding:6px 10px;font-family:Arial;font-size:10pt;text-align:center;background:#F5F7FA">${p.ref}</td>
+  <td style="padding:6px 10px;font-family:Arial;font-size:10pt;text-align:center;background:#F5F7FA">${p.op||'—'}</td>
+  <td style="padding:6px 10px;font-family:Arial;font-size:10pt;text-align:center;background:#F5F7FA">${p.cat}</td>
+  <td style="padding:6px 10px;font-family:Arial;font-size:10pt;text-align:center;background:#F5F7FA">${date}</td>
+</tr>
+</table>
+
+<!-- CONTENT -->
+<table style="width:100%;border:1px solid #E2E8F0">
+${rows}
+</table>
+
+<!-- SIGNATURES -->
+<table style="width:100%;margin-top:24px;border:1px solid #C8D6E5">
+<tr>
+  <th style="background:#2E75B6;color:white;padding:8px;font-family:Arial;font-size:10pt;width:50%">Established by</th>
+  <th style="background:#2E75B6;color:white;padding:8px;font-family:Arial;font-size:10pt;width:50%">Approved by</th>
+</tr>
+<tr>
+  <td style="padding:24px 12px;font-family:Arial;font-size:11pt;text-align:center">${p.op||author?.name||'—'}</td>
+  <td style="padding:24px 12px;font-family:Arial;font-size:11pt;text-align:center"></td>
+</tr>
+</table>
+
+<div style="margin-top:16px;border-top:1px solid #ddd;padding-top:8px;font-family:Arial;font-size:9pt;color:#999;text-align:center">
+  Doc: ${p.ref} | Generated by ProceduresApp — Magnetic Solution | ${date}
+</div>
+
+</body></html>`;
 }
-
-function mkHCell(){}
-function mkDCell(){}
-function waitDocx(){return Promise.resolve();}
 
 // ═══════════════════════════════════════════════════════
 // SHARE
 // ═══════════════════════════════════════════════════════
-function shareEmail(){
-  const p=S.cur;
-  window.location.href=`mailto:?subject=Procedure: ${encodeURIComponent(p.title)}&body=Please find attached the manufacturing procedure for ${encodeURIComponent(p.title)} (${encodeURIComponent(p.ref)}).`;
-}
-function shareTeams(){toast('Download the .docx file and share it in Teams');}
-function shareNative(){
-  if(navigator.share)navigator.share({title:'Manufacturing Procedure',text:'Generated with ProceduresApp — Magnetic Solution'});
-  else toast('Sharing not available on this browser');
-}
+function shareEmail(){const p=S.cur;window.location.href=`mailto:?subject=Procedure: ${encodeURIComponent(p.title)}&body=Please find the manufacturing procedure for ${encodeURIComponent(p.title)} (${encodeURIComponent(p.ref)}) attached.`;}
+function shareTeams(){toast('Download the .doc file and attach it in Teams');}
+function shareNative(){if(navigator.share)navigator.share({title:'Manufacturing Procedure',text:'Generated with ProceduresApp — Magnetic Solution'});else toast('Sharing not available on this browser');}
 
 // ═══════════════════════════════════════════════════════
 // UI UTILS
 // ═══════════════════════════════════════════════════════
 function showOverlay(t){document.getElementById('overlay-text').textContent=t||'Loading...';document.getElementById('overlay').style.display='flex';}
 function hideOverlay(){document.getElementById('overlay').style.display='none';}
-
-function toast(msg){
-  const el=document.getElementById('toast');
-  el.textContent=msg;el.classList.add('on');
-  clearTimeout(toast._t);
-  toast._t=setTimeout(()=>el.classList.remove('on'),2600);
-}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('on'),2600);}
 
 // ═══════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded',()=>{
-  go('home');
-  if(!S.apiKey)setTimeout(()=>{go('settings');},600);
+  renderLoginUsers();
+  // Stay on login screen
 });
-
-// Intercept form screen
-document.getElementById('s-form').addEventListener('transitionend',()=>{});
-document.querySelector('#s-home .btn-p').addEventListener('click',initForm,{capture:true});
-document.querySelector('.fab').addEventListener('click',initForm,{capture:true});
 </script>
 </body>
 </html>
