@@ -535,6 +535,7 @@ async function loadSharedToken(){
 
 // STEP 2 — Load fresh data from GitHub API (auth, no cache)
 async function ghLoad(){
+  if(!sharedToken) sharedToken=localStorage.getItem('shared_token')||'';
   if(!sharedToken)return{ok:false,reason:'no_token'};
   try{
     var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
@@ -568,6 +569,7 @@ async function getDataSHA(){
 
 // Save all data (including token) to GitHub — with 409 retry
 async function ghSave(){
+  if(!sharedToken) sharedToken=localStorage.getItem('shared_token')||'';
   if(!sharedToken)return;
   try{
     if(!GH_SHA)GH_SHA=await getDataSHA();
@@ -866,6 +868,8 @@ async function testToken(){
 }
 
 async function manualSync(){
+  // Always recover token from localStorage if not in memory
+  if(!sharedToken) sharedToken=localStorage.getItem('shared_token')||'';
   if(!sharedToken){
     toast('No token — enter it in Settings (admin)');
     go('settings');
