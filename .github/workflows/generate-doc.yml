@@ -1,0 +1,42 @@
+name: Generate Procedure Document
+
+on:
+  workflow_dispatch:
+    inputs:
+      procedure_id:
+        description: 'Procedure ID to generate'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install docx library
+        run: npm install docx@8.5.0
+
+      - name: Generate Word document
+        run: node generate.js "${{ inputs.procedure_id }}"
+
+      - name: Commit and push document
+        run: |
+          git config user.name "ProceduresApp Bot"
+          git config user.email "bot@proceduresapp.local"
+          git add docs/
+          git diff --cached --quiet || git commit -m "doc: generate ${{ inputs.procedure_id }}"
+          git push
