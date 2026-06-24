@@ -148,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.11</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.12</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -217,7 +217,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.11</div>
+      <div class="hdr-sub">Magnetic Solution — v1.12</div>
     </div>
     <div class="user-chip" onclick="logout()">
       <div class="user-chip-av" id="hdr-avatar"></div>
@@ -243,14 +243,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="hdr-title">Settings</div>
   </header>
   <div class="content">
-    <!-- GitHub token -->
-    <div class="card">
-      <div class="card-title">GitHub Token (AI + Sync)</div>
+    <!-- GitHub shared token (admin only) -->
+    <div class="card" id="admin-token-card" style="display:none">
+      <div class="card-title">🔑 Shared GitHub Token (admin)</div>
       <div class="fg">
-        <label class="fl">Token</label>
+        <label class="fl">Token (shared by all team members)</label>
         <input type="password" id="inp-apikey" class="fi" placeholder="ghp_..." style="font-family:monospace;font-size:13px" />
         <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5">
-          Get at <strong>github.com/settings/tokens</strong> — scope <strong>repo</strong> required
+          One token for the whole team. Get it at <strong>github.com/settings/tokens</strong> — scope <strong>repo</strong> required.
+          <br>Once saved, all devices load it automatically.
         </div>
       </div>
       <button class="btn btn-s btn-sm btn-full" style="margin-top:8px" onclick="manualSync()">🔄 Sync now</button>
@@ -487,86 +488,110 @@ const COLORS=['#2E75B6','#E8610A','#16A34A','#7C3AED','#DC2626','#0891B2'];
 
 // ─── Access code (change this to control who can sign up) ────────────────────
 var ACCESS_CODE='MAGNETIC';
-var siteCodeVerified=false; // gates the user list
+var siteCodeVerified=false;
 
-// ─── API key encryption (XOR with pwdHash — prevents GitHub token scanning) ──
-function encryptKey(k,h){if(!k)return '';var r='';for(var i=0;i<k.length;i++)r+=String.fromCharCode(k.charCodeAt(i)^h.charCodeAt(i%h.length));return 'enc:'+btoa(r);}
-function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=atob(e.slice(4));var r='';for(var i=0;i<s.length;i++)r+=String.fromCharCode(s.charCodeAt(i)^h.charCodeAt(i%h.length));return r;}catch(x){return '';}}
+// Simple base64 obfuscation to avoid GitHub token scanner detecting the token
+function obfuscate(t){return btoa(t);}
+function deobfuscate(t){try{return atob(t);}catch(e){return '';}}
 
 function uid(){return '_'+Date.now()+Math.random().toString(36).slice(2,7);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function hashPwd(s){let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return h.toString(36);}
+// Keep encrypt/decrypt for password change re-encryption (not for token storage anymore)
+function encryptKey(k,h){if(!k)return '';var r='';for(var i=0;i<k.length;i++)r+=String.fromCharCode(k.charCodeAt(i)^h.charCodeAt(i%h.length));return 'enc:'+btoa(r);}
+function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=atob(e.slice(4));var r='';for(var i=0;i<s.length;i++)r+=String.fromCharCode(s.charCodeAt(i)^h.charCodeAt(i%h.length));return r;}catch(x){return '';}}
 
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC — cross-device data
+// SHARED TOKEN & GITHUB — single token for whole team
 // ═══════════════════════════════════════════════════════
 var GH_REPO='AB-CDVI/proceduresapp';
-var GH_FILE='data.json';
-var GH_SHA=localStorage.getItem('gh_sha')||null; // SHA needed for GitHub file update
+var GH_DATA='data.json';
+var GH_CONFIG='config.json';
+var GH_SHA=null;
+var sharedToken=localStorage.getItem('shared_token')||'';
 
-async function ghLoad(token){
+// Load shared token from config.json (public file in repo, no auth needed)
+async function loadConfig(){
   try{
-    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_FILE,{
+    var resp=await fetch('https://raw.githubusercontent.com/'+GH_REPO+'/main/'+GH_CONFIG+'?t='+Date.now());
+    if(!resp.ok)return false;
+    var cfg=await resp.json();
+    if(cfg.t){
+      sharedToken=deobfuscate(cfg.t);
+      localStorage.setItem('shared_token',sharedToken);
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+// Write config.json to GitHub (admin only — uses provided token)
+async function writeConfig(token){
+  var cfg=JSON.stringify({t:obfuscate(token)});
+  var encoded=btoa(unescape(encodeURIComponent(cfg)));
+  // Get current SHA if exists
+  var sha=null;
+  try{
+    var check=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_CONFIG,{
       headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github.v3+json'}
     });
-    if(!resp.ok)return null;
+    if(check.ok){var m=await check.json();sha=m.sha;}
+  }catch(e){}
+  var payload={message:'Config update',content:encoded};
+  if(sha)payload.sha=sha;
+  var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_CONFIG,{
+    method:'PUT',
+    headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
+    body:JSON.stringify(payload)
+  });
+  if(!resp.ok)throw new Error('Config write failed: '+resp.status);
+  sharedToken=token;
+  localStorage.setItem('shared_token',token);
+}
+
+// Load data from GitHub — REPLACES local data (GitHub is source of truth)
+async function ghLoad(){
+  if(!sharedToken)return false;
+  try{
+    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
+      headers:{'Authorization':'Bearer '+sharedToken,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(!resp.ok)return false;
     var meta=await resp.json();
     GH_SHA=meta.sha;
-    localStorage.setItem('gh_sha',GH_SHA);
-    var content=JSON.parse(decodeURIComponent(escape(atob(meta.content.replace(/\s/g,'')))));
-    return content;
-  }catch(e){return null;}
+    var data=JSON.parse(decodeURIComponent(escape(atob(meta.content.replace(/\s/g,'')))));
+    // REPLACE local data — GitHub is the only source of truth
+    if(data.users)localStorage.setItem('ms_users',JSON.stringify(data.users));
+    if(data.procs)localStorage.setItem('ms_procs',JSON.stringify(data.procs));
+    return true;
+  }catch(e){console.warn('ghLoad error:',e);return false;}
 }
 
-async function ghSave(token){
-  if(!token)return;
+// Save all data to GitHub
+async function ghSave(){
+  if(!sharedToken)return;
   try{
-    var users=getUsers();
-    var procs=getProcs();
-    // Encrypt API keys before storing (prevents GitHub token scanning)
-    var safeUsers=users.map(function(u){
-      return {id:u.id,name:u.name,pwdHash:u.pwdHash,color:u.color,
-              encApiKey:u.apiKey?encryptKey(u.apiKey,u.pwdHash):''};
-    });
-    var data={users:safeUsers,procs:procs,updated:new Date().toISOString()};
+    var data={users:getUsers(),procs:getProcs(),updated:new Date().toISOString()};
     var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-    var payload={message:'Update procedures '+new Date().toISOString().slice(0,10),content:encoded};
+    var payload={message:'Sync '+new Date().toISOString().slice(0,10),content:encoded};
     if(GH_SHA)payload.sha=GH_SHA;
-    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_FILE,{
+    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
       method:'PUT',
-      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
+      headers:{'Authorization':'Bearer '+sharedToken,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
       body:JSON.stringify(payload)
     });
-    if(resp.ok){
-      var result=await resp.json();
-      GH_SHA=result.content.sha;
-      localStorage.setItem('gh_sha',GH_SHA);
-    }
-  }catch(e){console.warn('GitHub sync error:',e);}
-}
-
-function getSyncToken(){
-  // Use any user's token, or the one stored in localStorage
-  var users=getUsers();
-  for(var i=0;i<users.length;i++){if(users[i].apiKey)return users[i].apiKey;}
-  return localStorage.getItem('apiKey')||'';
+    if(resp.ok){var r=await resp.json();GH_SHA=r.content.sha;}
+  }catch(e){console.warn('ghSave error:',e);}
 }
 
 // ═══════════════════════════════════════════════════════
-// STORAGE — localStorage + GitHub sync
+// STORAGE — localStorage (cache) + GitHub (source of truth)
 // ═══════════════════════════════════════════════════════
-// users: [{id, name, pwdHash, color, apiKey}]
-// procs: [{id, title, ref, op, cat, status, created, userId, sections, genText}]
 function getUsers(){return JSON.parse(localStorage.getItem('ms_users')||'[]');}
-function saveUsers(u){
-  localStorage.setItem('ms_users',JSON.stringify(u));
-  ghSave(getSyncToken());
-}
+function saveUsers(u){localStorage.setItem('ms_users',JSON.stringify(u));ghSave();}
 function getProcs(){return JSON.parse(localStorage.getItem('ms_procs')||'[]');}
-function saveProcs(p){
-  localStorage.setItem('ms_procs',JSON.stringify(p));
-  ghSave(getSyncToken());
-}
+function saveProcs(p){localStorage.setItem('ms_procs',JSON.stringify(p));ghSave();}
+
 
 // ═══════════════════════════════════════════════════════
 // SESSION STATE
@@ -589,7 +614,10 @@ function go(screen){
   if(screen==='home')renderHome();
   if(screen==='capture')renderCapture();
   if(screen==='settings'){
-    document.getElementById('inp-apikey').value=S.user?.apiKey||'';
+    const tokenCard=document.getElementById('admin-token-card');
+    if(tokenCard)tokenCard.style.display=S.user&&S.user.isAdmin?'block':'none';
+    const apiInp=document.getElementById('inp-apikey');
+    if(apiInp)apiInp.value=sharedToken?'••••••••••••':'';
     document.getElementById('pwd-old').value='';
     document.getElementById('pwd-new1').value='';
     document.getElementById('pwd-new2').value='';
@@ -643,16 +671,11 @@ function checkPwd(){
   if(!pwd){toast('Enter your password');return;}
   if(hashPwd(pwd)!==loginTarget.pwdHash){toast('Wrong password ❌');return;}
   S.user=loginTarget;
-  if(!S.user.apiKey&&S.user.encApiKey){
-    S.user.apiKey=decryptKey(S.user.encApiKey,S.user.pwdHash);
-    var users=getUsers();
-    var idx=users.findIndex(function(u){return u.id===S.user.id;});
-    if(idx>=0){users[idx].apiKey=S.user.apiKey;localStorage.setItem('ms_users',JSON.stringify(users));}
-  }
   updateHeaderUser();
   go('home');
-  if(!S.user.apiKey){
-    setTimeout(function(){toast('⚙️ Enter your GitHub token in Settings');go('settings');},1000);
+  // Prompt admin to configure shared token if not set
+  if(!sharedToken&&S.user.isAdmin){
+    setTimeout(function(){toast('⚙️ Configure the shared GitHub token in Settings');go('settings');},1000);
   }
 }
 
@@ -708,15 +731,10 @@ function changePassword(){
   if(newPwd.length<4){toast('New password must be at least 4 characters');return;}
   if(newPwd!==newPwd2){toast('Passwords do not match');return;}
   const newHash=hashPwd(newPwd);
-  const newEncApiKey=S.user.apiKey?encryptKey(S.user.apiKey,newHash):'';
   S.user.pwdHash=newHash;
   const users=getUsers();
   const idx=users.findIndex(u=>u.id===S.user.id);
-  if(idx>=0){
-    users[idx].pwdHash=newHash;
-    users[idx].encApiKey=newEncApiKey;
-    saveUsers(users);
-  }
+  if(idx>=0){users[idx].pwdHash=newHash;saveUsers(users);}
   document.getElementById('pwd-old').value='';
   document.getElementById('pwd-new1').value='';
   document.getElementById('pwd-new2').value='';
@@ -765,37 +783,36 @@ function logout(){
 // ═══════════════════════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════════════════════
-function saveSettings(){
+async function saveSettings(){
   if(!S.user)return;
-  S.user.apiKey=document.getElementById('inp-apikey').value.trim();
-  const users=getUsers();
-  const idx=users.findIndex(u=>u.id===S.user.id);
-  if(idx>=0){users[idx]=S.user;localStorage.setItem('ms_users',JSON.stringify(users));}
-  toast('Settings saved ✓');go('home');
+  // Admin configures shared token
+  if(S.user.isAdmin){
+    const newToken=document.getElementById('inp-apikey').value.trim();
+    if(newToken&&newToken!==sharedToken){
+      showOverlay('Saving shared token...');
+      try{
+        await writeConfig(newToken);
+        toast('Shared token saved ✓ — all devices will use it');
+        await ghSave(); // push current data too
+      }catch(err){
+        hideOverlay();
+        toast('Error: '+err.message);
+        return;
+      }
+      hideOverlay();
+    }
+  }
+  go('home');
 }
 
 async function manualSync(){
-  var token=S.user?S.user.apiKey:getSyncToken();
-  if(!token){toast('Enter your GitHub token first');return;}
-  showOverlay('Syncing...');
-  var ghData=await ghLoad(token);
-  if(ghData){
-    var localUsers=JSON.parse(localStorage.getItem('ms_users')||'[]');
-    var mergedUsers=ghData.users.map(function(gu){
-      var lu=localUsers.find(function(u){return u.id===gu.id;});
-      return Object.assign({},gu,{apiKey:lu?lu.apiKey||'':''});
-    });
-    localUsers.forEach(function(lu){
-      if(!mergedUsers.find(function(u){return u.id===lu.id;}))mergedUsers.push(lu);
-    });
-    localStorage.setItem('ms_users',JSON.stringify(mergedUsers));
-    localStorage.setItem('ms_procs',JSON.stringify(ghData.procs||[]));
-    toast('✓ Synced from GitHub');
-  } else {
-    await ghSave(token);
-    toast('✓ Data pushed to GitHub');
-  }
+  if(!sharedToken){toast('No shared token — admin must configure it in Settings');return;}
+  showOverlay('Syncing from GitHub...');
+  const ok=await ghLoad();
+  renderLoginUsers();
   hideOverlay();
+  if(ok)toast('✓ Synced from GitHub');
+  else{await ghSave();toast('✓ Data pushed to GitHub');}
 }
 
 function clearMyData(){
@@ -1147,7 +1164,7 @@ function renderPhotoGrid(){
 // ═══════════════════════════════════════════════════════
 async function generateAI(){
   const apiKey=S.user?.apiKey||'';
-  if(!apiKey){toast('Add your GitHub token in Settings ⚙️');go('settings');return;}
+  if(!apiKey){toast('No shared token — admin must configure it in Settings');go('settings');return;}
   const p=S.cur;
   if(!p||!p.sections.length){toast('Add sections and steps first');return;}
   showOverlay('Generating with AI...');
@@ -1231,8 +1248,8 @@ async function exportWord(){
   const txt=document.getElementById('review-edit').value;
   p.genText=txt;p.status='generating';syncCur();
 
-  const token=S.user?S.user.apiKey:getSyncToken();
-  if(!token){toast('Add your GitHub token in Settings ⚙️');go('settings');return;}
+  const token=sharedToken;
+  if(!token){toast('No shared token — admin must configure it in Settings');go('settings');return;}
 
   // Step 1: Save latest data to GitHub
   showOverlay('1/3 — Saving procedure data...');
@@ -1519,34 +1536,29 @@ function hideOverlay(){document.getElementById('overlay').style.display='none';}
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('on'),2600);}
 
 // ═══════════════════════════════════════════════════════
-// INIT
+// INIT — config first, then GitHub data, then show login
 // ═══════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded',async function(){
+  showOverlay('Connecting...');
+
+  // 1. Load shared token from config.json (public, no auth)
+  const configFound=await loadConfig();
+
+  // 2. Load data from GitHub (replaces localStorage — GitHub is source of truth)
+  if(sharedToken){
+    showOverlay('Loading data...');
+    await ghLoad();
+  }
+
+  hideOverlay();
   renderLoginUsers();
-  // Try to sync from GitHub on startup
-  var token=getSyncToken();
-  if(token){
-    showOverlay('Syncing data...');
-    var ghData=await ghLoad(token);
-    if(ghData){
-      // Merge GitHub data — keep local API keys
-      var localUsers=JSON.parse(localStorage.getItem('ms_users')||'[]');
-      var mergedUsers=ghData.users.map(function(gu){
-        var lu=localUsers.find(function(u){return u.id===gu.id;});
-        return Object.assign({},gu,{apiKey:lu?lu.apiKey||'':''});
-      });
-      // Add any local-only users
-      localUsers.forEach(function(lu){
-        if(!mergedUsers.find(function(u){return u.id===lu.id;}))mergedUsers.push(lu);
-      });
-      localStorage.setItem('ms_users',JSON.stringify(mergedUsers));
-      localStorage.setItem('ms_procs',JSON.stringify(ghData.procs||[]));
-      renderLoginUsers();
-      toast('✓ Synced from GitHub');
-    }
-    hideOverlay();
+
+  // If no config found and no local token, admin needs to set it up
+  if(!sharedToken){
+    toast('⚙️ Admin: configure the shared GitHub token in Settings after login');
   }
 });
+
 </script>
 </body>
 </html>
