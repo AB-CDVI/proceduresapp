@@ -186,8 +186,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <label class="fl">API Key</label>
         <input type="password" id="inp-apikey" class="fi" placeholder="sk-ant-api03-..." style="font-family:monospace;font-size:13px" />
         <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5">
-          Get your key at <strong>console.anthropic.com</strong><br>
-          Stored locally on your device only. ~€0.001 per procedure.
+          Get your token at <strong>github.com/settings/tokens</strong><br>
+          Free with your GitHub account — no subscription needed.
         </div>
       </div>
     </div>
@@ -795,23 +795,21 @@ RULES:
 Output the procedure text directly, no preamble:`;
 
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch('https://models.inference.ai.azure.com/chat/completions',{
       method:'POST',
       headers:{
         'Content-Type':'application/json',
-        'x-api-key':S.apiKey,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
+        'Authorization':'Bearer '+S.apiKey
       },
       body:JSON.stringify({
-        model:'claude-haiku-4-5',
+        model:'gpt-4o-mini',
         max_tokens:2048,
         messages:[{role:'user',content:ctx}]
       })
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'API error '+res.status);}
     const data=await res.json();
-    const txt=data.content[0].text;
+    const txt=data.choices[0].message.content;
     p.genText=txt;p.status='generated';save();
     hideOverlay();
     document.getElementById('review-display').textContent=txt;
