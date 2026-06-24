@@ -148,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.9</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.10</div>
     </div>
     <div class="login-card">
       <div class="login-title">Who are you?</div>
@@ -183,8 +183,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <input type="password" id="new-pwd" class="fi" placeholder="Choose a password" />
         </div>
         <div class="fg" style="margin-bottom:0">
-          <label class="fl">Confirm password</label>
+          <label class="fl">Repeat password</label>
           <input type="password" id="new-pwd2" class="fi" placeholder="Repeat password" />
+        </div>
+        <div class="fg" style="margin-bottom:0;margin-top:14px">
+          <label class="fl">Access code *</label>
+          <input type="text" id="new-code" class="fi" placeholder="Ask your admin for the code" autocomplete="off" />
         </div>
         <div style="display:flex;gap:8px;margin-top:14px">
           <button class="btn btn-s" style="flex:1" onclick="cancelLogin()">Cancel</button>
@@ -202,7 +206,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.9</div>
+      <div class="hdr-sub">Magnetic Solution — v1.10</div>
     </div>
     <div class="user-chip" onclick="logout()">
       <div class="user-chip-av" id="hdr-avatar"></div>
@@ -439,6 +443,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 // HELPERS
 // ═══════════════════════════════════════════════════════
 const COLORS=['#2E75B6','#E8610A','#16A34A','#7C3AED','#DC2626','#0891B2'];
+
+// ─── Access code (change this to control who can sign up) ────────────────────
+var ACCESS_CODE='MAGNETIC';
+
+// ─── API key encryption (XOR with pwdHash — prevents GitHub token scanning) ──
+function encryptKey(k,h){if(!k)return '';var r='';for(var i=0;i<k.length;i++)r+=String.fromCharCode(k.charCodeAt(i)^h.charCodeAt(i%h.length));return 'enc:'+btoa(r);}
+function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=atob(e.slice(4));var r='';for(var i=0;i<s.length;i++)r+=String.fromCharCode(s.charCodeAt(i)^h.charCodeAt(i%h.length));return r;}catch(x){return '';}}
+
 function uid(){return '_'+Date.now()+Math.random().toString(36).slice(2,7);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function hashPwd(s){let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return h.toString(36);}
@@ -469,8 +481,11 @@ async function ghSave(token){
   try{
     var users=getUsers();
     var procs=getProcs();
-    // Don't store API keys in GitHub (security)
-    var safeUsers=users.map(function(u){return {id:u.id,name:u.name,pwdHash:u.pwdHash,color:u.color};});
+    // Encrypt API keys before storing (prevents GitHub token scanning)
+    var safeUsers=users.map(function(u){
+      return {id:u.id,name:u.name,pwdHash:u.pwdHash,color:u.color,
+              encApiKey:u.apiKey?encryptKey(u.apiKey,u.pwdHash):''};
+    });
     var data={users:safeUsers,procs:procs,updated:new Date().toISOString()};
     var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
     var payload={message:'Update procedures '+new Date().toISOString().slice(0,10),content:encoded};
@@ -572,9 +587,17 @@ function checkPwd(){
   if(!pwd){toast('Enter your password');return;}
   if(hashPwd(pwd)!==loginTarget.pwdHash){toast('Wrong password ❌');return;}
   S.user=loginTarget;
+  // Decrypt API key if it was loaded from GitHub (encrypted)
+  if(!S.user.apiKey&&S.user.encApiKey){
+    S.user.apiKey=decryptKey(S.user.encApiKey,S.user.pwdHash);
+    // Save decrypted key to localStorage for this device
+    var users=getUsers();
+    var idx=users.findIndex(function(u){return u.id===S.user.id;});
+    if(idx>=0){users[idx].apiKey=S.user.apiKey;localStorage.setItem('ms_users',JSON.stringify(users));}
+  }
   updateHeaderUser();
   go('home');
-  // Prompt for API key if not set
+  // Only prompt for API key if still not available after decryption
   if(!S.user.apiKey){
     setTimeout(function(){
       toast('⚙️ Enter your GitHub token in Settings to enable AI and sync');
@@ -601,9 +624,11 @@ function createUser(){
   const name=document.getElementById('new-name').value.trim();
   const pwd=document.getElementById('new-pwd').value;
   const pwd2=document.getElementById('new-pwd2').value;
+  const code=document.getElementById('new-code').value.trim().toUpperCase();
   if(!name){toast('Enter a name');return;}
   if(pwd.length<4){toast('Password must be at least 4 characters');return;}
   if(pwd!==pwd2){toast('Passwords do not match');return;}
+  if(code!==ACCESS_CODE){toast('Invalid access code ❌');return;}
   const users=getUsers();
   if(users.find(u=>u.name.toLowerCase()===name.toLowerCase())){toast('Name already taken');return;}
   const u={id:uid(),name,pwdHash:hashPwd(pwd),color:COLORS[users.length%COLORS.length],apiKey:''};
@@ -613,6 +638,11 @@ function createUser(){
   updateHeaderUser();
   document.getElementById('add-user-box').style.display='none';
   go('home');
+  // Prompt for token
+  setTimeout(function(){
+    toast('⚙️ Enter your GitHub token in Settings');
+    go('settings');
+  },800);
 }
 
 function updateHeaderUser(){
@@ -880,7 +910,7 @@ function quickPhoto(secId,stepId){
           if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
           const c=document.createElement('canvas');c.width=w;c.height=h;
           c.getContext('2d').drawImage(img,0,0,w,h);
-          st.photos.push({id:uid(),data:c.toDataURL('image/jpeg',0.7)});
+          st.photos.push({id:uid(),data:c.toDataURL('image/jpeg',0.88)});
           done++;if(done===e.target.files.length){syncCur();renderCapture();toast('📷 Photo added');}
         };
         img.src=ev.target.result;
@@ -962,7 +992,7 @@ function addPhoto(e){
         if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
         const c=document.createElement('canvas');c.width=w;c.height=h;
         c.getContext('2d').drawImage(img,0,0,w,h);
-        st.photos.push({id:uid(),data:c.toDataURL('image/jpeg',0.7)});
+        st.photos.push({id:uid(),data:c.toDataURL('image/jpeg',0.88)});
         renderPhotoGrid();
       };img.src=ev.target.result;
     };r.readAsDataURL(f);
