@@ -1246,7 +1246,9 @@ async function exportWord(){
 
     try{
       // Check via GitHub API if the docx was committed after we triggered
-      var checkResp=await fetch('https://api.github.com/repos/AB-CDVI/proceduresapp/commits?path=docs/'+p.id+'.docx&per_page=1',{
+      var userName=(S.user?S.user.name:'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
+      var docPath='docs/'+userName+'/'+p.id+'.docx';
+      var checkResp=await fetch('https://api.github.com/repos/AB-CDVI/proceduresapp/commits?path='+docPath+'&per_page=1',{
         headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github.v3+json'}
       });
       if(checkResp.ok){
@@ -1276,7 +1278,8 @@ async function exportWord(){
 
 async function downloadDocx(p,token){
   try{
-    var resp=await fetch('https://api.github.com/repos/AB-CDVI/proceduresapp/contents/docs/'+p.id+'.docx',{
+    var userName=(S.user?S.user.name:'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
+    var resp=await fetch('https://api.github.com/repos/AB-CDVI/proceduresapp/contents/docs/'+userName+'/'+p.id+'.docx',{
       headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github.v3+json'}
     });
     if(!resp.ok)throw new Error('Download failed: '+resp.status);
