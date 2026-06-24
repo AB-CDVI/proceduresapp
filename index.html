@@ -287,6 +287,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="btn btn-sm btn-danger" onclick="clearMyData()">Delete</button>
       </div>
     </div>
+    <div class="card" style="border:1px solid var(--red)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--red)">⚠️ Reset all local data</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Deletes accounts + procedures from this device</div>
+        </div>
+        <button class="btn btn-sm btn-danger" onclick="resetAllLocal()">Reset</button>
+      </div>
+    </div>
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0">
         <div>
@@ -797,6 +806,13 @@ function clearMyData(){
   go('home');
 }
 
+function resetAllLocal(){
+  if(!confirm('⚠️ This will delete ALL accounts and procedures from this device.\n\nGitHub data (data.json) is NOT affected.\n\nContinue?'))return;
+  localStorage.clear();
+  toast('Local data cleared — reloading...');
+  setTimeout(()=>window.location.reload(),1200);
+}
+
 // ═══════════════════════════════════════════════════════
 // HOME
 // ═══════════════════════════════════════════════════════
@@ -812,15 +828,26 @@ function renderHome(){
   el.innerHTML=[...procs].reverse().map(p=>{
     const author=users.find(u=>u.id===p.userId);
     const isMe=p.userId===S.user?.id;
-    return `<div class="proc-item" onclick="openProc('${p.id}')" style="border-left-color:${author?.color||'var(--blue-mid)'}">
-      <div class="proc-icon">${icons[p.cat]||'📋'}</div>
-      <div class="proc-info">
+    const canDelete=isMe||(S.user&&S.user.isAdmin);
+    return `<div class="proc-item" style="border-left-color:${author?.color||'var(--blue-mid)'}">
+      <div class="proc-icon" onclick="openProc('${p.id}')" style="cursor:pointer">${icons[p.cat]||'📋'}</div>
+      <div class="proc-info" onclick="openProc('${p.id}')" style="cursor:pointer">
         <div class="proc-title">${esc(p.title)}</div>
         <div class="proc-meta">${esc(p.ref)} · ${esc(author?.name||'Unknown')}${isMe?' (you)':''} · ${new Date(p.created).toLocaleDateString()}</div>
       </div>
-      <span class="badge badge-${p.status}">${p.status}</span>
+      <span class="badge badge-${p.status}" onclick="openProc('${p.id}')" style="cursor:pointer">${p.status}</span>
+      ${canDelete?`<button onclick="deleteProc('${p.id}')" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;opacity:.6" title="Delete">🗑️</button>`:''}
     </div>`;
   }).join('');
+}
+
+function deleteProc(id){
+  if(!confirm('Delete this procedure? This cannot be undone.'))return;
+  const procs=getProcs().filter(p=>p.id!==id);
+  saveProcs(procs);
+  if(S.cur&&S.cur.id===id)S.cur=null;
+  renderHome();
+  toast('Procedure deleted ✓');
 }
 
 function openProc(id){
