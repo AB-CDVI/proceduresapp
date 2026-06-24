@@ -148,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.4</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.5</div>
     </div>
     <div class="login-card">
       <div class="login-title">Who are you?</div>
@@ -202,7 +202,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.4</div>
+      <div class="hdr-sub">Magnetic Solution — v1.5</div>
     </div>
     <div class="user-chip" onclick="logout()">
       <div class="user-chip-av" id="hdr-avatar"></div>
@@ -388,6 +388,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="review-box">
       <div class="review-label">Generated procedure — English</div>
       <div id="review-display" class="review-text"></div>
+    </div>
+    <!-- Photos preview -->
+    <div id="review-photos" class="card" style="display:none">
+      <div class="card-title">📷 Photos by step</div>
+      <div id="review-photos-content"></div>
     </div>
     <div class="card">
       <div class="card-title">Edit before export</div>
@@ -613,6 +618,7 @@ function openProc(id){
     go('review');
     document.getElementById('review-display').textContent=S.cur.genText||'';
     document.getElementById('review-edit').value=S.cur.genText||'';
+    renderReviewPhotos();
   }else{go('capture');}
 }
 
@@ -933,33 +939,79 @@ Output the procedure directly:`;
     hideOverlay();
     document.getElementById('review-display').textContent=txt;
     document.getElementById('review-edit').value=txt;
+    renderReviewPhotos();
     go('review');
   }catch(err){hideOverlay();toast('Error: '+err.message);console.error(err);}
 }
 
 // ═══════════════════════════════════════════════════════
-// EXPORT — HTML→Word with embedded photos
+// REVIEW PHOTOS
+// ═══════════════════════════════════════════════════════
+function renderReviewPhotos(){
+  const p=S.cur;if(!p)return;
+  const box=document.getElementById('review-photos');
+  const content=document.getElementById('review-photos-content');
+  if(!box||!content)return;
+
+  // Collect all photos
+  let hasPhotos=false;
+  let html='';
+  p.sections.forEach((sec,si)=>{
+    sec.steps.forEach((st,idx)=>{
+      if(st.photos&&st.photos.length){
+        hasPhotos=true;
+        html+=`<div style="margin-bottom:12px">
+          <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">${roman(si+1)}.${idx+1} — ${esc(sec.title)}</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+            ${st.photos.map(ph=>`<img src="${ph.data}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--border)">`).join('')}
+          </div>
+          ${st.text?`<div style="font-size:12px;color:var(--muted);margin-top:4px">${esc(st.text.slice(0,80))}${st.text.length>80?'…':''}</div>`:''}
+        </div>`;
+      }
+    });
+  });
+
+  if(hasPhotos){box.style.display='block';content.innerHTML=html;}
+  else{box.style.display='none';}
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORT — CDVI Template style with photos
 // ═══════════════════════════════════════════════════════
 function exportWord(){
   const p=S.cur;
   const txt=document.getElementById('review-edit').value;
   p.genText=txt;p.status='exported';syncCur();
-
   showOverlay('Generating Word document...');
-
   try{
     const html=buildWordHTML(p,txt);
     const blob=new Blob([html],{type:'application/msword'});
-    const fname=`${p.ref}_${p.title.replace(/[^a-zA-Z0-9]/g,'_').slice(0,30)}_${new Date().toISOString().slice(0,10)}.doc`;
+    const fname=`Fabrication_${p.ref}_${p.title.replace(/[^a-zA-Z0-9]/g,'_').slice(0,25)}_${new Date().toISOString().slice(0,10)}.doc`;
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
     a.href=url;a.download=fname;a.style.display='none';
     document.body.appendChild(a);a.click();
     setTimeout(()=>{URL.revokeObjectURL(url);document.body.removeChild(a);},2000);
     hideOverlay();go('export');
-  }catch(err){
-    hideOverlay();toast('Export error: '+err.message);console.error(err);
-  }
+  }catch(err){hideOverlay();toast('Export error: '+err.message);console.error(err);}
+}
+
+function parseAIText(txt){
+  // Parse AI-generated text into typed blocks
+  const blocks=[];
+  txt.split('\n').forEach(line=>{
+    const t=line.trim();
+    if(!t){blocks.push({type:'empty'});return;}
+    if(/^(I{1,3}|IV|V|VI{1,3}|IX|X)[.\s]/i.test(t))
+      blocks.push({type:'section',text:t});
+    else if(/^\d+[.)]\s/.test(t))
+      blocks.push({type:'step',text:t,num:parseInt(t)});
+    else if(/^[-•]\s/.test(t))
+      blocks.push({type:'bullet',text:t});
+    else
+      blocks.push({type:'text',text:t});
+  });
+  return blocks;
 }
 
 function buildWordHTML(p,txt){
@@ -967,133 +1019,168 @@ function buildWordHTML(p,txt){
   const users=getUsers();
   const author=users.find(u=>u.id===p.userId);
 
-  // Collect all photos from all steps with their step context
-  const stepPhotos={};
-  p.sections.forEach((sec,si)=>{
-    sec.steps.forEach((st,idx)=>{
-      if(st.photos&&st.photos.length){
-        const key=`${roman(si+1)}.${idx+1}`;
-        stepPhotos[key]=st.photos;
-      }
-    });
-  });
+  // Parse AI text
+  const blocks=parseAIText(txt);
+
+  // Track section/step counters to match photos
+  let secCount=-1;
+  let stepCount=0;
 
   // Build content rows
   let rows='';
-  let photoInsertIdx=0;
-  const lines=txt.split('\n');
-  const stepPhotoKeys=Object.keys(stepPhotos);
-
-  lines.forEach(line=>{
-    const t=line.trim();
-    if(!t){rows+=`<tr><td colspan="2" style="padding:4px"></td></tr>`;return;}
-
-    // Section header
-    if(/^(I|II|III|IV|V|VI|VII|VIII|IX|X)[.\s]/.test(t)){
+  blocks.forEach(block=>{
+    if(block.type==='empty'){
+      rows+=`<tr><td colspan="2" style="padding:3px"></td></tr>`;
+      return;
+    }
+    if(block.type==='section'){
+      secCount++;stepCount=0;
       rows+=`<tr>
-        <td colspan="2" style="background:#1B3A6B;color:white;font-weight:bold;font-size:13pt;padding:8px 12px;font-family:Arial">
-          ${t}
+        <td colspan="2" style="background:#1B3A6B;color:#fff;font-weight:bold;font-size:12pt;padding:8px 14px;font-family:Arial">
+          ${esc(block.text)}
         </td>
       </tr>`;
+      return;
     }
-    // Numbered step
-    else if(/^\d+\./.test(t)){
-      // Find matching photo for this step
-      const stepNum=t.match(/^(\d+)\./)?.[1];
-      const currentSection=lines.slice(0,lines.indexOf(line)).reverse().find(l=>/^(I|II|III|IV|V|VI|VII|VIII|IX|X)[.\s]/.test(l.trim()));
-      let sectionRoman='';
-      if(currentSection){
-        const m=currentSection.trim().match(/^([IVX]+)/i);
-        if(m)sectionRoman=m[1];
-      }
-      const photoKey=`${sectionRoman}.${stepNum}`;
-      const photos=stepPhotos[photoKey];
+    if(block.type==='step'){
+      // Get matching photos from procedure structure
+      const sec=p.sections[secCount];
+      const st=sec?sec.steps[stepCount]:null;
+      const photos=st?.photos||[];
+      stepCount++;
 
-      if(photos&&photos.length){
+      if(photos.length){
+        // Step with photos — text left, photo right
         rows+=`<tr>
-          <td style="padding:8px 12px;font-family:Arial;font-size:11pt;vertical-align:top;width:55%">${t}</td>
-          <td style="padding:8px 4px;vertical-align:top;width:45%">
-            ${photos.slice(0,2).map(ph=>`<img src="${ph.data}" style="max-width:100%;max-height:120px;display:block;margin-bottom:4px;border:1px solid #ddd" />`).join('')}
+          <td style="padding:8px 14px;font-family:Arial;font-size:11pt;vertical-align:top;width:58%;border-bottom:1px solid #E2E8F0">
+            ${esc(block.text)}
+          </td>
+          <td style="padding:6px 8px;vertical-align:top;width:42%;border-bottom:1px solid #E2E8F0;border-left:1px solid #E2E8F0">
+            ${photos.map(ph=>`<img src="${ph.data}" style="max-width:100%;max-height:130px;display:block;margin-bottom:4px;border:1px solid #ddd;border-radius:3px">`).join('')}
           </td>
         </tr>`;
       }else{
+        // Step without photo — full width
         rows+=`<tr>
-          <td colspan="2" style="padding:8px 12px 8px 28px;font-family:Arial;font-size:11pt">${t}</td>
+          <td colspan="2" style="padding:8px 14px 8px 28px;font-family:Arial;font-size:11pt;border-bottom:1px solid #E2E8F0">
+            ${esc(block.text)}
+          </td>
         </tr>`;
       }
+      return;
+    }
+    if(block.type==='bullet'){
+      rows+=`<tr>
+        <td colspan="2" style="padding:5px 14px 5px 42px;font-family:Arial;font-size:10pt;color:#444;border-bottom:1px solid #F0F0F0">
+          ${esc(block.text)}
+        </td>
+      </tr>`;
+      return;
     }
     // Normal text
-    else{
-      rows+=`<tr><td colspan="2" style="padding:6px 12px;font-family:Arial;font-size:11pt;color:#444">${t}</td></tr>`;
-    }
+    rows+=`<tr>
+      <td colspan="2" style="padding:6px 14px;font-family:Arial;font-size:10pt;color:#555">
+        ${esc(block.text)}
+      </td>
+    </tr>`;
   });
 
+  // Total pages estimate
+  const totalSteps=p.sections.reduce((a,s)=>a+s.steps.length,0);
+  const estPages=Math.max(1,Math.ceil(totalSteps/6));
+
   return `<!DOCTYPE html>
-<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
 <head>
 <meta charset="UTF-8">
-<meta name:ProgId content="Word.Document">
-<meta name:Generator content="Microsoft Word 15">
-<!--[if gte mso 9]>
-<xml><w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom></w:WordDocument></xml>
-<![endif]-->
+<meta name="ProgId" content="Word.Document">
+<!--[if gte mso 9]><xml>
+<w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom>
+<w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
 <style>
-body{font-family:Arial;font-size:11pt;margin:0;padding:0}
-table{border-collapse:collapse;width:100%}
-@page{size:A4;margin:2cm}
+  @page{size:A4 portrait;margin:1.5cm 1.8cm 2cm 1.8cm;
+    mso-header-margin:1cm;mso-footer-margin:1.2cm;
+    mso-page-numbers:1;}
+  body{font-family:Arial;font-size:11pt;margin:0;padding:0;color:#1A1A2E}
+  table{border-collapse:collapse;width:100%}
+  p{margin:0;padding:0}
+  .hdr-table{width:100%;margin-bottom:0}
+  .content-table{width:100%;border:1px solid #C8D6E5;border-top:none}
+  .footer-table{width:100%;margin-top:0}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<table style="width:100%;margin-bottom:12px">
+<!--====== HEADER — CDVI TEMPLATE STYLE ======-->
+<table class="hdr-table" style="border:1px solid #C8D6E5">
 <tr>
-  <td style="background:#1B3A6B;color:white;text-align:center;padding:12px;font-family:Arial">
-    <div style="font-size:16pt;font-weight:bold">MANUFACTURING PROCEDURE</div>
-    <div style="font-size:13pt;margin-top:4px;color:#D6E4F0">${p.title}</div>
+  <!-- Title block -->
+  <td colspan="3" style="background:#1B3A6B;text-align:center;padding:10px 14px;border-bottom:1px solid #2E75B6">
+    <p style="font-size:15pt;font-weight:bold;color:#fff;font-family:Arial">Procédure de fabrication</p>
+    <p style="font-size:11pt;color:#D6E4F0;font-family:Arial;margin-top:4px">
+      &laquo; ${esc(p.title)} &ndash; ${esc(p.ref)} &raquo;
+    </p>
+  </td>
+</tr>
+<tr>
+  <td style="padding:6px 10px;font-family:Arial;font-size:9pt;background:#F5F7FA;width:33%;border-right:1px solid #C8D6E5">
+    <b style="color:#2E75B6">Operator :</b> ${esc(p.op||author?.name||'—')}
+  </td>
+  <td style="padding:6px 10px;font-family:Arial;font-size:9pt;background:#F5F7FA;width:33%;border-right:1px solid #C8D6E5;text-align:center">
+    <b style="color:#2E75B6">Category :</b> ${esc(p.cat)}
+  </td>
+  <td style="padding:6px 10px;font-family:Arial;font-size:9pt;background:#F5F7FA;width:34%;text-align:right">
+    <b style="color:#2E75B6">Date :</b> ${date} &nbsp;|&nbsp; <b style="color:#2E75B6">Version :</b> 01
   </td>
 </tr>
 </table>
 
-<!-- META -->
-<table style="width:100%;margin-bottom:16px;border:1px solid #C8D6E5">
-<tr>
-  <th style="background:#2E75B6;color:white;padding:6px 10px;font-family:Arial;font-size:10pt;text-align:center">Reference</th>
-  <th style="background:#2E75B6;color:white;padding:6px 10px;font-family:Arial;font-size:10pt;text-align:center">Operator</th>
-  <th style="background:#2E75B6;color:white;padding:6px 10px;font-family:Arial;font-size:10pt;text-align:center">Category</th>
-  <th style="background:#2E75B6;color:white;padding:6px 10px;font-family:Arial;font-size:10pt;text-align:center">Date</th>
-</tr>
-<tr>
-  <td style="padding:6px 10px;font-family:Arial;font-size:10pt;text-align:center;background:#F5F7FA">${p.ref}</td>
-  <td style="padding:6px 10px;font-family:Arial;font-size:10pt;text-align:center;background:#F5F7FA">${p.op||'—'}</td>
-  <td style="padding:6px 10px;font-family:Arial;font-size:10pt;text-align:center;background:#F5F7FA">${p.cat}</td>
-  <td style="padding:6px 10px;font-family:Arial;font-size:10pt;text-align:center;background:#F5F7FA">${date}</td>
-</tr>
-</table>
-
-<!-- CONTENT -->
-<table style="width:100%;border:1px solid #E2E8F0">
+<!--====== CONTENT ======-->
+<table class="content-table">
 ${rows}
 </table>
 
-<!-- SIGNATURES -->
-<table style="width:100%;margin-top:24px;border:1px solid #C8D6E5">
+<!--====== SIGNATURES ======-->
+<table style="width:100%;margin-top:16px;border:1px solid #C8D6E5">
 <tr>
-  <th style="background:#2E75B6;color:white;padding:8px;font-family:Arial;font-size:10pt;width:50%">Established by</th>
-  <th style="background:#2E75B6;color:white;padding:8px;font-family:Arial;font-size:10pt;width:50%">Approved by</th>
+  <th style="background:#2E75B6;color:#fff;padding:7px 10px;font-family:Arial;font-size:9pt;width:50%;text-align:center">Established by</th>
+  <th style="background:#2E75B6;color:#fff;padding:7px 10px;font-family:Arial;font-size:9pt;width:50%;text-align:center">Approved by</th>
 </tr>
 <tr>
-  <td style="padding:24px 12px;font-family:Arial;font-size:11pt;text-align:center">${p.op||author?.name||'—'}</td>
-  <td style="padding:24px 12px;font-family:Arial;font-size:11pt;text-align:center"></td>
+  <td style="padding:28px 10px;font-family:Arial;font-size:10pt;text-align:center;border:1px solid #C8D6E5">${esc(p.op||author?.name||'—')}</td>
+  <td style="padding:28px 10px;font-family:Arial;font-size:10pt;text-align:center;border:1px solid #C8D6E5"></td>
 </tr>
 </table>
 
-<div style="margin-top:16px;border-top:1px solid #ddd;padding-top:8px;font-family:Arial;font-size:9pt;color:#999;text-align:center">
-  Doc: ${p.ref} | Generated by ProceduresApp — Magnetic Solution | ${date}
-</div>
+<!--====== FOOTER — CDVI TEMPLATE STYLE ======-->
+<table style="width:100%;margin-top:12px;border-top:1px solid #C8D6E5;padding-top:6px">
+<tr>
+  <td style="font-family:Arial;font-size:8pt;color:#555;width:45%">
+    Doc. : Fabrication ${esc(p.ref)} &ndash; ${esc(p.title)}
+  </td>
+  <td style="font-family:Arial;font-size:8pt;color:#555;text-align:center;width:30%">
+    Date : ${date} &nbsp;&nbsp; Version : 01 / Ed doc :
+  </td>
+  <td style="font-family:Arial;font-size:8pt;color:#555;text-align:right;width:25%">
+    Page 1 sur ${estPages}
+  </td>
+</tr>
+<tr>
+  <td style="font-family:Arial;font-size:8pt;color:#555;padding-top:2px">
+    Etablit par : ${esc(p.op||author?.name||'—')}
+  </td>
+  <td style="font-family:Arial;font-size:8pt;color:#555;text-align:center;padding-top:2px">
+    Contrôlé par :
+  </td>
+  <td style="font-family:Arial;font-size:8pt;color:#555;text-align:right;padding-top:2px">
+    Generated by ProceduresApp
+  </td>
+</tr>
+</table>
 
 </body></html>`;
-}
 
 // ═══════════════════════════════════════════════════════
 // SHARE
