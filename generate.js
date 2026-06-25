@@ -8,6 +8,9 @@ const path = require('path');
 
 const procId = process.argv[2];
 if (!procId) { console.error('No procedure ID provided'); process.exit(1); }
+// userName passed from the app (S.user.name) — reliable, no lookup needed
+const userName = (process.argv[3] || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
+console.log('User folder:', userName);
 
 // Try reading procedure from its own file first (procs/[id].json)
 // This is more reliable than data.json which may not have the latest data
@@ -289,8 +292,8 @@ const doc = new Document({
   }]
 });
 
-// Save to docs/[procId].docx
-const outDir = path.join(__dirname, 'docs');
+// Save to docs/[userName]/[procId].docx
+const outDir = path.join(__dirname, 'docs', userName);
 fs.mkdirSync(outDir, { recursive: true });
 const outFile = path.join(outDir, procId + '.docx');
 
