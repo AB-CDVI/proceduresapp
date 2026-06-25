@@ -289,10 +289,8 @@ const doc = new Document({
   }]
 });
 
-// Folder per user
-const procUser = users.find(u => u.id === proc.userId);
-const userName = (procUser ? procUser.name : 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
-const outDir = path.join(__dirname, 'docs', userName);
+// Save to docs/[procId].docx
+const outDir = path.join(__dirname, 'docs');
 fs.mkdirSync(outDir, { recursive: true });
 const outFile = path.join(outDir, procId + '.docx');
 
