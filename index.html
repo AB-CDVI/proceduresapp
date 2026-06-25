@@ -1435,33 +1435,49 @@ async function exportWord(){
   const token=S.user?.apiKey||sharedToken||'';
   if(!token){toast('Enter your GitHub token in Settings ⚙️');go('settings');return;}
 
-  // Step 1: Save latest data to GitHub (MUST succeed before triggering Action)
-  showOverlay('1/3 — Saving procedure data to GitHub...');
-  if(!sharedToken)sharedToken=token;
-  await ghSave();
-  await new Promise(r=>setTimeout(r,3000));
-
-  // Verify data.json on GitHub actually has our procedure
+  // Step 1: Write procedure DIRECTLY to its own file in GitHub
+  // This bypasses data.json size limits (photos can be large)
+  showOverlay('1/3 — Uploading procedure to GitHub...');
+  var procSaved=false;
   try{
-    var verifyResp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
-      headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github.v3+json'}
-    });
-    if(verifyResp.ok){
-      var verifyMeta=await verifyResp.json();
-      var verifyRaw=atob(verifyMeta.content.replace(/\s/g,''));
-      var verifyData;
-      try{verifyData=JSON.parse(decodeURIComponent(escape(verifyRaw)));}
-      catch(e){verifyData=JSON.parse(verifyRaw);}
-      var procInGH=(verifyData.procs||[]).find(function(pr){return pr.id===p.id;});
-      if(!procInGH){
-        // Procedure not in GitHub yet — retry save
-        showOverlay('1/3 — Retrying save...');
-        await ghSave();
-        await new Promise(r=>setTimeout(r,3000));
-      }
-    }
-  }catch(e){console.warn('Verify failed:',e);}
+    var procJson=JSON.stringify(p);
+    var procEncoded=btoa(unescape(encodeURIComponent(procJson)));
+    var procPath='procs/'+p.id+'.json';
 
+    // Get current SHA if file exists
+    var procSHA=null;
+    try{
+      var chk=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+procPath,{
+        headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github.v3+json'}
+      });
+      if(chk.ok){var chkm=await chk.json();procSHA=chkm.sha;}
+    }catch(e){}
+
+    var procPayload={message:'proc: '+p.id.slice(0,12),content:procEncoded};
+    if(procSHA)procPayload.sha=procSHA;
+
+    var procResp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+procPath,{
+      method:'PUT',
+      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
+      body:JSON.stringify(procPayload)
+    });
+
+    if(procResp.ok){
+      procSaved=true;
+    }else{
+      var pe=await procResp.json().catch(()=>({}));
+      throw new Error('Save failed: '+(pe.message||procResp.status));
+    }
+  }catch(err){
+    hideOverlay();
+    toast('Cannot save to GitHub: '+err.message);
+    p.status='generated';syncCur();
+    return;
+  }
+
+  // Also push data.json in background (best effort, don't block on it)
+  if(!sharedToken)sharedToken=token;
+  ghSave();
 
   // Step 2: Trigger GitHub Action
   showOverlay('2/3 — Requesting document generation...');
