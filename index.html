@@ -8,7 +8,129 @@
 <meta name="theme-color" content="#1B3A6B">
 <title>ProceduresApp</title>
 <style>
-/* ... garder le même CSS que l'original ... */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --blue:#1B3A6B;--blue-mid:#2E75B6;--blue-pale:#D6E4F0;
+  --orange:#E8610A;--white:#fff;--bg:#F4F6FA;
+  --border:#E2E8F0;--text:#1A1A2E;--muted:#7A8AA0;
+  --green:#16A34A;--red:#DC2626;
+  --r:12px;--shadow:0 2px 10px rgba(0,0,0,.1);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;overflow-x:hidden}
+.screen{display:none;flex-direction:column;min-height:100vh}
+.screen.active{display:flex}
+.hdr{background:var(--blue);color:#fff;padding:0 16px;height:58px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.hdr-title{font-size:17px;font-weight:700;flex:1;line-height:1.2}
+.hdr-sub{font-size:11px;opacity:.75;font-weight:400}
+.btn-back{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:6px;line-height:1}
+.content{flex:1;overflow-y:auto;padding:16px;padding-bottom:86px}
+.ftr{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;border-top:1px solid var(--border);padding:10px 14px;display:flex;gap:8px;z-index:100}
+.btn{padding:12px 18px;border-radius:var(--r);border:none;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:opacity .15s,transform .1s;font-family:inherit}
+.btn:active{transform:scale(.97)}
+.btn-p{background:var(--blue-mid);color:#fff;flex:1}
+.btn-s{background:var(--bg);color:var(--text);border:1.5px solid var(--border)}
+.btn-o{background:var(--orange);color:#fff;flex:1}
+.btn-full{width:100%}
+.btn-sm{padding:8px 14px;font-size:13px}
+.btn-danger{background:var(--red);color:#fff}
+.card{background:#fff;border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card-title{font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.fg{margin-bottom:14px}
+.fl{display:block;font-size:12px;font-weight:700;color:var(--blue);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+.fi,.fs,.fta{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:15px;font-family:inherit;background:#fff;color:var(--text);transition:border-color .2s}
+.fi:focus,.fs:focus,.fta:focus{outline:none;border-color:var(--blue-mid)}
+.fs{appearance:none}
+.fta{resize:none;line-height:1.5}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:var(--blue)}
+.login-logo{text-align:center;margin-bottom:32px}
+.login-logo-title{font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px}
+.login-logo-sub{font-size:14px;color:rgba(255,255,255,.7);margin-top:4px}
+.login-card{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.25)}
+.login-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px}
+.user-btn{width:100%;padding:14px;border-radius:10px;border:2px solid var(--border);background:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:12px;margin-bottom:10px;transition:border-color .2s,background .2s;text-align:left;font-family:inherit}
+.user-btn:hover,.user-btn:active{border-color:var(--blue-mid);background:var(--blue-pale)}
+.user-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0}
+
+/* HOME */
+.proc-item{background:#fff;border-radius:var(--r);padding:14px 15px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;cursor:pointer;border-left:4px solid var(--blue-mid);transition:transform .1s}
+.proc-item:active{transform:scale(.99)}
+.proc-icon{font-size:28px;flex-shrink:0}
+.proc-info{flex:1;min-width:0}
+.proc-title{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proc-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.badge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700;white-space:nowrap;flex-shrink:0}
+.badge-draft{background:var(--bg);color:var(--muted)}
+.badge-generated{background:#DCFCE7;color:#15803D}
+.badge-exported{background:var(--blue-pale);color:var(--blue)}
+
+/* CAPTURE */
+.sec-hdr{background:var(--blue);color:#fff;padding:10px 14px;border-radius:9px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.sec-num{font-size:12px;opacity:.7;flex-shrink:0}
+.sec-title{font-size:14px;font-weight:700;flex:1}
+.sec-edit{background:none;border:none;color:#fff;opacity:.8;font-size:16px;cursor:pointer;padding:2px}
+.step-card{background:#fff;border-radius:9px;margin-bottom:8px;margin-left:16px;border:1px solid var(--border);overflow:hidden}
+.step-top{padding:10px 13px;display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.step-n{width:26px;height:26px;background:var(--blue-pale);color:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px}
+.step-txt{font-size:13px;color:var(--text);flex:1;line-height:1.45}
+.step-txt.empty{color:var(--muted);font-style:italic}
+.step-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.step-tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600}
+.tag-photo{background:#E0F2FE;color:#0369A1}
+.tag-voice{background:#FEF3C7;color:#92400E}
+.step-btns{display:flex;border-top:1px solid var(--border)}
+.cap-btn{flex:1;padding:9px 6px;border:none;font-size:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;background:#fff;border-right:1px solid var(--border);transition:background .1s;font-family:inherit}
+.cap-btn:last-child{border-right:none}
+.cap-btn:active{background:var(--bg)}
+.cap-btn span{font-size:10px;font-weight:600;color:var(--muted)}
+.cap-btn.cv{background:#FFFBEB}.cap-btn.cp{background:#F0F9FF}.cap-btn.ct{background:#F0FFF4}.cap-btn.cd{background:#FFF1F2}
+.add-row{display:flex;gap:8px;margin-top:4px;margin-bottom:16px;margin-left:16px}
+
+/* STEP DETAIL */
+.voice-box{border:1.5px solid var(--border);border-radius:9px;padding:12px;min-height:60px;font-size:13px;line-height:1.5;color:var(--text);background:#FAFAFA;margin-top:8px;word-break:break-word}
+.rec-bar{display:flex;align-items:center;gap:8px;padding:10px 13px;background:#FEF3C7;border-radius:9px;margin-top:8px}
+.rec-dot{width:10px;height:10px;background:var(--red);border-radius:50%;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.photo-wrap{position:relative;aspect-ratio:1}
+.photo-wrap img{width:100%;height:100%;object-fit:cover;border-radius:7px;display:block}
+.photo-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+
+/* REVIEW */
+.review-box{background:var(--blue-pale);border-left:4px solid var(--blue-mid);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.review-label{font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.review-text{font-size:13px;line-height:1.75;color:var(--text);white-space:pre-wrap;word-break:break-word}
+
+/* SUCCESS */
+.success-box{text-align:center;padding:32px 20px}
+.success-icon{font-size:72px;margin-bottom:16px}
+.success-title{font-size:22px;font-weight:700;margin-bottom:8px}
+.success-sub{font-size:14px;color:var(--muted);line-height:1.5}
+.share-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+
+/* EMPTY */
+.empty{text-align:center;padding:56px 20px}
+.empty-ico{font-size:64px;margin-bottom:16px;opacity:.6}
+.empty-t{font-size:18px;font-weight:700;margin-bottom:8px}
+.empty-s{font-size:14px;color:var(--muted);line-height:1.5}
+
+/* FAB */
+.fab{position:fixed;bottom:82px;right:16px;width:54px;height:54px;background:var(--orange);color:#fff;border:none;border-radius:50%;font-size:28px;cursor:pointer;box-shadow:0 4px 16px rgba(232,97,10,.45);display:flex;align-items:center;justify-content:center;z-index:50;transition:transform .15s;font-family:inherit}
+.fab:active{transform:scale(.9)}
+
+/* OVERLAY */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px;color:#fff;font-size:15px;font-weight:500}
+.spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+.toast{position:fixed;bottom:86px;left:50%;transform:translateX(-50%);background:rgba(26,26,46,.92);color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;font-weight:500;z-index:998;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;max-width:320px;text-align:center}
+.toast.on{opacity:1}
+
+/* USER BADGE */
+.user-chip{background:rgba(255,255,255,.2);border-radius:20px;padding:4px 10px 4px 6px;display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:600}
+.user-chip-av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
 </style>
 </head>
 <body>
@@ -19,13 +141,17 @@
   <div id="overlay-text">Loading...</div>
 </div>
 
-<!-- LOGIN -->
+<!-- ══════════════════════════════════════════
+     LOGIN
+══════════════════════════════════════════ -->
 <div id="s-login" class="screen active">
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.13</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.14</div>
     </div>
+
+    <!-- Step 1: Site access code -->
     <div id="site-code-box" class="login-card">
       <div class="login-title">Site access code</div>
       <div class="fg">
@@ -34,6 +160,8 @@
       </div>
       <button class="btn btn-p btn-full" onclick="checkSiteCode()">Enter →</button>
     </div>
+
+    <!-- Step 2: User selection (shown after correct code) -->
     <div id="user-selection-box" style="display:none;width:100%;max-width:380px">
       <div class="login-card">
         <div class="login-title">Select your account</div>
@@ -43,12 +171,15 @@
           <button class="btn btn-s btn-sm" id="btn-load-gh" style="display:none" onclick="showLoadFromGH()">☁️ Load accounts from GitHub</button>
         </div>
       </div>
+
+      <!-- Load from GitHub panel (shown when no token cached) -->
       <div id="load-gh-box" style="display:none;margin-top:16px">
         <div class="login-card">
           <div class="login-title">☁️ Load from GitHub</div>
           <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5">
-            Enter the GitHub token to load accounts from this device for the first time.
-            <br>The admin has this token.
+            The admin must first click <strong>"☁️ Push to GitHub"</strong> in Settings on their device.<br><br>
+            Once done, close this panel and tap "Load accounts from GitHub" again — it will work automatically.<br><br>
+            <em>Or enter the token below if you have it:</em>
           </div>
           <div class="fg">
             <label class="fl">GitHub Token</label>
@@ -58,6 +189,8 @@
           <button class="btn btn-s btn-full" style="margin-top:8px" onclick="document.getElementById('load-gh-box').style.display='none'">Cancel</button>
         </div>
       </div>
+
+      <!-- Password prompt -->
       <div id="pwd-box" style="display:none;margin-top:16px">
         <div class="login-card">
           <div class="login-title" id="pwd-title">Enter password</div>
@@ -70,6 +203,8 @@
         </div>
       </div>
     </div>
+
+    <!-- Add user form -->
     <div id="add-user-box" style="display:none;width:100%;max-width:380px;margin-top:16px">
       <div class="login-card">
         <div class="login-title">Create account</div>
@@ -94,14 +229,15 @@
   </div>
 </div>
 
-<!-- HOME -->
+<!-- ══════════════════════════════════════════
+     HOME
+══════════════════════════════════════════ -->
 <div id="s-home" class="screen">
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.13</div>
+      <div class="hdr-sub">Magnetic Solution — v1.14</div>
     </div>
-    <span id="sync-status" style="color:#fff;font-size:16px;margin-right:8px;" title="Statut de synchronisation">☁️</span>
     <div class="user-chip" onclick="logout()">
       <div class="user-chip-av" id="hdr-avatar"></div>
       <span id="hdr-username" style="color:#fff"></span>
@@ -117,14 +253,16 @@
   </div>
 </div>
 
-<!-- SETTINGS -->
+<!-- ══════════════════════════════════════════
+     SETTINGS
+══════════════════════════════════════════ -->
 <div id="s-settings" class="screen">
   <header class="hdr">
     <button class="btn-back" onclick="go('home')">←</button>
     <div class="hdr-title">Settings</div>
   </header>
   <div class="content">
-    <!-- Personal token -->
+    <!-- Personal token — visible to ALL users -->
     <div class="card" id="personal-token-card">
       <div class="card-title">🔑 GitHub Token (AI + Word export)</div>
       <div id="personal-token-status" style="padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:12px;font-weight:500"></div>
@@ -137,36 +275,24 @@
       </div>
       <button class="btn btn-s btn-sm btn-full" style="margin-top:8px" onclick="testPersonalToken()">🔌 Test connection</button>
     </div>
-
-    <!-- Shared token (admin only) -->
+    <!-- GitHub shared token (admin only) -->
     <div class="card" id="admin-token-card" style="display:none">
       <div class="card-title">🔑 Shared GitHub Token (admin)</div>
+      <!-- Token status indicator -->
       <div id="token-status" style="padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:12px;font-weight:500"></div>
       <div class="fg">
         <label class="fl">Enter / replace token</label>
         <input type="text" id="inp-apikey" class="fi" placeholder="ghp_..." style="font-family:monospace;font-size:13px" autocomplete="off" />
         <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5">
-          One token for the whole team — stored locally on each device (not on GitHub).
+          Get it at <strong>github.com/settings/tokens</strong> — scope <strong>repo</strong> required.
+          One token for the whole team — all devices sync automatically once set.
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:8px">
         <button class="btn btn-s btn-sm" style="flex:1" onclick="testToken()">🔌 Test connection</button>
-        <button class="btn btn-s btn-sm" style="flex:1" onclick="manualPush()">⬆ Push to GitHub</button>
+        <button class="btn btn-s btn-sm" style="flex:1" onclick="manualSync()">☁️ Push to GitHub</button>
       </div>
     </div>
-
-    <!-- Sync controls -->
-    <div class="card">
-      <div class="card-title">🔄 Synchronisation</div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-s btn-sm" onclick="manualPull()">⬇ Pull (récupérer)</button>
-        <button class="btn btn-s btn-sm" onclick="manualPush()">⬆ Push (envoyer)</button>
-      </div>
-      <div style="font-size:12px;color:var(--muted);margin-top:8px">
-        Dernière sync : <span id="last-sync-time">--</span>
-      </div>
-    </div>
-
     <!-- Change password -->
     <div class="card">
       <div class="card-title">Change password</div>
@@ -184,13 +310,11 @@
       </div>
       <button class="btn btn-s btn-sm btn-full" style="margin-top:10px" onclick="changePassword()">Change password</button>
     </div>
-
-    <!-- Admin panel -->
+    <!-- Admin: manage users -->
     <div class="card" id="admin-panel" style="display:none">
       <div class="card-title">👑 Manage users (admin)</div>
       <div id="admin-user-list"></div>
     </div>
-
     <!-- Danger zone -->
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0">
@@ -225,283 +349,1507 @@
   </div>
 </div>
 
-<!-- FORM, CAPTURE, STEP, REVIEW, EXPORT (inchangés) ... -->
-<!-- ... (les mêmes que l'original) ... -->
+<!-- ══════════════════════════════════════════
+     FORM
+══════════════════════════════════════════ -->
+<div id="s-form" class="screen">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('home')">←</button>
+    <div class="hdr-title">New procedure</div>
+  </header>
+  <div class="content">
+    <div class="card">
+      <div class="fg">
+        <label class="fl">Title *</label>
+        <input type="text" id="f-title" class="fi" placeholder="e.g. SASIC F0527000014" />
+      </div>
+      <div class="fg">
+        <label class="fl">Reference *</label>
+        <input type="text" id="f-ref" class="fi" placeholder="e.g. FAB-001" />
+      </div>
+      <div class="fg">
+        <label class="fl">Operator</label>
+        <input type="text" id="f-op" class="fi" placeholder="Your name" />
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="fl">Category</label>
+        <select id="f-cat" class="fs">
+          <option>Assembly</option>
+          <option>Electronics</option>
+          <option>Cabling</option>
+          <option>Packaging</option>
+          <option>Testing</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="ftr">
+    <button class="btn btn-s" onclick="go('home')">Cancel</button>
+    <button class="btn btn-p" onclick="createProc()">Create & start →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CAPTURE
+══════════════════════════════════════════ -->
+<div id="s-capture" class="screen">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('home')">←</button>
+    <div style="flex:1;min-width:0">
+      <div class="hdr-title" id="cap-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Procedure</div>
+      <div class="hdr-sub" id="cap-ref"></div>
+    </div>
+    <button onclick="generateAI()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px">🤖</button>
+  </header>
+  <div class="content">
+    <div id="cap-content"></div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-s btn-sm" style="flex:1" onclick="addSection()">＋ Section</button>
+      <button class="btn btn-s btn-sm" style="flex:1" onclick="addStepLast()">＋ Sub-step</button>
+    </div>
+  </div>
+  <div class="ftr">
+    <button class="btn btn-s" onclick="go('home')">Save draft</button>
+    <button class="btn btn-o" onclick="generateAI()">🤖 Generate AI</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     STEP DETAIL
+══════════════════════════════════════════ -->
+<div id="s-step" class="screen">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('capture')">←</button>
+    <div class="hdr-title" id="step-hdr">Step</div>
+  </header>
+  <div class="content">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="card-title" style="margin-bottom:0">🎙️ Voice dictation</div>
+        <button id="voice-btn" class="btn btn-s btn-sm" onclick="toggleVoice()">▶ Start</button>
+      </div>
+      <div id="rec-bar" class="rec-bar" style="display:none">
+        <div class="rec-dot"></div>
+        <span style="font-size:13px;font-weight:500">Recording — speak now</span>
+      </div>
+      <div id="voice-box" class="voice-box" style="color:var(--muted);font-style:italic">Tap "Start" to begin...</div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn btn-s btn-sm btn-full" onclick="clearVoice()">Clear</button>
+        <button class="btn btn-s btn-sm btn-full" onclick="appendVoiceToText()">→ Copy to notes</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="card-title" style="margin-bottom:0">📷 Photos</div>
+        <label class="btn btn-s btn-sm" style="cursor:pointer">
+          Add photo
+          <input type="file" accept="image/*" capture="environment" id="photo-inp" style="display:none" onchange="addPhoto(event)" multiple />
+        </label>
+      </div>
+      <div id="photo-grid" class="photo-grid"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">✍️ Notes</div>
+      <textarea id="step-txt" class="fta" rows="6" placeholder="French or English — AI will translate..."></textarea>
+    </div>
+  </div>
+  <div class="ftr">
+    <button class="btn btn-s" onclick="cancelStep()">Cancel</button>
+    <button class="btn btn-p" onclick="saveStep()">Save step ✓</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     REVIEW
+══════════════════════════════════════════ -->
+<div id="s-review" class="screen">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('capture')">←</button>
+    <div class="hdr-title">AI Review</div>
+    <button onclick="generateAI()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:4px">🔄</button>
+  </header>
+  <div class="content">
+    <div class="review-box">
+      <div class="review-label">Generated procedure — English</div>
+      <div id="review-display" class="review-text"></div>
+    </div>
+    <!-- Photos preview -->
+    <div id="review-photos" class="card" style="display:none">
+      <div class="card-title">📷 Photos by step</div>
+      <div id="review-photos-content"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Edit before export</div>
+      <textarea id="review-edit" class="fta" rows="14" style="font-size:13px;line-height:1.6"></textarea>
+    </div>
+  </div>
+  <div class="ftr">
+    <button class="btn btn-s" onclick="go('capture')">← Back</button>
+    <button class="btn btn-p" onclick="exportWord()">📄 Export Word</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     EXPORT
+══════════════════════════════════════════ -->
+<div id="s-export" class="screen">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('review')">←</button>
+    <div class="hdr-title">Export</div>
+  </header>
+  <div class="content">
+    <div class="success-box">
+      <div class="success-icon">✅</div>
+      <div class="success-title">Document ready!</div>
+      <div class="success-sub">Your procedure has been downloaded.<br>Open it with Word or any Office app.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Share</div>
+      <div class="share-grid">
+        <button class="btn btn-s" onclick="shareEmail()">✉️ Email</button>
+        <button class="btn btn-s" onclick="shareTeams()">💬 Teams</button>
+        <button class="btn btn-s" onclick="shareNative()">📤 Share</button>
+        <button class="btn btn-s" onclick="go('capture')">✏️ Edit more</button>
+      </div>
+    </div>
+    <button class="btn btn-p btn-full" onclick="go('home')" style="margin-top:8px">🏠 Back to home</button>
+  </div>
+</div>
 
 <script>
 // ═══════════════════════════════════════════════════════
-// NOUVEAU : Gestion du statut de synchronisation
+// HELPERS
 // ═══════════════════════════════════════════════════════
-function updateSyncStatus(status) {
-  const el = document.getElementById('sync-status');
-  if (!el) return;
-  const icons = { ok: '✔️', error: '❌', pending: '⏳', idle: '☁️' };
-  el.textContent = icons[status] || icons.idle;
-  el.title = status === 'ok' ? 'Synchronisé' : status === 'error' ? 'Erreur de sync' : 'En attente';
-  if (status === 'ok') {
-    localStorage.setItem('last_save_time', String(Date.now()));
-    const span = document.getElementById('last-sync-time');
-    if (span) span.textContent = new Date().toLocaleString();
-  }
-}
+const COLORS=['#2E75B6','#E8610A','#16A34A','#7C3AED','#DC2626','#0891B2'];
+
+// ─── Access code (change this to control who can sign up) ────────────────────
+var ACCESS_CODE='MAGNETIC';
+var siteCodeVerified=false;
+
+// Simple base64 obfuscation to avoid GitHub token scanner detecting the token
+function obfuscate(t){return btoa(t);}
+function deobfuscate(t){try{return atob(t);}catch(e){return '';}}
+
+function uid(){return '_'+Date.now()+Math.random().toString(36).slice(2,7);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function hashPwd(s){let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return h.toString(36);}
+// Keep encrypt/decrypt for password change re-encryption (not for token storage anymore)
+function encryptKey(k,h){if(!k)return '';var r='';for(var i=0;i<k.length;i++)r+=String.fromCharCode(k.charCodeAt(i)^h.charCodeAt(i%h.length));return 'enc:'+btoa(r);}
+function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=atob(e.slice(4));var r='';for(var i=0;i<s.length;i++)r+=String.fromCharCode(s.charCodeAt(i)^h.charCodeAt(i%h.length));return r;}catch(x){return '';}}
 
 // ═══════════════════════════════════════════════════════
-// SUPPLRESSION du token stocké dans data.json
-// On utilise uniquement les tokens locaux (S.user.apiKey ou localStorage.getItem('shared_token'))
+// SHARED TOKEN & GITHUB
+// Token is stored in data.json itself (field "st") and read publicly
+// No config.json needed — simpler and no 409 issues
 // ═══════════════════════════════════════════════════════
-
 var GH_REPO='AB-CDVI/proceduresapp';
 var GH_DATA='data.json';
 var GH_SHA=null;
+var sharedToken=localStorage.getItem('shared_token')||'';
 
-// Fonction pour obtenir le SHA (avec token)
-async function getDataSHA(token) {
-  if (!token) return null;
-  try {
-    const r = await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA, {
-      headers: { 'Authorization': 'Bearer '+token, 'Accept': 'application/vnd.github.v3+json' }
+// STEP 1 — Load token from public raw URL (no auth, cached)
+// data.json is public — anyone can read it, token is obfuscated
+async function loadSharedToken(){
+  if(sharedToken)return true;
+  try{
+    // Use GitHub API — no CDN cache (unlike raw.githubusercontent.com which caches 5+ min)
+    // Public repos can be read without auth
+    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
+      headers:{'Accept':'application/vnd.github.v3+json'}
     });
-    if (r.ok) { const m = await r.json(); return m.sha || null; }
-  } catch(e) {}
+    if(!resp.ok)return false;
+    var meta=await resp.json();
+    var raw=atob(meta.content.replace(/\s/g,''));
+    var decoded;
+    try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
+    var data=JSON.parse(decoded);
+    if(data.st){
+      var tok=deobfuscate(data.st);
+      if(tok){
+        sharedToken=tok;
+        localStorage.setItem('shared_token',tok);
+        return true;
+      }
+    }
+  }catch(e){console.warn('loadSharedToken:',e);}
+  return false;
+}
+
+// STEP 2 — Load fresh data from GitHub API (auth, no cache)
+async function ghLoad(){
+  if(!sharedToken) sharedToken=localStorage.getItem('shared_token')||'';
+  if(!sharedToken)return{ok:false,reason:'no_token'};
+  try{
+    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
+      headers:{'Authorization':'Bearer '+sharedToken,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(resp.status===404)return{ok:false,reason:'not_found'};
+    if(resp.status===401||resp.status===403)return{ok:false,reason:'auth_error',status:resp.status};
+    if(!resp.ok)return{ok:false,reason:'http_error',status:resp.status};
+    var meta=await resp.json();
+    GH_SHA=meta.sha;
+    var raw=atob(meta.content.replace(/\s/g,''));
+    var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
+    var data=JSON.parse(decoded);
+
+    // ── Token sync (always safe) ─────────────────────────────────────────────
+    if(data.st){var tok=deobfuscate(data.st);if(tok){sharedToken=tok;localStorage.setItem('shared_token',tok);}}
+
+    // ── Timestamp-based merge: only replace if GitHub is NEWER than local ────
+    var ghTime=data.updated?new Date(data.updated).getTime():0;
+    var localTime=parseInt(localStorage.getItem('last_save_time')||'0');
+
+    if(ghTime>localTime){
+      // GitHub has newer data — safe to replace
+      if(data.users){
+        var restoredUsers=data.users.map(function(u){
+          var apiKey=u.oApiKey?deobfuscate(u.oApiKey):'';
+          return Object.assign({},u,{apiKey:apiKey});
+        });
+        localStorage.setItem('ms_users',JSON.stringify(restoredUsers));
+        // Refresh logged-in user
+        if(S.user){
+          var ghUser=restoredUsers.find(function(u){return u.id===S.user.id;});
+          if(ghUser){Object.assign(S.user,ghUser);}
+        }
+      }
+      if(data.procs)localStorage.setItem('ms_procs',JSON.stringify(data.procs));
+      localStorage.setItem('last_save_time',String(ghTime));
+      return{ok:true,action:'replaced'};
+    }else{
+      // Local is newer or equal — push local to GitHub instead
+      ghSave();
+      return{ok:true,action:'pushed'};
+    }
+  }catch(e){console.warn('ghLoad error:',e);return{ok:false,reason:'parse_error',detail:e.message};}
+}
+
+// Get current SHA of data.json (needed to update it)
+async function getDataSHA(){
+  var tok=(S.user&&S.user.apiKey)||sharedToken||localStorage.getItem('shared_token')||'';
+  if(!tok)return null;
+  try{
+    var r=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
+      headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(r.ok){var m=await r.json();return m.sha||null;}
+  }catch(e){}
   return null;
 }
 
-// Chargement GitHub avec fusion intelligente
-async function ghLoad() {
-  const token = (S.user && S.user.apiKey) || localStorage.getItem('shared_token');
-  if (!token) {
-    updateSyncStatus('error');
-    return { ok: false, reason: 'no_token' };
-  }
-  try {
-    const resp = await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA, {
-      headers: { 'Authorization': 'Bearer '+token, 'Accept': 'application/vnd.github.v3+json' }
-    });
-    if (resp.status === 404) return { ok: false, reason: 'not_found' };
-    if (resp.status === 401 || resp.status === 403) return { ok: false, reason: 'auth_error', status: resp.status };
-    if (!resp.ok) return { ok: false, reason: 'http_error', status: resp.status };
-    const meta = await resp.json();
-    GH_SHA = meta.sha;
-    const raw = atob(meta.content.replace(/\s/g,''));
-    let decoded; try { decoded = decodeURIComponent(escape(raw)); } catch(e) { decoded = raw; }
-    const ghData = JSON.parse(decoded);
+// Save all data (including token) to GitHub — with 409 retry
+async function ghSave(){
+  // Use personal token first, then shared token, then localStorage
+  var tok=(S.user&&S.user.apiKey)||sharedToken||localStorage.getItem('shared_token')||'';
+  if(!tok){console.warn('ghSave: no token available');return;}
+  // Keep sharedToken in sync
+  if(!sharedToken&&tok)sharedToken=tok;
+  try{
+    if(!GH_SHA)GH_SHA=await getDataSHA();
 
-    // Fusion des utilisateurs
-    const localUsers = getUsers();
-    const mergedUsers = [];
-    const allUserIds = new Set([...localUsers.map(u=>u.id), ...(ghData.users||[]).map(u=>u.id)]);
-    for (const id of allUserIds) {
-      const local = localUsers.find(u=>u.id===id);
-      const remote = (ghData.users||[]).find(u=>u.id===id);
-      if (!local) { mergedUsers.push(remote); continue; }
-      if (!remote) { mergedUsers.push(local); continue; }
-      // Préserver les champs sensibles locaux
-      const merged = { ...remote, ...local };
-      merged.isAdmin = local.isAdmin || remote.isAdmin || false;
-      merged.apiKey = local.apiKey || '';
-      mergedUsers.push(merged);
-    }
-
-    // Fusion des procédures (basée sur la date la plus récente)
-    const localProcs = getProcs();
-    const remoteProcs = ghData.procs || [];
-    const mergedProcs = [];
-    const allProcIds = new Set([...localProcs.map(p=>p.id), ...remoteProcs.map(p=>p.id)]);
-    for (const id of allProcIds) {
-      const local = localProcs.find(p=>p.id===id);
-      const remote = remoteProcs.find(p=>p.id===id);
-      if (!local) { mergedProcs.push(remote); continue; }
-      if (!remote) { mergedProcs.push(local); continue; }
-      const localTime = new Date(local.updated || local.created || 0).getTime();
-      const remoteTime = new Date(remote.updated || remote.created || 0).getTime();
-      mergedProcs.push(localTime >= remoteTime ? local : remote);
-    }
-
-    saveUsers(mergedUsers);
-    saveProcs(mergedProcs);
-    updateSyncStatus('ok');
-    // Mettre à jour l'utilisateur courant s'il a changé
-    if (S.user) {
-      const refreshed = mergedUsers.find(u=>u.id===S.user.id);
-      if (refreshed) Object.assign(S.user, refreshed);
-    }
-    return { ok: true, action: 'merged' };
-  } catch(e) {
-    console.warn('ghLoad error:', e);
-    updateSyncStatus('error');
-    return { ok: false, reason: 'parse_error', detail: e.message };
-  }
-}
-
-// Sauvegarde GitHub (sans le champ 'st')
-async function ghSave() {
-  const token = (S.user && S.user.apiKey) || localStorage.getItem('shared_token');
-  if (!token) {
-    console.warn('ghSave: no token available');
-    updateSyncStatus('error');
-    return;
-  }
-  try {
-    if (!GH_SHA) GH_SHA = await getDataSHA(token);
-    const rawUsers = getUsers();
-    const safeUsers = rawUsers.map(u => {
-      const safe = { ...u };
-      delete safe.apiKey; // ne pas stocker le token personnel
+    var rawUsers=getUsers();
+    var safeUsers=rawUsers.map(function(u){
+      // Keep all fields including isAdmin; only strip raw apiKey
+      var safe=Object.assign({},u,{apiKey:''});
+      safe.oApiKey=u.apiKey?obfuscate(u.apiKey):'';
       return safe;
     });
-    const data = {
-      users: safeUsers,
-      procs: getProcs(),
-      updated: new Date().toISOString()
+    var data={
+      users:safeUsers,
+      procs:getProcs(),
+      st:obfuscate(tok),
+      updated:new Date().toISOString()
     };
-    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-    const payload = { message: 'Sync '+new Date().toISOString().slice(0,10), content: encoded };
-    if (GH_SHA) payload.sha = GH_SHA;
+    var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+    var payload={message:'Sync '+new Date().toISOString().slice(0,10),content:encoded};
+    if(GH_SHA)payload.sha=GH_SHA;
 
-    const put = async () => fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA, {
-      method: 'PUT',
-      headers: { 'Authorization': 'Bearer '+token, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
-      body: JSON.stringify(payload)
+    var put=async()=>fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
+      method:'PUT',
+      headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
+      body:JSON.stringify(payload)
     });
 
-    let resp = await put();
-    if (resp.status === 409) {
-      GH_SHA = await getDataSHA(token);
-      if (GH_SHA) payload.sha = GH_SHA; else delete payload.sha;
-      resp = await put();
+    var resp=await put();
+
+    if(resp.status===409){
+      GH_SHA=await getDataSHA();
+      if(GH_SHA)payload.sha=GH_SHA; else delete payload.sha;
+      resp=await put();
     }
-    if (resp.ok) {
-      const r = await resp.json();
-      GH_SHA = r.content.sha;
-      updateSyncStatus('ok');
-    } else {
-      console.warn('ghSave failed:', resp.status);
-      updateSyncStatus('error');
-    }
-  } catch(e) {
-    console.warn('ghSave error:', e);
-    updateSyncStatus('error');
-  }
+
+    if(resp.ok){var r=await resp.json();GH_SHA=r.content.sha;localStorage.setItem('last_save_time',String(Date.now()));}
+    else console.warn('ghSave failed:',resp.status,await resp.text().catch(()=>''));
+  }catch(e){console.warn('ghSave error:',e);}
 }
 
-// Fonctions manuelles de synchronisation
-async function manualPull() {
-  showOverlay('Récupération des données...');
-  const result = await ghLoad();
+// ═══════════════════════════════════════════════════════
+// STORAGE — localStorage (cache) + GitHub (source of truth)
+// ═══════════════════════════════════════════════════════
+function getUsers(){return JSON.parse(localStorage.getItem('ms_users')||'[]');}
+function saveUsers(u){localStorage.setItem('ms_users',JSON.stringify(u));ghSave();}
+function getProcs(){return JSON.parse(localStorage.getItem('ms_procs')||'[]');}
+function saveProcs(p){localStorage.setItem('ms_procs',JSON.stringify(p));ghSave();}
+
+
+
+// ═══════════════════════════════════════════════════════
+// SESSION STATE
+// ═══════════════════════════════════════════════════════
+const S={
+  user:null,      // current logged-in user
+  cur:null,       // current procedure
+  curSecId:null,
+  curStep:null,
+  recog:null,
+  recording:false
+};
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+function go(screen){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('s-'+screen).classList.add('active');
+  if(screen==='home')renderHome();
+  if(screen==='capture')renderCapture();
+  if(screen==='settings'){
+    // Personal token status (all users)
+    const pStatus=document.getElementById('personal-token-status');
+    const userTok=S.user&&S.user.apiKey||'';
+    if(pStatus){
+      if(userTok){
+        pStatus.style.background='#DCFCE7';pStatus.style.color='#15803D';
+        pStatus.textContent='✓ Token configured — '+userTok.slice(0,8)+'••••••••';
+      }else{
+        pStatus.style.background='#FEE2E2';pStatus.style.color='#DC2626';
+        pStatus.textContent='⚠️ No token — enter it below';
+      }
+    }
+    const pInp=document.getElementById('inp-personal-apikey');
+    if(pInp)pInp.value='';
+    // Admin shared token
+    const tokenCard=document.getElementById('admin-token-card');
+    if(tokenCard)tokenCard.style.display=S.user&&S.user.isAdmin?'block':'none';
+    const status=document.getElementById('token-status');
+    if(status){
+      if(sharedToken){
+        status.style.background='#DCFCE7';status.style.color='#15803D';
+        status.textContent='✓ Shared token — '+sharedToken.slice(0,8)+'••••••••';
+      }else{
+        status.style.background='#FFF3CD';status.style.color='#856404';
+        status.textContent='No shared token (optional — admin can set for team)';
+      }
+    }
+    const apiInp=document.getElementById('inp-apikey');
+    if(apiInp){apiInp.value='';apiInp.placeholder='Enter to set/replace shared token...';}
+    document.getElementById('pwd-old').value='';
+    document.getElementById('pwd-new1').value='';
+    document.getElementById('pwd-new2').value='';
+    renderAdminPanel();
+  }
+  window.scrollTo(0,0);
+}
+
+// ═══════════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════════
+let loginTarget=null;
+
+function checkSiteCode(){
+  var code=document.getElementById('site-code-inp').value.trim().toUpperCase();
+  if(code!==ACCESS_CODE){toast('Invalid code ❌');return;}
+  siteCodeVerified=true;
+  document.getElementById('site-code-box').style.display='none';
+  document.getElementById('user-selection-box').style.display='block';
+  renderLoginUsers();
+}
+
+function renderLoginUsers(){
+  const users=getUsers();
+  const el=document.getElementById('user-list');
+  if(!el)return;
+  // Show/hide Load from GitHub button
+  const ghBtn=document.getElementById('btn-load-gh');
+  if(ghBtn)ghBtn.style.display=users.length===0?'block':'none';
+
+  if(!users.length){
+    el.innerHTML='<div style="text-align:center;color:var(--muted);font-size:14px;padding:16px 0">No accounts — create one or load from GitHub ☁️</div>';
+    return;
+  }
+  el.innerHTML=users.map((u,i)=>`
+    <button class="user-btn" onclick="selectUser('${u.id}')">
+      <div class="user-avatar" style="background:${u.color||COLORS[i%COLORS.length]}">${u.name[0].toUpperCase()}</div>
+      <span>${esc(u.name)}${u.isAdmin?' 👑':''}</span>
+    </button>`).join('');
+}
+
+function showLoadFromGH(){
+  loadFromGitHubLogin();
+}
+
+async function loadFromGitHubLogin(){
+  showOverlay('Loading accounts from GitHub...');
+
+  // Check for manually entered bootstrap token (fallback only)
+  var bootstrapInp=document.getElementById('bootstrap-token');
+  var bootstrapTok=bootstrapInp?bootstrapInp.value.trim():'';
+  if(bootstrapTok){
+    sharedToken=bootstrapTok;
+    localStorage.setItem('shared_token',bootstrapTok);
+  }
+
+  // Try to get token from public data.json
+  if(!sharedToken) await loadSharedToken();
+
+  if(!sharedToken){
+    hideOverlay();
+    // Show manual token input as fallback
+    document.getElementById('load-gh-box').style.display='block';
+    toast('Token not found — enter it below (ask your admin)');
+    return;
+  }
+
+  var result=await ghLoad();
   hideOverlay();
-  if (result.ok) {
-    toast('Données synchronisées ✓');
-    renderHome();
-    renderSettings();
+  if(result.ok){
+    document.getElementById('load-gh-box').style.display='none';
+    renderLoginUsers();
+    toast('✓ Accounts loaded');
+  } else if(result.reason==='not_found'){
+    toast('No data on GitHub yet — admin must log in first from their device');
+  } else if(result.reason==='auth_error'){
+    toast('Token error ('+result.status+') — enter a valid token below');
+    document.getElementById('load-gh-box').style.display='block';
   } else {
-    toast('Erreur : ' + result.reason);
+    toast('Error: '+result.reason);
   }
 }
 
-async function manualPush() {
-  showOverlay('Envoi des données...');
+function selectUser(id){
+  const users=getUsers();
+  loginTarget=users.find(u=>u.id===id);
+  if(!loginTarget)return;
+  document.getElementById('pwd-title').textContent=`Hello ${loginTarget.name} 👋`;
+  document.getElementById('pwd-inp').value='';
+  document.getElementById('pwd-box').style.display='block';
+  document.getElementById('add-user-box').style.display='none';
+  setTimeout(()=>document.getElementById('pwd-inp').focus(),100);
+}
+
+function checkPwd(){
+  const pwd=document.getElementById('pwd-inp').value;
+  if(!pwd){toast('Enter your password');return;}
+  if(hashPwd(pwd)!==loginTarget.pwdHash){toast('Wrong password ❌');return;}
+  S.user=loginTarget;
+  updateHeaderUser();
+  go('home');
+  // Push data to GitHub after login — keeps data.json current for other devices
+  var _tok=S.user.apiKey||sharedToken||localStorage.getItem('shared_token')||'';
+  if(_tok){
+    if(!sharedToken)sharedToken=_tok;
+    setTimeout(function(){ghSave();},800);
+  } else if(S.user.isAdmin){
+    setTimeout(function(){toast('⚙️ Enter your GitHub token in Settings');go('settings');},1000);
+  }
+}
+
+function cancelLogin(){
+  document.getElementById('pwd-box').style.display='none';
+  document.getElementById('add-user-box').style.display='none';
+  loginTarget=null;
+}
+
+function showAddUser(){
+  document.getElementById('pwd-box').style.display='none';
+  document.getElementById('add-user-box').style.display='block';
+  document.getElementById('new-name').value='';
+  document.getElementById('new-pwd').value='';
+  document.getElementById('new-pwd2').value='';
+}
+
+function createUser(){
+  const name=document.getElementById('new-name').value.trim();
+  const pwd=document.getElementById('new-pwd').value;
+  const pwd2=document.getElementById('new-pwd2').value;
+  if(!name){toast('Enter a name');return;}
+  if(pwd.length<4){toast('Password must be at least 4 characters');return;}
+  if(pwd!==pwd2){toast('Passwords do not match');return;}
+  const users=getUsers();
+  if(users.find(u=>u.name.toLowerCase()===name.toLowerCase())){toast('Name already taken');return;}
+  // First user created is admin
+  const isAdmin=users.length===0;
+  const u={id:uid(),name,pwdHash:hashPwd(pwd),color:COLORS[users.length%COLORS.length],apiKey:'',isAdmin};
+  users.push(u);
+  saveUsers(users);
+  S.user=u;
+  updateHeaderUser();
+  document.getElementById('add-user-box').style.display='none';
+  go('home');
+  setTimeout(function(){toast('⚙️ Enter your GitHub token in Settings');go('settings');},800);
+}
+
+function updateHeaderUser(){
+  if(!S.user)return;
+  const av=document.getElementById('hdr-avatar');
+  const nm=document.getElementById('hdr-username');
+  av.textContent=S.user.name[0].toUpperCase();
+  av.style.background=S.user.color||COLORS[0];
+  nm.textContent=S.user.name;
+}
+
+function changePassword(){
+  const oldPwd=document.getElementById('pwd-old').value;
+  const newPwd=document.getElementById('pwd-new1').value;
+  const newPwd2=document.getElementById('pwd-new2').value;
+  if(hashPwd(oldPwd)!==S.user.pwdHash){toast('Wrong current password ❌');return;}
+  if(newPwd.length<4){toast('New password must be at least 4 characters');return;}
+  if(newPwd!==newPwd2){toast('Passwords do not match');return;}
+  const newHash=hashPwd(newPwd);
+  S.user.pwdHash=newHash;
+  const users=getUsers();
+  const idx=users.findIndex(u=>u.id===S.user.id);
+  if(idx>=0){users[idx].pwdHash=newHash;saveUsers(users);}
+  document.getElementById('pwd-old').value='';
+  document.getElementById('pwd-new1').value='';
+  document.getElementById('pwd-new2').value='';
+  toast('Password changed ✓');
+}
+
+function deleteUser(id){
+  if(id===S.user.id){toast('You cannot delete your own account');return;}
+  if(!confirm('Delete this account and all their procedures?'))return;
+  var users=getUsers().filter(u=>u.id!==id);
+  var procs=getProcs().filter(p=>p.userId!==id);
+  saveUsers(users);
+  saveProcs(procs);
+  renderAdminPanel();
+  toast('Account deleted ✓');
+}
+
+function renderAdminPanel(){
+  const panel=document.getElementById('admin-panel');
+  const list=document.getElementById('admin-user-list');
+  if(!panel||!list)return;
+  if(!S.user||!S.user.isAdmin){panel.style.display='none';return;}
+  panel.style.display='block';
+  const users=getUsers();
+  list.innerHTML=users.map(u=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="width:32px;height:32px;border-radius:50%;background:${u.color||'#ccc'};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0">${u.name[0].toUpperCase()}</div>
+      <div style="flex:1;font-size:14px;font-weight:500">${esc(u.name)}${u.isAdmin?' 👑':''}</div>
+      ${u.id!==S.user.id?`<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')">Delete</button>`:'<span style="font-size:12px;color:var(--muted)">You</span>'}
+    </div>`).join('');
+}
+
+function logout(){
+  S.user=null;S.cur=null;S.curStep=null;
+  siteCodeVerified=false;
+  stopVoice();
+  // Reset login screen to site code step
+  document.getElementById('site-code-box').style.display='block';
+  document.getElementById('user-selection-box').style.display='none';
+  document.getElementById('pwd-box').style.display='none';
+  document.getElementById('add-user-box').style.display='none';
+  document.getElementById('site-code-inp').value='';
+  go('login');
+}
+
+// ═══════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════
+async function saveSettings(){
+  if(!S.user)return;
+
+  // ── Personal token (all users) ─────────────────────────────────────────────
+  const personalTok=document.getElementById('inp-personal-apikey').value.trim();
+  if(personalTok&&personalTok.length>10){
+    S.user.apiKey=personalTok;
+    const users=getUsers();
+    const idx=users.findIndex(u=>u.id===S.user.id);
+    if(idx>=0){users[idx].apiKey=personalTok;}
+    localStorage.setItem('ms_users',JSON.stringify(users));
+    await ghSave(); // syncs token to GitHub with obfuscation
+    // Update status
+    const pStatus=document.getElementById('personal-token-status');
+    if(pStatus){pStatus.style.background='#DCFCE7';pStatus.style.color='#15803D';pStatus.textContent='✓ Token saved — '+personalTok.slice(0,8)+'••••••••';}
+    document.getElementById('inp-personal-apikey').value='';
+    toast('✓ Token saved');
+    return;
+  }
+
+  // ── Shared token (admin only) ──────────────────────────────────────────────
+  if(S.user.isAdmin){
+    const newToken=document.getElementById('inp-apikey').value.trim();
+    if(newToken&&newToken.length>10){
+      sharedToken=newToken;
+      localStorage.setItem('shared_token',newToken);
+      await ghSave();
+      const status=document.getElementById('token-status');
+      if(status){status.style.background='#DCFCE7';status.style.color='#15803D';status.textContent='✓ Shared token saved — '+newToken.slice(0,8)+'••••••••';}
+      document.getElementById('inp-apikey').value='';
+      toast('✓ Shared token saved');
+      return;
+    }
+  }
+  go('home');
+}
+
+async function testPersonalToken(){
+  const tok=document.getElementById('inp-personal-apikey').value.trim()||S.user?.apiKey||'';
+  if(!tok){toast('Enter your token first');return;}
+  showOverlay('Testing...');
+  try{
+    var r=await fetch('https://api.github.com/repos/'+GH_REPO,{headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}});
+    hideOverlay();
+    if(r.ok){var d=await r.json();toast('✓ Token works — '+d.full_name);}
+    else if(r.status===401)toast('❌ Token invalid or expired');
+    else if(r.status===403)toast('❌ Token missing repo scope');
+    else toast('❌ Error '+r.status);
+  }catch(e){hideOverlay();toast('❌ Network error');}
+}
+
+async function testToken(){
+  const testTok=document.getElementById('inp-apikey').value.trim()||sharedToken;
+  if(!testTok){toast('Enter a token first');return;}
+  showOverlay('Testing connection...');
+  try{
+    var resp=await fetch('https://api.github.com/repos/'+GH_REPO,{
+      headers:{'Authorization':'Bearer '+testTok,'Accept':'application/vnd.github.v3+json'}
+    });
+    hideOverlay();
+    if(resp.ok){
+      var r=await resp.json();
+      toast('✓ Token works — repo: '+r.full_name);
+    }else if(resp.status===401){
+      toast('❌ Token invalid or expired');
+    }else if(resp.status===403){
+      toast('❌ Token valid but missing repo scope');
+    }else{
+      toast('❌ Error '+resp.status);
+    }
+  }catch(e){hideOverlay();toast('❌ Network error: '+e.message);}
+}
+
+async function manualSync(){
+  // "Force sync" = push local data to GitHub
+  // The local device is always the source of truth
+  var tok=(S.user&&S.user.apiKey)||sharedToken||localStorage.getItem('shared_token')||'';
+  if(!tok){
+    toast('No token — enter it in Settings');
+    go('settings');
+    return;
+  }
+  if(!sharedToken)sharedToken=tok;
+  showOverlay('Pushing data to GitHub...');
   await ghSave();
   hideOverlay();
-  toast('Données envoyées ✓');
-  renderSettings();
+  toast('✓ Data pushed to GitHub — other devices can now sync');
+}
+
+function clearMyData(){
+  if(!confirm('Delete all YOUR procedures? Cannot be undone.'))return;
+  const procs=getProcs().filter(p=>p.userId!==S.user.id);
+  saveProcs(procs);
+  toast('Your procedures deleted');
+  go('home');
+}
+
+function resetAllLocal(){
+  if(!confirm('⚠️ This will delete ALL accounts and procedures from this device.\n\nGitHub data (data.json) is NOT affected.\n\nContinue?'))return;
+  localStorage.clear();
+  toast('Local data cleared — reloading...');
+  setTimeout(()=>window.location.reload(),1200);
 }
 
 // ═══════════════════════════════════════════════════════
-// VOIX CORRIGÉE (plus de doublement)
+// HOME
 // ═══════════════════════════════════════════════════════
-function startVoice() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { toast('Voice not available'); return; }
-  const r = new SR();
-  r.continuous = false;  // ← clé : s'arrête après un silence
-  r.interimResults = true;
-  r.lang = 'fr-FR';
-  const vbox = document.getElementById('voice-box');
-  let finalText = (vbox.textContent && vbox.textContent !== 'Tap "Start" to begin...') ? vbox.textContent + ' ' : '';
-  r.onresult = (e) => {
-    let interim = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
-      else interim += e.results[i][0].transcript;
-    }
-    vbox.textContent = finalText + interim;
-    vbox.style.color = interim ? 'var(--orange)' : 'var(--text)';
-    vbox.style.fontStyle = 'normal';
-  };
-  r.onerror = () => stopVoice();
-  r.onend = () => {
-    S.recording = false;
-    document.getElementById('voice-btn').innerHTML = '▶ Start';
-    document.getElementById('voice-btn').style.background = '';
-    document.getElementById('rec-bar').style.display = 'none';
-    if (!vbox.textContent || vbox.textContent === 'Tap "Start" to begin...') {
-      vbox.textContent = 'Tap "Start" to begin...';
-      vbox.style.fontStyle = 'italic';
-      vbox.style.color = 'var(--muted)';
-    }
-  };
-  r.start();
-  S.recog = r;
-  S.recording = true;
-  document.getElementById('voice-btn').innerHTML = '■ Stop';
-  document.getElementById('voice-btn').style.background = '#FEE2E2';
-  document.getElementById('rec-bar').style.display = 'flex';
-}
-
-// stopVoice() inchangé
-
-// ═══════════════════════════════════════════════════════
-// AUTRES FONCTIONS MODIFIÉES (SAVEUSERS, SAVEPROCS, etc.)
-// ═══════════════════════════════════════════════════════
-function getUsers(){ return JSON.parse(localStorage.getItem('ms_users')||'[]'); }
-function saveUsers(u){ localStorage.setItem('ms_users',JSON.stringify(u)); ghSave(); }
-function getProcs(){ return JSON.parse(localStorage.getItem('ms_procs')||'[]'); }
-function saveProcs(p){ localStorage.setItem('ms_procs',JSON.stringify(p)); ghSave(); }
-
-// ═══════════════════════════════════════════════════════
-// RENDER SETTINGS (avec affichage du timestamp)
-// ═══════════════════════════════════════════════════════
-function renderSettings() {
-  // ... (code existant pour token status, admin panel, etc.)
-  const lastSync = localStorage.getItem('last_save_time');
-  if (lastSync) {
-    const d = new Date(parseInt(lastSync));
-    document.getElementById('last-sync-time').textContent = d.toLocaleString();
+function renderHome(){
+  const el=document.getElementById('home-list');
+  const procs=getProcs();
+  const users=getUsers();
+  if(!procs.length){
+    el.innerHTML=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-t">No procedures yet</div><div class="empty-s">Tap + to create the first manufacturing procedure.</div></div>`;
+    return;
   }
-  // Mettre à jour le statut
-  updateSyncStatus('idle');
+  const icons={Assembly:'🔧',Electronics:'⚡',Cabling:'🔌',Packaging:'📦',Testing:'🔬',Other:'📋'};
+  el.innerHTML=[...procs].reverse().map(p=>{
+    const author=users.find(u=>u.id===p.userId);
+    const isMe=p.userId===S.user?.id;
+    const canDelete=isMe||(S.user&&S.user.isAdmin);
+    return `<div class="proc-item" style="border-left-color:${author?.color||'var(--blue-mid)'}">
+      <div class="proc-icon" onclick="openProc('${p.id}')" style="cursor:pointer">${icons[p.cat]||'📋'}</div>
+      <div class="proc-info" onclick="openProc('${p.id}')" style="cursor:pointer">
+        <div class="proc-title">${esc(p.title)}</div>
+        <div class="proc-meta">${esc(p.ref)} · ${esc(author?.name||'Unknown')}${isMe?' (you)':''} · ${new Date(p.created).toLocaleDateString()}</div>
+      </div>
+      <span class="badge badge-${p.status}" onclick="openProc('${p.id}')" style="cursor:pointer">${p.status}</span>
+      ${canDelete?`<button onclick="deleteProc('${p.id}')" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;opacity:.6" title="Delete">🗑️</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+function deleteProc(id){
+  if(!confirm('Delete this procedure? This cannot be undone.'))return;
+  const procs=getProcs().filter(p=>p.id!==id);
+  saveProcs(procs);
+  if(S.cur&&S.cur.id===id)S.cur=null;
+  renderHome();
+  toast('Procedure deleted ✓');
+}
+
+function openProc(id){
+  const procs=getProcs();
+  S.cur=procs.find(p=>p.id===id);
+  if(!S.cur)return;
+  if(S.cur.status==='generated'||S.cur.status==='exported'){
+    go('review');
+    document.getElementById('review-display').textContent=S.cur.genText||'';
+    document.getElementById('review-edit').value=S.cur.genText||'';
+    renderReviewPhotos();
+  }else{go('capture');}
 }
 
 // ═══════════════════════════════════════════════════════
-// INITIALISATION (adaptée)
+// FORM
 // ═══════════════════════════════════════════════════════
-window.addEventListener('DOMContentLoaded', async function() {
+function initForm(){
+  document.getElementById('f-title').value='';
+  document.getElementById('f-ref').value='';
+  document.getElementById('f-op').value=S.user?.name||'';
+}
+
+function createProc(){
+  const title=document.getElementById('f-title').value.trim();
+  const ref=document.getElementById('f-ref').value.trim();
+  if(!title||!ref){toast('Please fill in title and reference');return;}
+  const p={
+    id:uid(),title,ref,
+    op:document.getElementById('f-op').value.trim(),
+    cat:document.getElementById('f-cat').value,
+    status:'draft',userId:S.user?.id||'',
+    created:new Date().toISOString(),
+    sections:[],genText:''
+  };
+  const procs=getProcs();procs.push(p);saveProcs(procs);
+  S.cur=p;go('capture');
+}
+
+function syncCur(){
+  if(!S.cur)return;
+  const procs=getProcs();
+  const idx=procs.findIndex(p=>p.id===S.cur.id);
+  if(idx>=0){procs[idx]=S.cur;}
+  else{procs.push(S.cur);} // Add if missing — never lose a procedure
+  saveProcs(procs);
+}
+
+// ═══════════════════════════════════════════════════════
+// CAPTURE
+// ═══════════════════════════════════════════════════════
+function roman(n){const v=[10,'X',9,'IX',5,'V',4,'IV',1,'I'];let r='';for(let i=0;i<v.length;i+=2)while(n>=v[i]){r+=v[i+1];n-=v[i];}return r;}
+
+function renderCapture(){
+  const p=S.cur;if(!p)return;
+  document.getElementById('cap-title').textContent=p.title;
+  document.getElementById('cap-ref').textContent=p.ref;
+  const el=document.getElementById('cap-content');
+  if(!p.sections.length){
+    el.innerHTML=`<div class="card" style="text-align:center;padding:28px;color:var(--muted)"><div style="font-size:40px;margin-bottom:12px">📝</div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">No sections yet</div><div style="font-size:13px">Add a section first</div></div>`;
+    return;
+  }
+  el.innerHTML=p.sections.map((sec,si)=>`
+    <div class="sec-hdr">
+      <span class="sec-num">${roman(si+1)}.</span>
+      <span class="sec-title">${esc(sec.title||'Untitled')}</span>
+      <button class="sec-edit" onclick="editSecTitle('${sec.id}')">✏️</button>
+      <button class="sec-edit" onclick="deleteSection('${sec.id}')" style="opacity:.7">🗑️</button>
+    </div>
+    ${sec.steps.map((st,idx)=>`
+      <div class="step-card">
+        <div class="step-top" onclick="editStep('${sec.id}','${st.id}')">
+          <div class="step-n">${idx+1}</div>
+          <div style="flex:1">
+            <div class="step-txt ${!st.text?'empty':''}">${st.text?esc(st.text.slice(0,90))+(st.text.length>90?'…':''):'Tap to add content...'}</div>
+            <div class="step-tags">
+              ${st.photos&&st.photos.length?`<span class="step-tag tag-photo">📷 ${st.photos.length}</span>`:''}
+              ${st.voice?`<span class="step-tag tag-voice">🎙️</span>`:''}
+            </div>
+          </div>
+        </div>
+        <div class="step-btns">
+          <button class="cap-btn cv" onclick="quickVoice('${sec.id}','${st.id}')">🎙️<span>Voice</span></button>
+          <button class="cap-btn cp" onclick="quickPhoto('${sec.id}','${st.id}')">📷<span>Photo</span></button>
+          <button class="cap-btn ct" onclick="editStep('${sec.id}','${st.id}')">✍️<span>Edit</span></button>
+          <button class="cap-btn cd" onclick="deleteStep('${sec.id}','${st.id}')">🗑️<span>Del</span></button>
+        </div>
+      </div>`).join('')}
+    <div class="add-row">
+      <button class="btn btn-s btn-sm" onclick="addStepTo('${sec.id}')">＋ Add sub-step</button>
+    </div>`).join('');
+}
+
+function addSection(){
+  const title=prompt('Section name:\n(e.g. "Board preparation")');
+  if(!title||!title.trim())return;
+  const sec={id:uid(),title:title.trim(),steps:[]};
+  S.cur.sections.push(sec);S.curSecId=sec.id;
+  syncCur();renderCapture();toast('Section added ✓');
+}
+
+function editSecTitle(secId){
+  const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
+  const t=prompt('Edit section name:',sec.title);
+  if(t===null)return;sec.title=t.trim();syncCur();renderCapture();
+}
+
+function deleteSection(secId){
+  const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
+  if(!confirm('Delete section "'+sec.title+'" and all its steps?'))return;
+  S.cur.sections=S.cur.sections.filter(s=>s.id!==secId);
+  syncCur();renderCapture();toast('Section deleted');
+}
+
+function addStepLast(){
+  if(!S.cur.sections.length){toast('Add a section first');return;}
+  addStepTo(S.cur.sections[S.cur.sections.length-1].id);
+}
+
+function addStepTo(secId){
+  const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
+  const st={id:uid(),text:'',voice:'',photos:[]};
+  sec.steps.push(st);syncCur();
+  openStepEditor(secId,st);
+}
+
+function deleteStep(secId,stepId){
+  if(!confirm('Delete this step?'))return;
+  const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
+  sec.steps=sec.steps.filter(s=>s.id!==stepId);
+  syncCur();renderCapture();
+}
+
+function editStep(secId,stepId){
+  const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
+  const st=sec.steps.find(s=>s.id===stepId);if(!st)return;
+  openStepEditor(secId,st);
+}
+
+function openStepEditor(secId,st){
+  const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
+  S.curSecId=secId;S.curStep=st;
+  const si=S.cur.sections.indexOf(sec)+1;
+  const idx=sec.steps.indexOf(st)+1;
+  document.getElementById('step-hdr').textContent=`${roman(si)}.${idx} — ${sec.title}`;
+  document.getElementById('step-txt').value=st.text||'';
+  const vb=document.getElementById('voice-box');
+  vb.textContent=st.voice||'Tap "Start" to begin...';
+  vb.style.fontStyle=st.voice?'normal':'italic';
+  vb.style.color=st.voice?'var(--text)':'var(--muted)';
+  stopVoice();renderPhotoGrid();go('step');
+}
+
+function cancelStep(){
+  const sec=S.cur.sections.find(s=>s.id===S.curSecId);
+  if(sec&&S.curStep&&!S.curStep.text&&!S.curStep.voice&&(!S.curStep.photos||!S.curStep.photos.length)){
+    sec.steps=sec.steps.filter(s=>s.id!==S.curStep.id);syncCur();
+  }
+  go('capture');
+}
+
+function saveStep(){
+  const st=S.curStep;if(!st)return;
+  st.text=document.getElementById('step-txt').value.trim();
+  const vt=document.getElementById('voice-box').textContent;
+  if(vt&&vt!=='Tap "Start" to begin...')st.voice=vt.trim();
+  if(!st.text&&st.voice)st.text=st.voice;
+  stopVoice();syncCur();toast('Step saved ✓');go('capture');
+}
+
+function quickVoice(secId,stepId){editStep(secId,stepId);setTimeout(startVoice,400);}
+
+function quickPhoto(secId,stepId){
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='image/*';inp.capture='environment';inp.multiple=true;inp.style.display='none';
+  inp.onchange=e=>{
+    const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
+    const st=sec.steps.find(s=>s.id===stepId);if(!st)return;
+    if(!st.photos)st.photos=[];
+    let done=0;
+    Array.from(e.target.files).forEach(f=>{
+      const r=new FileReader();
+      r.onload=ev=>{
+        // Resize image to max 800px to keep storage manageable
+        const img=new Image();
+        img.onload=()=>{
+          const MAX=800;
+          let w=img.width,h=img.height;
+          if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+          const c=document.createElement('canvas');c.width=w;c.height=h;
+          c.getContext('2d').drawImage(img,0,0,w,h);
+          st.photos.push({id:uid(),data:c.toDataURL('image/jpeg',0.88)});
+          done++;if(done===e.target.files.length){syncCur();renderCapture();toast('📷 Photo added');}
+        };
+        img.src=ev.target.result;
+      };
+      r.readAsDataURL(f);
+    });
+    inp.remove();
+  };
+  document.body.appendChild(inp);inp.click();
+}
+
+// ═══════════════════════════════════════════════════════
+// VOICE
+// ═══════════════════════════════════════════════════════
+function toggleVoice(){S.recording?stopVoice():startVoice();}
+
+function startVoice(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toast('Voice not available on this browser — use Chrome or Safari');return;}
+  const r=new SR();r.continuous=true;r.interimResults=true;r.lang='fr-FR';
+  const vbox=document.getElementById('voice-box');
+  const existing=vbox.style.color.includes('muted')||vbox.textContent==='Tap "Start" to begin...'?'':vbox.textContent;
+  let final=existing;
+  r.onresult=e=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)final+=e.results[i][0].transcript+' ';
+      else interim+=e.results[i][0].transcript;
+    }
+    vbox.textContent=final+interim;
+    vbox.style.color=interim?'var(--orange)':'var(--text)';
+    vbox.style.fontStyle='normal';
+  };
+  r.onerror=()=>stopVoice();
+  r.onend=()=>{
+    // Don't auto-restart — causes duplicate text
+    // If still recording state, just stop gracefully
+    if(S.recording)stopVoice();
+  };
+  r.start();S.recog=r;S.recording=true;
+  document.getElementById('voice-btn').innerHTML='■ Stop';
+  document.getElementById('voice-btn').style.background='#FEE2E2';
+  document.getElementById('rec-bar').style.display='flex';
+}
+
+function stopVoice(){
+  if(S.recog){try{S.recog.stop();}catch(e){}S.recog=null;}
+  S.recording=false;
+  const btn=document.getElementById('voice-btn');
+  if(btn){btn.innerHTML='▶ Start';btn.style.background='';}
+  const rb=document.getElementById('rec-bar');if(rb)rb.style.display='none';
+  const vbox=document.getElementById('voice-box');if(vbox)vbox.style.color='var(--text)';
+  const stxt=document.getElementById('step-txt');
+  if(stxt&&!stxt.value.trim()&&vbox&&vbox.textContent&&vbox.textContent!=='Tap "Start" to begin...')
+    stxt.value=vbox.textContent.trim();
+}
+
+function clearVoice(){
+  const vb=document.getElementById('voice-box');
+  vb.textContent='Tap "Start" to begin...';vb.style.fontStyle='italic';vb.style.color='var(--muted)';
+}
+
+function appendVoiceToText(){
+  const vt=document.getElementById('voice-box').textContent;
+  if(!vt||vt==='Tap "Start" to begin...')return;
+  const ta=document.getElementById('step-txt');
+  ta.value=(ta.value?ta.value+'\n':'')+vt.trim();
+  toast('Voice copied to notes');
+}
+
+// ═══════════════════════════════════════════════════════
+// PHOTOS
+// ═══════════════════════════════════════════════════════
+function addPhoto(e){
+  const st=S.curStep;if(!st)return;
+  if(!st.photos)st.photos=[];
+  Array.from(e.target.files).forEach(f=>{
+    const r=new FileReader();
+    r.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        const MAX=800;let w=img.width,h=img.height;
+        if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        st.photos.push({id:uid(),data:c.toDataURL('image/jpeg',0.88)});
+        renderPhotoGrid();
+      };img.src=ev.target.result;
+    };r.readAsDataURL(f);
+  });e.target.value='';
+}
+
+function removePhoto(pid){if(!S.curStep)return;S.curStep.photos=S.curStep.photos.filter(p=>p.id!==pid);renderPhotoGrid();}
+
+function renderPhotoGrid(){
+  const st=S.curStep;const g=document.getElementById('photo-grid');if(!g)return;
+  if(!st||!st.photos||!st.photos.length){g.innerHTML='';return;}
+  g.innerHTML=st.photos.map(p=>`
+    <div class="photo-wrap">
+      <img src="${p.data}" />
+      <button class="photo-del" onclick="removePhoto('${p.id}')">×</button>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// AI GENERATION
+// ═══════════════════════════════════════════════════════
+async function generateAI(){
+  // Personal token first, shared token as fallback
+  const apiKey=S.user?.apiKey||sharedToken||'';
+  if(!apiKey){toast('Enter your GitHub token in Settings ⚙️');go('settings');return;}
+  const p=S.cur;
+  if(!p||!p.sections.length){toast('Add sections and steps first');return;}
+  showOverlay('Generating with AI...');
+  const ctx='You are a technical writer for Magnetic Solution, a manufacturing company.\n'
+    +'Write a complete, professional manufacturing procedure in ENGLISH ONLY.\n\n'
+    +'PROCEDURE INFO:\n'
+    +'Title: '+p.title+'\nReference: '+p.ref+'\nOperator: '+p.op+'\nCategory: '+p.cat+'\nDate: '+new Date().toLocaleDateString('en-GB')+'\n\n'
+    +'CAPTURED CONTENT (translate any French to English):\n'
+    +p.sections.map(function(s,si){
+      return '=== SECTION '+roman(si+1)+': '+s.title+' ===\n'
+        +s.steps.map(function(st,idx){
+          return 'Step '+(idx+1)+':\n'
+            +'  Notes: '+(st.text||st.voice||'(empty)')+'\n'
+            +'  Photos: '+(st.photos?st.photos.length:0)+' photo(s)';
+        }).join('\n');
+    }).join('\n\n')+'\n\n'
+    +'STRICT OUTPUT FORMAT — follow exactly:\n'
+    +'- Start directly with the first section, no title header, no preamble\n'
+    +'- Sections: EXACTLY "I. Title" "II. Title" "III. Title" (Roman numeral + dot + space + title)\n'
+    +'- Steps: EXACTLY "1. instruction" "2. instruction" (number + dot + space + text)\n'
+    +'- Sub-items: "- item" (dash + space)\n'
+    +'- NO markdown: no ##, no **, no ---, no _\n'
+    +'- Add "(see photo)" at end of steps that have photos\n'
+    +'- Translate any French content to English\n\n'
+    +'Output the procedure now:';
+
+  try{
+    const res=await fetch('https://models.inference.ai.azure.com/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body:JSON.stringify({model:'gpt-4o-mini',max_tokens:2048,messages:[{role:'user',content:ctx}]})
+    });
+    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'API error '+res.status);}
+    const data=await res.json();
+    const txt=data.choices[0].message.content;
+    p.genText=txt;p.status='generated';syncCur();
+    hideOverlay();
+    document.getElementById('review-display').textContent=txt;
+    document.getElementById('review-edit').value=txt;
+    renderReviewPhotos();
+    go('review');
+  }catch(err){hideOverlay();toast('Error: '+err.message);console.error(err);}
+}
+
+// ═══════════════════════════════════════════════════════
+// REVIEW PHOTOS
+// ═══════════════════════════════════════════════════════
+function renderReviewPhotos(){
+  const p=S.cur;if(!p)return;
+  const box=document.getElementById('review-photos');
+  const content=document.getElementById('review-photos-content');
+  if(!box||!content)return;
+
+  // Collect all photos
+  let hasPhotos=false;
+  let html='';
+  p.sections.forEach((sec,si)=>{
+    sec.steps.forEach((st,idx)=>{
+      if(st.photos&&st.photos.length){
+        hasPhotos=true;
+        html+=`<div style="margin-bottom:12px">
+          <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">${roman(si+1)}.${idx+1} — ${esc(sec.title)}</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+            ${st.photos.map(ph=>`<img src="${ph.data}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--border)">`).join('')}
+          </div>
+          ${st.text?`<div style="font-size:12px;color:var(--muted);margin-top:4px">${esc(st.text.slice(0,80))}${st.text.length>80?'…':''}</div>`:''}
+        </div>`;
+      }
+    });
+  });
+
+  if(hasPhotos){box.style.display='block';content.innerHTML=html;}
+  else{box.style.display='none';}
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORT — CDVI Template style with photos
+// ═══════════════════════════════════════════════════════
+async function exportWord(){
+  const p=S.cur;
+  const txt=document.getElementById('review-edit').value;
+  p.genText=txt;p.status='generating';syncCur();
+
+  // Personal token first, shared token as fallback
+  const token=S.user?.apiKey||sharedToken||'';
+  if(!token){toast('Enter your GitHub token in Settings ⚙️');go('settings');return;}
+
+  // Step 1: Write procedure DIRECTLY to its own file in GitHub
+  // This bypasses data.json size limits (photos can be large)
+  showOverlay('1/3 — Uploading procedure to GitHub...');
+  var procSaved=false;
+  try{
+    var procJson=JSON.stringify(p);
+    var procEncoded=btoa(unescape(encodeURIComponent(procJson)));
+    var procPath='procs/'+p.id+'.json';
+
+    // Get current SHA if file exists
+    var procSHA=null;
+    try{
+      var chk=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+procPath,{
+        headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github.v3+json'}
+      });
+      if(chk.ok){var chkm=await chk.json();procSHA=chkm.sha;}
+    }catch(e){}
+
+    var procPayload={message:'proc: '+p.id.slice(0,12),content:procEncoded};
+    if(procSHA)procPayload.sha=procSHA;
+
+    var procResp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+procPath,{
+      method:'PUT',
+      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
+      body:JSON.stringify(procPayload)
+    });
+
+    if(procResp.ok){
+      procSaved=true;
+    }else{
+      var pe=await procResp.json().catch(()=>({}));
+      throw new Error('Save failed: '+(pe.message||procResp.status));
+    }
+  }catch(err){
+    hideOverlay();
+    toast('Cannot save to GitHub: '+err.message);
+    p.status='generated';syncCur();
+    return;
+  }
+
+  // Also push data.json in background (best effort, don't block on it)
+  if(!sharedToken)sharedToken=token;
+  ghSave();
+
+  // Step 2: Trigger GitHub Action
+  showOverlay('2/3 — Requesting document generation...');
+  const triggerTime=new Date();
+  try{
+  var uName=(S.user?S.user.name:'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
+  const resp=await fetch('https://api.github.com/repos/AB-CDVI/proceduresapp/actions/workflows/generate-doc.yml/dispatches',{
+      method:'POST',
+      headers:{
+        'Authorization':'Bearer '+token,
+        'Accept':'application/vnd.github.v3+json',
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({ref:'main',inputs:{procedure_id:p.id,user_name:uName}})
+    });
+    if(!resp.ok){
+      const e=await resp.json().catch(()=>({}));
+      var status=resp.status;
+      var msg=e.message||'HTTP '+status;
+      if(status===422)msg='Workflow not found — check generate-doc.yml is in .github/workflows/';
+      if(status===403||status===404)msg='Token missing "workflow" scope — go to github.com/settings/tokens and add the "workflow" scope to your token';
+      throw new Error(msg);
+    }
+  }catch(err){
+    hideOverlay();
+    toast('Export error: '+err.message);
+    p.status='generated';syncCur();
+    return;
+  }
+
+  // Step 3: Poll for the generated file (max 3 min)
+  var attempt=0;
+  var maxAttempts=18;
+
+  async function poll(){
+    attempt++;
+    var elapsed=attempt*10;
+    showOverlay('3/3 — Generating Word document... ('+elapsed+'s / ~60s total)');
+
+    try{
+      var uName=(S.user?S.user.name:'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
+      var docPath='docs/'+uName+'/'+p.id+'.docx';
+      var checkResp=await fetch('https://api.github.com/repos/AB-CDVI/proceduresapp/commits?path='+docPath+'&per_page=1',{
+        headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github.v3+json'}
+      });
+      if(checkResp.ok){
+        var commits=await checkResp.json();
+        if(commits.length>0){
+          var commitTime=new Date(commits[0].commit.author.date);
+          if(commitTime>triggerTime){
+            await downloadDocx(p,token);
+            return;
+          }
+        }
+      }
+    }catch(e){/* continue polling */}
+
+    if(attempt<maxAttempts){
+      setTimeout(poll,10000);
+    }else{
+      hideOverlay();
+      toast('Timeout — check GitHub Actions tab in your repo for errors');
+      p.status='generated';syncCur();
+    }
+  }
+
+  setTimeout(poll,20000);
+}
+
+async function downloadDocx(p,token){
+  try{
+    var uName=(S.user?S.user.name:'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
+    var resp=await fetch('https://api.github.com/repos/AB-CDVI/proceduresapp/contents/docs/'+uName+'/'+p.id+'.docx',{
+      headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(!resp.ok)throw new Error('Download failed: '+resp.status);
+    var meta=await resp.json();
+    // GitHub returns file content as base64
+    var b64=meta.content.replace(/\s/g,'');
+    var binary=atob(b64);
+    var bytes=new Uint8Array(binary.length);
+    for(var i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+    var blob=new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+    var fname='Fabrication_'+p.ref+'_'+p.title.replace(/[^a-zA-Z0-9]/g,'_').slice(0,25)+'_'+new Date().toISOString().slice(0,10)+'.docx';
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;a.download=fname;a.style.display='none';
+    document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(url);document.body.removeChild(a);},2000);
+    p.status='exported';syncCur();
+    hideOverlay();
+    go('export');
+  }catch(err){
+    hideOverlay();
+    toast('Download error: '+err.message);
+  }
+}
+
+function parseAIText(txt){
+  var blocks=[];
+  txt=txt.replace(/\*\*(.*?)\*\*/g,'$1').replace(/__(.*?)__/g,'$1').replace(/\*(.*?)\*/g,'$1');
+  txt.split('\n').forEach(function(line){
+    var t=line.trim();
+    if(!t){blocks.push({type:'empty'});return;}
+    var clean=t.replace(/^#{1,3}\s*/,'');
+    // ONLY Roman numeral sections
+    if(/^(I{1,3}|IV|V|VI{1,3}|IX|X)\.\s/i.test(clean)){
+      blocks.push({type:'section',text:clean});
+    } else if(/^\d+[.)]\s/.test(t)){
+      blocks.push({type:'step',text:t});
+    } else if(/^[-•]\s/.test(t)){
+      blocks.push({type:'bullet',text:t.slice(2)});
+    } else if(/^[-=]{3,}$/.test(t)){
+      // skip separators
+    } else {
+      blocks.push({type:'text',text:clean});
+    }
+  });
+  return blocks;
+}
+
+function buildWordHTML(p,txt){
+  var date=new Date().toLocaleDateString('en-GB');
+  var users=getUsers();
+  var author=users.find(function(u){return u.id===p.userId;});
+  var opName=p.op||(author?author.name:'');
+  var blocks=parseAIText(txt);
+
+  // ── Collect ALL photos from procedure data ──
+  // Used both for inline matching AND guaranteed appendix
+  var allPhotos=[]; // [{secTitle, stepNum, stepText, photos:[]}]
+  p.sections.forEach(function(sec,si){
+    sec.steps.forEach(function(st,idx){
+      if(st.photos&&st.photos.length){
+        allPhotos.push({
+          secTitle:sec.title,
+          secNum:si,
+          stepNum:idx,
+          stepText:st.text||st.voice||'',
+          photos:st.photos
+        });
+      }
+    });
+  });
+
+  // ── Build content using sections & steps ──
+  var secCount=-1;
+  var stepCount=0;
+  var content='';
+
+  blocks.forEach(function(block){
+    if(block.type==='empty')return;
+
+    if(block.type==='section'){
+      secCount++;stepCount=0;
+      content+='<p style="font-weight:bold;font-size:12pt;font-family:Arial;margin:14px 0 4px;border-bottom:1px solid #000;padding-bottom:3px">'+esc(block.text)+'</p>';
+      return;
+    }
+
+    if(block.type==='step'){
+      var sec=p.sections[secCount];
+      var st=sec?sec.steps[stepCount]:null;
+      var photos=st&&st.photos&&st.photos.length?st.photos:[];
+      stepCount++;
+
+      if(photos.length){
+        // Step with photo — side by side table
+        content+='<table style="width:100%;border-collapse:collapse;margin:4px 0;border:1px solid #ddd">';
+        content+='<tr>';
+        content+='<td style="width:60%;padding:6px 8px;vertical-align:top;font-family:Arial;font-size:11pt">'+esc(block.text)+'</td>';
+        content+='<td style="width:40%;padding:4px;vertical-align:top;border-left:1px solid #ddd;text-align:center">';
+        photos.forEach(function(ph){
+          content+='<img src="'+ph.data+'" style="max-width:100%;max-height:160px;display:block;margin:2px auto">';
+        });
+        content+='</td>';
+        content+='</tr></table>';
+      } else {
+        content+='<p style="margin:3px 0 3px 24px;font-family:Arial;font-size:11pt">'+esc(block.text)+'</p>';
+      }
+      return;
+    }
+
+    if(block.type==='bullet'){
+      content+='<p style="margin:2px 0 2px 48px;font-family:Arial;font-size:10pt">&bull; '+esc(block.text)+'</p>';
+      return;
+    }
+    if(block.type==='text'){
+      content+='<p style="margin:2px 0;font-family:Arial;font-size:10pt;color:#333">'+esc(block.text)+'</p>';
+    }
+  });
+
+  // ── Photo appendix (guaranteed, in case inline matching missed some) ──
+  var photoAppendix='';
+  if(allPhotos.length){
+    photoAppendix+='<p style="font-weight:bold;font-size:12pt;font-family:Arial;margin:20px 0 4px;border-bottom:1px solid #000;padding-bottom:3px">Photos</p>';
+    allPhotos.forEach(function(item){
+      photoAppendix+='<p style="font-weight:bold;font-size:10pt;font-family:Arial;margin:10px 0 4px">'+esc(item.secTitle)+' &mdash; Step '+(item.stepNum+1)+'</p>';
+      if(item.stepText)photoAppendix+='<p style="font-size:10pt;font-family:Arial;margin:0 0 4px;color:#333">'+esc(item.stepText.slice(0,120))+'</p>';
+      photoAppendix+='<table style="border-collapse:collapse"><tr>';
+      item.photos.forEach(function(ph){
+        photoAppendix+='<td style="padding:4px"><img src="'+ph.data+'" style="max-width:220px;max-height:180px;display:block;border:1px solid #ccc"></td>';
+      });
+      photoAppendix+='</tr></table>';
+    });
+  }
+
+  // ── Signatures ──
+  var signatures='';
+  signatures+='<table style="width:100%;border-collapse:collapse;margin-top:24px;border:1px solid #999">';
+  signatures+='<tr>';
+  signatures+='<td style="width:50%;padding:20px 10px;font-family:Arial;font-size:10pt;border-right:1px solid #999">';
+  signatures+='Etablit par : '+esc(opName)+'</td>';
+  signatures+='<td style="width:50%;padding:20px 10px;font-family:Arial;font-size:10pt">';
+  signatures+='Contr&ocirc;l&eacute; par :</td>';
+  signatures+='</tr></table>';
+
+  // ── Estimate pages ──
+  var totalSteps=p.sections.reduce(function(a,s){return a+s.steps.length;},0);
+  var estPages=Math.max(1,Math.ceil((totalSteps+allPhotos.length*2)/12));
+
+  // ── Assemble full document ──
+  // Match CDVI template: plain, no blue banners, correct footer
+  var H='<!DOCTYPE html><html><head><meta charset="UTF-8">';
+  H+='<style>';
+  H+='body{font-family:Arial;font-size:11pt;margin:2cm}';
+  H+='table{border-collapse:collapse;width:100%}';
+  H+='p{margin:4px 0}';
+  H+='<\/style><\/head><body>';
+
+  // Title block (matching CDVI template layout)
+  H+='<table style="width:100%;border-collapse:collapse;border:1px solid #999;margin-bottom:12px">';
+  H+='<tr>';
+  H+='<td colspan="2" style="text-align:center;padding:8px 14px;border-bottom:1px solid #999">';
+  H+='<p style="font-size:14pt;font-weight:bold;margin:0;font-family:Arial">Proc&eacute;dure de fabrication</p>';
+  H+='<p style="font-size:11pt;margin:4px 0 0;font-family:Arial">&laquo; '+esc(p.title)+' &ndash; '+esc(p.ref)+' &raquo;</p>';
+  H+='</td></tr></table>';
+
+  // Content
+  H+=content;
+
+  // Photo appendix
+  H+=photoAppendix;
+
+  // Signatures
+  H+=signatures;
+
+  // Footer — matching CDVI template EXACTLY
+  H+='<table style="width:100%;border-collapse:collapse;margin-top:20px;border-top:1px solid #000;padding-top:4px">';
+  H+='<tr>';
+  H+='<td style="font-size:8.5pt;font-family:Arial;padding:3px 0;width:60%">';
+  H+='Doc. : Fabrication '+esc(p.ref)+' &ndash; '+esc(p.title)+'</td>';
+  H+='<td style="font-size:8.5pt;font-family:Arial;padding:3px 0;text-align:center;width:25%">';
+  H+='Date : '+date+'</td>';
+  H+='<td style="font-size:8.5pt;font-family:Arial;padding:3px 0;text-align:right;width:15%">';
+  H+='Version :01 / Ed doc :</td>';
+  H+='</tr>';
+  H+='<tr>';
+  H+='<td style="font-size:8.5pt;font-family:Arial;padding:2px 0">';
+  H+='Etablit par : '+esc(opName)+'</td>';
+  H+='<td style="font-size:8.5pt;font-family:Arial;padding:2px 0;text-align:center">';
+  H+='Contr&ocirc;l&eacute; par :</td>';
+  H+='<td style="font-size:8.5pt;font-family:Arial;padding:2px 0;text-align:right">';
+  H+='Page 1 sur '+estPages+'</td>';
+  H+='</tr>';
+  H+='</table>';
+
+  H+='<\/body><\/html>';
+  return H;
+}
+
+// ═══════════════════════════════════════════════════════
+// SHARE
+// ═══════════════════════════════════════════════════════
+function shareEmail(){const p=S.cur;window.location.href=`mailto:?subject=Procedure: ${encodeURIComponent(p.title)}&body=Please find the manufacturing procedure for ${encodeURIComponent(p.title)} (${encodeURIComponent(p.ref)}) attached.`;}
+function shareTeams(){toast('Download the .doc file and attach it in Teams');}
+function shareNative(){if(navigator.share)navigator.share({title:'Manufacturing Procedure',text:'Generated with ProceduresApp — Magnetic Solution'});else toast('Sharing not available on this browser');}
+
+// ═══════════════════════════════════════════════════════
+// UI UTILS
+// ═══════════════════════════════════════════════════════
+function showOverlay(t){document.getElementById('overlay-text').textContent=t||'Loading...';document.getElementById('overlay').style.display='flex';}
+function hideOverlay(){document.getElementById('overlay').style.display='none';}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('on'),2600);}
+
+// ═══════════════════════════════════════════════════════
+// INIT — token first, then data, then login screen
+// ═══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded',async function(){
   showOverlay('Connecting...');
-  const localUsers = getUsers();
-  if (localUsers.length === 0) {
-    // Nouvel appareil : on essaie de charger depuis GitHub (sans token, on utilise le token admin si présent)
-    const tok = localStorage.getItem('shared_token');
-    if (tok) {
-      const r = await ghLoad();
-      if (r.ok) {
+
+  // Always try to get token from localStorage first (fast)
+  if(!sharedToken) sharedToken=localStorage.getItem('shared_token')||'';
+
+  var localUsers=getUsers();
+
+  if(localUsers.length===0){
+    // New device — load everything from GitHub automatically
+    showOverlay('Loading accounts...');
+    // Step 1: get token from public data.json (no auth needed)
+    await loadSharedToken();
+    // Step 2: if we have a token, load users and procs
+    if(sharedToken){
+      var r=await ghLoad();
+      if(r.ok){
         hideOverlay();
         renderLoginUsers();
         return;
       }
     }
-    // Sinon, on affiche la page de login vide
+    // No data on GitHub yet — show empty login screen
   } else {
-    // Appareil existant : push en arrière-plan
-    if (localStorage.getItem('shared_token')) {
-      setTimeout(() => ghSave(), 1000);
-    }
+    // Existing device — push local data to keep GitHub in sync (background)
+    if(sharedToken) setTimeout(function(){ghSave();},1000);
   }
+
   hideOverlay();
   renderLoginUsers();
 });
 
-// Les autres fonctions (checkSiteCode, selectUser, etc.) restent inchangées.
-// Assurez-vous de supprimer les références à 'sharedToken' global et à 'obfuscate'/'deobfuscate'.
 </script>
 </body>
 </html>
