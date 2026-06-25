@@ -7,6 +7,11 @@ on:
         description: 'Procedure ID to generate'
         required: true
         type: string
+      user_name:
+        description: 'Username for output subfolder'
+        required: false
+        type: string
+        default: 'unknown'
 
 permissions:
   contents: write
@@ -31,12 +36,12 @@ jobs:
         run: npm install docx@8.5.0
 
       - name: Generate Word document
-        run: node generate.js "${{ inputs.procedure_id }}"
+        run: node generate.js "${{ inputs.procedure_id }}" "${{ inputs.user_name }}"
 
       - name: Commit and push document
         run: |
           git config user.name "ProceduresApp Bot"
           git config user.email "bot@proceduresapp.local"
           git add docs/
-          git diff --cached --quiet || git commit -m "doc: generate ${{ inputs.procedure_id }}"
+          git diff --cached --quiet || git commit -m "doc: ${{ inputs.user_name }}/${{ inputs.procedure_id }}"
           git push
