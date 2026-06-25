@@ -8,12 +8,13 @@ const path = require('path');
 
 const procId = process.argv[2];
 if (!procId) { console.error('No procedure ID provided'); process.exit(1); }
-// userName passed from the app (S.user.name) — reliable, no lookup needed
-const userName = (process.argv[3] || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
+
+// Normaliser le nom d'utilisateur (supprimer les accents, caractères spéciaux)
+let userName = (process.argv[3] || 'unknown').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+userName = userName.replace(/[^a-zA-Z0-9_-]/g, '_');
 console.log('User folder:', userName);
 
 // Try reading procedure from its own file first (procs/[id].json)
-// This is more reliable than data.json which may not have the latest data
 const procFilePath = path.join(__dirname, 'procs', procId + '.json');
 const dataPath = path.join(__dirname, 'data.json');
 
@@ -79,18 +80,22 @@ function parseText(txt) {
   return blocks;
 }
 
-// ─── Image helper ─────────────────────────────────────────────────────────────
+// ─── Image helper (avec gestion d'erreur) ────────────────────────────────────
 function makeImage(ph, w, h) {
   try {
     const mime = ph.data.split(';')[0].split('/')[1]; // jpeg or png
     const b64 = ph.data.split(',')[1];
+    if (!b64) return null;
     const buf = Buffer.from(b64, 'base64');
     return new ImageRun({
       data: buf,
       transformation: { width: w, height: h },
       type: mime === 'jpeg' ? 'jpg' : 'png'
     });
-  } catch (e) { return null; }
+  } catch (e) {
+    console.warn('Image skipped:', e.message);
+    return null;
+  }
 }
 
 // ─── Cell helpers ─────────────────────────────────────────────────────────────
@@ -134,7 +139,7 @@ blocks.forEach(block => {
 
     if (photos.length) {
       const imgCells = photos.slice(0, 2).map(ph => {
-        const img = makeImage(ph, 260, 195); // larger inline photos
+        const img = makeImage(ph, 260, 195);
         return img ? new Paragraph({ alignment: AlignmentType.CENTER, children: [img] }) : null;
       }).filter(Boolean);
 
@@ -217,7 +222,7 @@ if (allPhotos.length > inlinePhotoCount) {
       }));
     }
     item.st.photos.forEach(ph => {
-      const img = makeImage(ph, 400, 300); // larger appendix photos
+      const img = makeImage(ph, 400, 300);
       if (img) photoChildren.push(new Paragraph({ spacing: { before: 40, after: 40 }, children: [img] }));
     });
   });
