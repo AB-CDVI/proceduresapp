@@ -168,7 +168,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div id="user-list"></div>
         <div style="text-align:center;margin-top:16px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-s btn-sm" onclick="showAddUser()">+ Create account</button>
-          <button class="btn btn-s btn-sm" id="btn-load-gh" style="display:none" onclick="loadFromGitHubLogin()">☁️ Load accounts from GitHub</button>
+          <button class="btn btn-s btn-sm" id="btn-load-gh" style="display:none" onclick="showLoadFromGH()">☁️ Load accounts from GitHub</button>
+        </div>
+      </div>
+
+      <!-- Load from GitHub panel (shown when no token cached) -->
+      <div id="load-gh-box" style="display:none;margin-top:16px">
+        <div class="login-card">
+          <div class="login-title">☁️ Load from GitHub</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5">
+            Enter the GitHub token to load accounts from this device for the first time.
+            <br>The admin has this token.
+          </div>
+          <div class="fg">
+            <label class="fl">GitHub Token</label>
+            <input type="text" id="bootstrap-token" class="fi" placeholder="ghp_..." style="font-family:monospace;font-size:13px" autocomplete="off"/>
+          </div>
+          <button class="btn btn-p btn-full" onclick="loadFromGitHubLogin()">Load accounts →</button>
+          <button class="btn btn-s btn-full" style="margin-top:8px" onclick="document.getElementById('load-gh-box').style.display='none'">Cancel</button>
         </div>
       </div>
 
@@ -756,15 +773,46 @@ function renderLoginUsers(){
     </button>`).join('');
 }
 
+function showLoadFromGH(){
+  loadFromGitHubLogin();
+}
+
 async function loadFromGitHubLogin(){
   showOverlay('Loading accounts from GitHub...');
-  await loadSharedToken();
-  if(!sharedToken){hideOverlay();toast('No token available — enter it after creating an account');return;}
-  const result=await ghLoad();
+
+  // Check for manually entered bootstrap token (fallback only)
+  var bootstrapInp=document.getElementById('bootstrap-token');
+  var bootstrapTok=bootstrapInp?bootstrapInp.value.trim():'';
+  if(bootstrapTok){
+    sharedToken=bootstrapTok;
+    localStorage.setItem('shared_token',bootstrapTok);
+  }
+
+  // Try to get token from public data.json
+  if(!sharedToken) await loadSharedToken();
+
+  if(!sharedToken){
+    hideOverlay();
+    // Show manual token input as fallback
+    document.getElementById('load-gh-box').style.display='block';
+    toast('Token not found — enter it below (ask your admin)');
+    return;
+  }
+
+  var result=await ghLoad();
   hideOverlay();
-  if(result.ok){renderLoginUsers();toast('✓ Accounts loaded from GitHub');}
-  else if(result.reason==='not_found'){toast('No data on GitHub yet');}
-  else toast('Error: '+result.reason);
+  if(result.ok){
+    document.getElementById('load-gh-box').style.display='none';
+    renderLoginUsers();
+    toast('✓ Accounts loaded');
+  } else if(result.reason==='not_found'){
+    toast('No data on GitHub yet — admin must log in first from their device');
+  } else if(result.reason==='auth_error'){
+    toast('Token error ('+result.status+') — enter a valid token below');
+    document.getElementById('load-gh-box').style.display='block';
+  } else {
+    toast('Error: '+result.reason);
+  }
 }
 
 function selectUser(id){
@@ -1775,15 +1823,29 @@ function toast(msg){const el=document.getElementById('toast');el.textContent=msg
 window.addEventListener('DOMContentLoaded',async function(){
   showOverlay('Connecting...');
 
-  // Load shared token only (from localStorage — fast, no network needed)
-  // We do NOT pull from GitHub automatically — local data is the source of truth
-  // GitHub is a push-only backup; users pull explicitly via "Load from GitHub"
+  // Always try to get token from localStorage first (fast)
   if(!sharedToken) sharedToken=localStorage.getItem('shared_token')||'';
 
-  // Also try to get token from data.json if not in localStorage (new device, no accounts yet)
   var localUsers=getUsers();
-  if(!sharedToken||localUsers.length===0){
+
+  if(localUsers.length===0){
+    // New device — load everything from GitHub automatically
+    showOverlay('Loading accounts...');
+    // Step 1: get token from public data.json (no auth needed)
     await loadSharedToken();
+    // Step 2: if we have a token, load users and procs
+    if(sharedToken){
+      var r=await ghLoad();
+      if(r.ok){
+        hideOverlay();
+        renderLoginUsers();
+        return;
+      }
+    }
+    // No data on GitHub yet — show empty login screen
+  } else {
+    // Existing device — push local data to keep GitHub in sync (background)
+    if(sharedToken) setTimeout(function(){ghSave();},1000);
   }
 
   hideOverlay();
