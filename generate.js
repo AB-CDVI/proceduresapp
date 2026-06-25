@@ -9,29 +9,46 @@ const path = require('path');
 const procId = process.argv[2];
 if (!procId) { console.error('No procedure ID provided'); process.exit(1); }
 
+// Try reading procedure from its own file first (procs/[id].json)
+// This is more reliable than data.json which may not have the latest data
+const procFilePath = path.join(__dirname, 'procs', procId + '.json');
 const dataPath = path.join(__dirname, 'data.json');
-if (!fs.existsSync(dataPath)) { console.error('data.json not found in repo root'); process.exit(1); }
 
-// Read and parse data.json
-let data;
-try {
-  const raw = fs.readFileSync(dataPath, 'utf8');
-  data = JSON.parse(raw);
-} catch(e) {
-  console.error('Failed to parse data.json:', e.message);
-  process.exit(1);
+let proc = null;
+let users = [];
+
+// Read from procs/[id].json (written directly by exportWord)
+if (fs.existsSync(procFilePath)) {
+  try {
+    proc = JSON.parse(fs.readFileSync(procFilePath, 'utf8'));
+    console.log('Procedure loaded from procs/' + procId + '.json');
+  } catch(e) {
+    console.warn('Failed to parse procs file:', e.message);
+  }
 }
 
-console.log('data.json loaded — users:', (data.users||[]).length, 'procs:', (data.procs||[]).length);
+// Read users from data.json
+if (fs.existsSync(dataPath)) {
+  try {
+    const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+    users = data.users || [];
+    console.log('data.json loaded — users:', users.length);
+    // Fallback: try to find procedure in data.json if not found in procs file
+    if (!proc) {
+      proc = (data.procs || []).find(p => p.id === procId);
+      if (proc) console.log('Procedure found in data.json');
+    }
+  } catch(e) {
+    console.warn('Failed to parse data.json:', e.message);
+  }
+}
 
-const proc = (data.procs || []).find(p => p.id === procId);
 if (!proc) {
   console.error('Procedure not found:', procId);
-  console.error('Available IDs:', (data.procs||[]).map(p=>p.id).join(', ')||'none');
+  console.error('Checked: procs/' + procId + '.json and data.json');
   process.exit(1);
 }
 
-const users = data.users || [];
 const author = users.find(u => u.id === proc.userId);
 const opName = proc.op || (author ? author.name : '');
 const date = new Date().toLocaleDateString('en-GB');
