@@ -604,19 +604,35 @@ async function ghPutFile(path,content,tok){
   return resp.ok;
 }
 
-// ─── Load token (no auth needed — public API) ───────────
+// ─── Write token to dedicated st file (tiny, no parsing issues) ─
+async function ghWriteToken(tok){
+  if(!tok)return;
+  try{
+    // Store the token obfuscated in a tiny dedicated file
+    // File content = btoa(token), sent to GitHub as btoa(btoa(token))
+    var fileContent=obfuscate(tok); // = btoa(token)
+    var ghContent=btoa(fileContent); // = btoa(btoa(token)) for GitHub API
+    await ghPutFile('st',ghContent,tok);
+  }catch(e){console.warn('ghWriteToken:',e);}
+}
+
+// ─── Load token from st file (no auth, public read) ──────────────
 async function loadSharedToken(){
   if(sharedToken)return true;
   try{
-    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
+    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/st',{
       headers:{'Accept':'application/vnd.github.v3+json'}
     });
     if(!resp.ok)return false;
     var meta=await resp.json();
-    var raw=atob(meta.content.replace(/\s/g,''));
-    var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
-    var data=JSON.parse(decoded);
-    if(data.st){var tok=deobfuscate(data.st);if(tok){sharedToken=tok;localStorage.setItem('shared_token',tok);return true;}}
+    // meta.content = btoa(file_content) = btoa(btoa(token))
+    var fileContent=atob(meta.content.replace(/\s/g,'')); // = btoa(token)
+    var tok=deobfuscate(fileContent); // = atob(btoa(token)) = token
+    if(tok&&tok.length>10){
+      sharedToken=tok;
+      localStorage.setItem('shared_token',tok);
+      return true;
+    }
   }catch(e){console.warn('loadSharedToken:',e);}
   return false;
 }
@@ -1024,20 +1040,25 @@ function logout(){
 async function saveSettings(){
   if(!S.user)return;
 
-  // ── Personal token (all users) ─────────────────────────────────────────────
+  // ── Personal token (all users) ────────────────────────────────────────────
   const personalTok=document.getElementById('inp-personal-apikey').value.trim();
   if(personalTok&&personalTok.length>10){
     S.user.apiKey=personalTok;
+    sharedToken=personalTok;
+    localStorage.setItem('shared_token',personalTok);
     const users=getUsers();
     const idx=users.findIndex(u=>u.id===S.user.id);
     if(idx>=0){users[idx].apiKey=personalTok;}
     localStorage.setItem('ms_users',JSON.stringify(users));
-    await ghSave(); // syncs token to GitHub with obfuscation
-    // Update status
+    showOverlay('Saving token...');
+    // Write dedicated st file (allows other devices to load without auth)
+    await ghWriteToken(personalTok);
+    await ghSave();
+    hideOverlay();
     const pStatus=document.getElementById('personal-token-status');
     if(pStatus){pStatus.style.background='#DCFCE7';pStatus.style.color='#15803D';pStatus.textContent='✓ Token saved — '+personalTok.slice(0,8)+'••••••••';}
     document.getElementById('inp-personal-apikey').value='';
-    toast('✓ Token saved');
+    toast('✓ Token saved — other devices can now sync automatically');
     return;
   }
 
@@ -1099,16 +1120,18 @@ async function manualSync(){
   if(!tok){toast('No token — enter it in Settings');go('settings');return;}
   if(!sharedToken)sharedToken=tok;
   showOverlay('Pushing all data to GitHub...');
+  // Ensure st file exists (token readable without auth on any device)
+  await ghWriteToken(tok);
   // Push users + procIds to data.json
   await ghSave();
   // Push all individual procedure files in parallel
   var procs=getProcs();
   if(procs.length>0){
-    showOverlay('Pushing '+procs.length+' procedures...');
+    showOverlay('Pushing '+procs.length+' procedure(s)...');
     await Promise.all(procs.map(function(p){return ghSaveProc(p);}));
   }
   hideOverlay();
-  toast('✓ All data pushed to GitHub — other devices can now sync');
+  toast('✓ Pushed — other devices will sync automatically');
 }
 
 function clearMyData(){
