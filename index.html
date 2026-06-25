@@ -606,34 +606,50 @@ async function ghPutFile(path,content,tok){
 
 // ─── Write token to dedicated st file (tiny, no parsing issues) ─
 async function ghWriteToken(tok){
-  if(!tok)return;
+  if(!tok)return false;
   try{
-    // Store the token obfuscated in a tiny dedicated file
-    // File content = btoa(token), sent to GitHub as btoa(btoa(token))
-    var fileContent=obfuscate(tok); // = btoa(token)
-    var ghContent=btoa(fileContent); // = btoa(btoa(token)) for GitHub API
-    await ghPutFile('st',ghContent,tok);
-  }catch(e){console.warn('ghWriteToken:',e);}
+    var fileContent=obfuscate(tok);
+    var ghContent=btoa(fileContent);
+    var ok=await ghPutFile('st',ghContent,tok);
+    if(!ok) console.warn('ghWriteToken: ghPutFile returned false');
+    return ok;
+  }catch(e){console.warn('ghWriteToken error:',e);return false;}
 }
 
-// ─── Load token from st file (no auth, public read) ──────────────
+// ─── Load token — tries st file first, then data.json as fallback ──
 async function loadSharedToken(){
   if(sharedToken)return true;
+
+  // Attempt 1: read tiny st file (written by ghWriteToken)
   try{
-    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/st',{
+    var r1=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/st',{
       headers:{'Accept':'application/vnd.github.v3+json'}
     });
-    if(!resp.ok)return false;
-    var meta=await resp.json();
-    // meta.content = btoa(file_content) = btoa(btoa(token))
-    var fileContent=atob(meta.content.replace(/\s/g,'')); // = btoa(token)
-    var tok=deobfuscate(fileContent); // = atob(btoa(token)) = token
-    if(tok&&tok.length>10){
-      sharedToken=tok;
-      localStorage.setItem('shared_token',tok);
-      return true;
+    if(r1.ok){
+      var m1=await r1.json();
+      var fc=atob(m1.content.replace(/\s/g,''));
+      var t1=deobfuscate(fc);
+      if(t1&&t1.length>10){sharedToken=t1;localStorage.setItem('shared_token',t1);return true;}
     }
-  }catch(e){console.warn('loadSharedToken:',e);}
+  }catch(e){console.warn('loadSharedToken/st:',e);}
+
+  // Attempt 2: read data.json (also contains st field)
+  try{
+    var r2=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
+      headers:{'Accept':'application/vnd.github.v3+json'}
+    });
+    if(r2.ok){
+      var m2=await r2.json();
+      var raw=atob(m2.content.replace(/\s/g,''));
+      var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
+      var data=JSON.parse(decoded);
+      if(data.st){
+        var t2=deobfuscate(data.st);
+        if(t2&&t2.length>10){sharedToken=t2;localStorage.setItem('shared_token',t2);return true;}
+      }
+    }
+  }catch(e){console.warn('loadSharedToken/data.json:',e);}
+
   return false;
 }
 
@@ -885,7 +901,7 @@ async function loadFromGitHubLogin(){
     hideOverlay();
     // Show manual token input as fallback
     document.getElementById('load-gh-box').style.display='block';
-    toast('Token not found — enter it below (ask your admin)');
+    toast('⚠️ Admin: Settings → enter token → Save → Push to GitHub first');
     return;
   }
 
@@ -1051,14 +1067,17 @@ async function saveSettings(){
     if(idx>=0){users[idx].apiKey=personalTok;}
     localStorage.setItem('ms_users',JSON.stringify(users));
     showOverlay('Saving token...');
-    // Write dedicated st file (allows other devices to load without auth)
-    await ghWriteToken(personalTok);
+    var stOk=await ghWriteToken(personalTok);
     await ghSave();
     hideOverlay();
     const pStatus=document.getElementById('personal-token-status');
     if(pStatus){pStatus.style.background='#DCFCE7';pStatus.style.color='#15803D';pStatus.textContent='✓ Token saved — '+personalTok.slice(0,8)+'••••••••';}
     document.getElementById('inp-personal-apikey').value='';
-    toast('✓ Token saved — other devices can now sync automatically');
+    if(stOk){
+      toast('✓ Token saved — other devices will sync automatically');
+    }else{
+      toast('⚠️ Token saved locally but GitHub write failed — try Push to GitHub');
+    }
     return;
   }
 
