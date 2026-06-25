@@ -148,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.14</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.15</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -236,8 +236,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.14</div>
+      <div class="hdr-sub">Magnetic Solution — v1.15</div>
     </div>
+    <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:4px" title="Sync status"></span>
     <div class="user-chip" onclick="logout()">
       <div class="user-chip-av" id="hdr-avatar"></div>
       <span id="hdr-username" style="color:#fff"></span>
@@ -540,157 +541,218 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
-// Token is stored in data.json itself (field "st") and read publicly
-// No config.json needed — simpler and no 409 issues
+// ═══════════════════════════════════════════════════════
+// GITHUB SYNC v1.15 — Architecture séparée
+// data.json  → utilisateurs + token (petit fichier, pas de photos)
+// procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
 var GH_REPO='AB-CDVI/proceduresapp';
 var GH_DATA='data.json';
 var GH_SHA=null;
 var sharedToken=localStorage.getItem('shared_token')||'';
 
-// STEP 1 — Load token from public raw URL (no auth, cached)
-// data.json is public — anyone can read it, token is obfuscated
+// ─── Sync status indicator ──────────────────────────────
+var _syncStatus='idle'; // idle | syncing | ok | error
+function setSyncStatus(s){
+  _syncStatus=s;
+  var el=document.getElementById('sync-indicator');
+  if(!el)return;
+  var states={idle:'',syncing:'🔄',ok:'☁️✓',error:'⚠️'};
+  el.textContent=states[s]||'';
+  el.title=s==='ok'?'Synced':s==='syncing'?'Syncing...':s==='error'?'Sync error':'';
+}
+
+// ─── Token utility ──────────────────────────────────────
+function getBestToken(){
+  return (S.user&&S.user.apiKey)||sharedToken||localStorage.getItem('shared_token')||'';
+}
+
+// ─── GitHub API helper ──────────────────────────────────
+async function ghPutFile(path,content,tok){
+  // Get current SHA (needed for updates)
+  var sha=null;
+  try{
+    var r=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+path,{
+      headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(r.ok){var m=await r.json();sha=m.sha;}
+  }catch(e){}
+
+  var payload={message:'sync: '+path.split('/').pop().slice(0,20),content:content};
+  if(sha)payload.sha=sha;
+
+  var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+path,{
+    method:'PUT',
+    headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
+    body:JSON.stringify(payload)
+  });
+
+  // 409 = stale SHA → retry once with fresh SHA
+  if(resp.status===409){
+    try{
+      var r2=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+path,{
+        headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
+      });
+      if(r2.ok){var m2=await r2.json();sha=m2.sha;payload.sha=sha;}
+    }catch(e){}
+    resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+path,{
+      method:'PUT',
+      headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
+      body:JSON.stringify(payload)
+    });
+  }
+  return resp.ok;
+}
+
+// ─── Load token (no auth needed — public API) ───────────
 async function loadSharedToken(){
   if(sharedToken)return true;
   try{
-    // Use GitHub API — no CDN cache (unlike raw.githubusercontent.com which caches 5+ min)
-    // Public repos can be read without auth
     var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
       headers:{'Accept':'application/vnd.github.v3+json'}
     });
     if(!resp.ok)return false;
     var meta=await resp.json();
     var raw=atob(meta.content.replace(/\s/g,''));
-    var decoded;
-    try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
+    var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
     var data=JSON.parse(decoded);
-    if(data.st){
-      var tok=deobfuscate(data.st);
-      if(tok){
-        sharedToken=tok;
-        localStorage.setItem('shared_token',tok);
-        return true;
-      }
-    }
+    if(data.st){var tok=deobfuscate(data.st);if(tok){sharedToken=tok;localStorage.setItem('shared_token',tok);return true;}}
   }catch(e){console.warn('loadSharedToken:',e);}
   return false;
 }
 
-// STEP 2 — Load fresh data from GitHub API (auth, no cache)
-async function ghLoad(){
-  if(!sharedToken) sharedToken=localStorage.getItem('shared_token')||'';
-  if(!sharedToken)return{ok:false,reason:'no_token'};
-  try{
-    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
-      headers:{'Authorization':'Bearer '+sharedToken,'Accept':'application/vnd.github.v3+json'}
-    });
-    if(resp.status===404)return{ok:false,reason:'not_found'};
-    if(resp.status===401||resp.status===403)return{ok:false,reason:'auth_error',status:resp.status};
-    if(!resp.ok)return{ok:false,reason:'http_error',status:resp.status};
-    var meta=await resp.json();
-    GH_SHA=meta.sha;
-    var raw=atob(meta.content.replace(/\s/g,''));
-    var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
-    var data=JSON.parse(decoded);
-
-    // ── Token sync (always safe) ─────────────────────────────────────────────
-    if(data.st){var tok=deobfuscate(data.st);if(tok){sharedToken=tok;localStorage.setItem('shared_token',tok);}}
-
-    // ── Timestamp-based merge: only replace if GitHub is NEWER than local ────
-    var ghTime=data.updated?new Date(data.updated).getTime():0;
-    var localTime=parseInt(localStorage.getItem('last_save_time')||'0');
-
-    if(ghTime>localTime){
-      // GitHub has newer data — safe to replace
-      if(data.users){
-        var restoredUsers=data.users.map(function(u){
-          var apiKey=u.oApiKey?deobfuscate(u.oApiKey):'';
-          return Object.assign({},u,{apiKey:apiKey});
-        });
-        localStorage.setItem('ms_users',JSON.stringify(restoredUsers));
-        // Refresh logged-in user
-        if(S.user){
-          var ghUser=restoredUsers.find(function(u){return u.id===S.user.id;});
-          if(ghUser){Object.assign(S.user,ghUser);}
-        }
-      }
-      if(data.procs)localStorage.setItem('ms_procs',JSON.stringify(data.procs));
-      localStorage.setItem('last_save_time',String(ghTime));
-      return{ok:true,action:'replaced'};
-    }else{
-      // Local is newer or equal — push local to GitHub instead
-      ghSave();
-      return{ok:true,action:'pushed'};
-    }
-  }catch(e){console.warn('ghLoad error:',e);return{ok:false,reason:'parse_error',detail:e.message};}
-}
-
-// Get current SHA of data.json (needed to update it)
-async function getDataSHA(){
-  var tok=(S.user&&S.user.apiKey)||sharedToken||localStorage.getItem('shared_token')||'';
-  if(!tok)return null;
-  try{
-    var r=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
-      headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
-    });
-    if(r.ok){var m=await r.json();return m.sha||null;}
-  }catch(e){}
-  return null;
-}
-
-// Save all data (including token) to GitHub — with 409 retry
+// ─── Save users to data.json (small file, no proc content) ─
 async function ghSave(){
-  // Use personal token first, then shared token, then localStorage
-  var tok=(S.user&&S.user.apiKey)||sharedToken||localStorage.getItem('shared_token')||'';
-  if(!tok){console.warn('ghSave: no token available');return;}
-  // Keep sharedToken in sync
-  if(!sharedToken&&tok)sharedToken=tok;
+  var tok=getBestToken();
+  if(!tok){setSyncStatus('error');return;}
+  if(!sharedToken)sharedToken=tok;
+  setSyncStatus('syncing');
   try{
-    if(!GH_SHA)GH_SHA=await getDataSHA();
-
     var rawUsers=getUsers();
     var safeUsers=rawUsers.map(function(u){
-      // Keep all fields including isAdmin; only strip raw apiKey
       var safe=Object.assign({},u,{apiKey:''});
       safe.oApiKey=u.apiKey?obfuscate(u.apiKey):'';
       return safe;
     });
+    // data.json only stores users + procIds + token (no proc content = always small)
     var data={
       users:safeUsers,
-      procs:getProcs(),
+      procIds:getProcs().map(function(p){return p.id;}),
       st:obfuscate(tok),
       updated:new Date().toISOString()
     };
     var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-    var payload={message:'Sync '+new Date().toISOString().slice(0,10),content:encoded};
-    if(GH_SHA)payload.sha=GH_SHA;
+    var ok=await ghPutFile(GH_DATA,encoded,tok);
+    if(ok){setSyncStatus('ok');localStorage.setItem('last_save_time',String(Date.now()));}
+    else setSyncStatus('error');
+  }catch(e){console.warn('ghSave error:',e);setSyncStatus('error');}
+}
 
-    var put=async()=>fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
-      method:'PUT',
-      headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
-      body:JSON.stringify(payload)
+// ─── Save ONE procedure to procs/[id].json ──────────────
+async function ghSaveProc(proc){
+  var tok=getBestToken();
+  if(!tok||!proc)return;
+  try{
+    var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(proc))));
+    await ghPutFile('procs/'+proc.id+'.json',encoded,tok);
+  }catch(e){console.warn('ghSaveProc:',e);}
+}
+
+// ─── Load ONE procedure from GitHub ─────────────────────
+async function ghFetchProc(procId){
+  var tok=getBestToken();
+  if(!tok)return null;
+  try{
+    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/procs/'+procId+'.json',{
+      headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
     });
+    if(!resp.ok)return null;
+    var meta=await resp.json();
+    var raw=atob(meta.content.replace(/\s/g,''));
+    var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
+    return JSON.parse(decoded);
+  }catch(e){return null;}
+}
 
-    var resp=await put();
+// ─── Load all data from GitHub (users + all procedures) ─
+async function ghLoad(){
+  var tok=getBestToken();
+  if(!tok)return{ok:false,reason:'no_token'};
+  try{
+    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
+      headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(resp.status===404)return{ok:false,reason:'not_found'};
+    if(resp.status===401||resp.status===403)return{ok:false,reason:'auth_error',status:resp.status};
+    if(!resp.ok)return{ok:false,reason:'http_error',status:resp.status};
 
-    if(resp.status===409){
-      GH_SHA=await getDataSHA();
-      if(GH_SHA)payload.sha=GH_SHA; else delete payload.sha;
-      resp=await put();
+    var meta=await resp.json();
+    var raw=atob(meta.content.replace(/\s/g,''));
+    var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
+    var data=JSON.parse(decoded);
+
+    // Update shared token
+    if(data.st){var t=deobfuscate(data.st);if(t){sharedToken=t;localStorage.setItem('shared_token',t);}}
+
+    // Merge users — isAdmin is STICKY (once true, always true)
+    if(data.users){
+      var localUsers=getUsers();
+      var merged=data.users.map(function(gu){
+        var lu=localUsers.find(function(u){return u.id===gu.id;});
+        var apiKey=lu&&lu.apiKey?lu.apiKey:(gu.oApiKey?deobfuscate(gu.oApiKey):'');
+        // isAdmin protected: if EITHER local or GitHub has it, keep it
+        var isAdmin=gu.isAdmin||!!(lu&&lu.isAdmin);
+        return Object.assign({},gu,{apiKey:apiKey,isAdmin:isAdmin});
+      });
+      // Preserve local-only users
+      localUsers.forEach(function(lu){
+        if(!merged.find(function(u){return u.id===lu.id;}))merged.push(lu);
+      });
+      localStorage.setItem('ms_users',JSON.stringify(merged));
+      // Refresh S.user if logged in
+      if(S.user){
+        var updated=merged.find(function(u){return u.id===S.user.id;});
+        if(updated)Object.assign(S.user,updated);
+      }
     }
 
-    if(resp.ok){var r=await resp.json();GH_SHA=r.content.sha;localStorage.setItem('last_save_time',String(Date.now()));}
-    else console.warn('ghSave failed:',resp.status,await resp.text().catch(()=>''));
-  }catch(e){console.warn('ghSave error:',e);}
+    // Load procedures — fetch ones not already in localStorage
+    var procIds=data.procIds||[];
+    // Also handle old format where procs were embedded
+    if(!data.procIds&&data.procs&&data.procs.length){
+      var localProcs=getProcs();
+      data.procs.forEach(function(p){
+        if(!localProcs.find(function(lp){return lp.id===p.id;}))localProcs.push(p);
+      });
+      localStorage.setItem('ms_procs',JSON.stringify(localProcs));
+    }else if(procIds.length){
+      var localProcs=getProcs();
+      var missingIds=procIds.filter(function(id){return !localProcs.find(function(p){return p.id===id;});});
+      if(missingIds.length>0){
+        var fetched=await Promise.all(missingIds.map(ghFetchProc));
+        fetched.forEach(function(p){if(p)localProcs.push(p);});
+        localStorage.setItem('ms_procs',JSON.stringify(localProcs));
+      }
+    }
+
+    localStorage.setItem('last_save_time',String(Date.now()));
+    setSyncStatus('ok');
+    return{ok:true};
+  }catch(e){console.warn('ghLoad error:',e);return{ok:false,reason:'parse_error',detail:e.message};}
 }
 
 // ═══════════════════════════════════════════════════════
-// STORAGE — localStorage (cache) + GitHub (source of truth)
+// STORAGE
 // ═══════════════════════════════════════════════════════
 function getUsers(){return JSON.parse(localStorage.getItem('ms_users')||'[]');}
 function saveUsers(u){localStorage.setItem('ms_users',JSON.stringify(u));ghSave();}
 function getProcs(){return JSON.parse(localStorage.getItem('ms_procs')||'[]');}
-function saveProcs(p){localStorage.setItem('ms_procs',JSON.stringify(p));ghSave();}
+function saveProcs(p){
+  localStorage.setItem('ms_procs',JSON.stringify(p));
+  ghSave(); // update procIds list in data.json
+}
+
+
 
 
 
@@ -1033,19 +1095,20 @@ async function testToken(){
 }
 
 async function manualSync(){
-  // "Force sync" = push local data to GitHub
-  // The local device is always the source of truth
-  var tok=(S.user&&S.user.apiKey)||sharedToken||localStorage.getItem('shared_token')||'';
-  if(!tok){
-    toast('No token — enter it in Settings');
-    go('settings');
-    return;
-  }
+  var tok=getBestToken();
+  if(!tok){toast('No token — enter it in Settings');go('settings');return;}
   if(!sharedToken)sharedToken=tok;
-  showOverlay('Pushing data to GitHub...');
+  showOverlay('Pushing all data to GitHub...');
+  // Push users + procIds to data.json
   await ghSave();
+  // Push all individual procedure files in parallel
+  var procs=getProcs();
+  if(procs.length>0){
+    showOverlay('Pushing '+procs.length+' procedures...');
+    await Promise.all(procs.map(function(p){return ghSaveProc(p);}));
+  }
   hideOverlay();
-  toast('✓ Data pushed to GitHub — other devices can now sync');
+  toast('✓ All data pushed to GitHub — other devices can now sync');
 }
 
 function clearMyData(){
@@ -1142,8 +1205,12 @@ function syncCur(){
   const procs=getProcs();
   const idx=procs.findIndex(p=>p.id===S.cur.id);
   if(idx>=0){procs[idx]=S.cur;}
-  else{procs.push(S.cur);} // Add if missing — never lose a procedure
-  saveProcs(procs);
+  else{procs.push(S.cur);}
+  localStorage.setItem('ms_procs',JSON.stringify(procs));
+  // Push individual proc file to GitHub (non-blocking)
+  ghSaveProc(S.cur);
+  // Update procIds list in data.json (non-blocking)
+  ghSave();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1308,27 +1375,34 @@ function toggleVoice(){S.recording?stopVoice():startVoice();}
 
 function startVoice(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){toast('Voice not available on this browser — use Chrome or Safari');return;}
+  if(!SR){toast('Voice not available — use Chrome or Safari');return;}
   const r=new SR();r.continuous=true;r.interimResults=true;r.lang='fr-FR';
   const vbox=document.getElementById('voice-box');
   const existing=vbox.style.color.includes('muted')||vbox.textContent==='Tap "Start" to begin...'?'':vbox.textContent;
-  let final=existing;
+
+  // Track accumulated final text and last processed index to prevent iOS duplicates
+  let finalText=existing;
+  let lastFinalIndex=-1; // prevents reprocessing results already finalized
+
   r.onresult=e=>{
     let interim='';
     for(let i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal)final+=e.results[i][0].transcript+' ';
-      else interim+=e.results[i][0].transcript;
+      if(e.results[i].isFinal){
+        // Only process if we haven't seen this result index before
+        if(i>lastFinalIndex){
+          finalText+=e.results[i][0].transcript+' ';
+          lastFinalIndex=i;
+        }
+      }else{
+        interim+=e.results[i][0].transcript;
+      }
     }
-    vbox.textContent=final+interim;
+    vbox.textContent=finalText+interim;
     vbox.style.color=interim?'var(--orange)':'var(--text)';
     vbox.style.fontStyle='normal';
   };
   r.onerror=()=>stopVoice();
-  r.onend=()=>{
-    // Don't auto-restart — causes duplicate text
-    // If still recording state, just stop gracefully
-    if(S.recording)stopVoice();
-  };
+  r.onend=()=>{if(S.recording)stopVoice();};
   r.start();S.recog=r;S.recording=true;
   document.getElementById('voice-btn').innerHTML='■ Stop';
   document.getElementById('voice-btn').style.background='#FEE2E2';
