@@ -1490,14 +1490,14 @@ async function exportWord(){
   showOverlay('2/3 — Requesting document generation...');
   const triggerTime=new Date();
   try{
-    const resp=await fetch('https://api.github.com/repos/AB-CDVI/proceduresapp/actions/workflows/generate-doc.yml/dispatches',{
+  var uName=(S.user?S.user.name:'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
+  const resp=await fetch('https://api.github.com/repos/AB-CDVI/proceduresapp/actions/workflows/generate-doc.yml/dispatches',{
       method:'POST',
       headers:{
         'Authorization':'Bearer '+token,
         'Accept':'application/vnd.github.v3+json',
         'Content-Type':'application/json'
       },
-      var uName=(S.user?S.user.name:'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
       body:JSON.stringify({ref:'main',inputs:{procedure_id:p.id,user_name:uName}})
     });
     if(!resp.ok){
