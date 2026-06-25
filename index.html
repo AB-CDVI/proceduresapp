@@ -550,17 +550,28 @@ var sharedToken=localStorage.getItem('shared_token')||'';
 // STEP 1 — Load token from public raw URL (no auth, cached)
 // data.json is public — anyone can read it, token is obfuscated
 async function loadSharedToken(){
-  if(sharedToken)return true; // already have it
+  if(sharedToken)return true;
   try{
-    var resp=await fetch('https://raw.githubusercontent.com/'+GH_REPO+'/main/'+GH_DATA+'?t='+Date.now());
+    // Use GitHub API — no CDN cache (unlike raw.githubusercontent.com which caches 5+ min)
+    // Public repos can be read without auth
+    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
+      headers:{'Accept':'application/vnd.github.v3+json'}
+    });
     if(!resp.ok)return false;
-    var data=await resp.json();
+    var meta=await resp.json();
+    var raw=atob(meta.content.replace(/\s/g,''));
+    var decoded;
+    try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
+    var data=JSON.parse(decoded);
     if(data.st){
-      sharedToken=deobfuscate(data.st);
-      localStorage.setItem('shared_token',sharedToken);
-      return true;
+      var tok=deobfuscate(data.st);
+      if(tok){
+        sharedToken=tok;
+        localStorage.setItem('shared_token',tok);
+        return true;
+      }
     }
-  }catch(e){}
+  }catch(e){console.warn('loadSharedToken:',e);}
   return false;
 }
 
