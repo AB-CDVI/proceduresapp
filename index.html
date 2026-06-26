@@ -148,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.21</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.22</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -236,7 +236,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.21</div>
+      <div class="hdr-sub">Magnetic Solution — v1.22</div>
     </div>
     <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:4px" title="Sync status"></span>
     <div class="user-chip" onclick="logout()">
@@ -558,7 +558,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.21 — Architecture séparée
+// GITHUB SYNC v1.22 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -707,10 +707,15 @@ async function ghSaveProc(proc){
     var ok=await ghPutFile('procs/'+proc.id+'.json',encoded,tok);
     if(!ok)return false;
     // Upload photos in parallel — each file is small
+    // Photos are data URLs: "data:image/jpeg;base64,/9j/..."
+    // GitHub API needs raw base64 content — extract the part after the comma
     if(photoJobs.length>0){
       await Promise.all(photoJobs.map(function(job){
-        var b64content=btoa(unescape(encodeURIComponent(job.data)));
-        return ghPutFile(job.path,b64content,tok);
+        var rawB64=job.data.indexOf(',')>=0?job.data.split(',')[1]:job.data;
+        // Store as: MIME_HEADER|base64data so we can reconstruct the data URL on load
+        var mime=job.data.indexOf(',')>=0?job.data.split(',')[0]:'data:image/jpeg;base64';
+        var fileContent=btoa(mime+'|'+rawB64);
+        return ghPutFile(job.path,fileContent,tok);
       }));
     }
     return true;
@@ -753,8 +758,13 @@ async function ghFetchProc(procId){
           if(!pr.ok)return;
           var pm=await pr.json();
           var rawData=atob(pm.content.replace(/\s/g,''));
-          var photoData;try{photoData=decodeURIComponent(escape(rawData));}catch(e){photoData=rawData;}
-          job.ph.data=photoData;
+          // rawData = "data:image/jpeg;base64|/9j/..." — reconstruct proper data URL
+          var pipeIdx=rawData.indexOf('|');
+          if(pipeIdx>=0){
+            job.ph.data=rawData.slice(0,pipeIdx)+','+rawData.slice(pipeIdx+1);
+          } else {
+            job.ph.data=rawData; // fallback
+          }
         }catch(e){console.warn('photo fetch failed:',job.path);}
       }));
     }
