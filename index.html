@@ -148,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.16</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.17</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -236,7 +236,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.16</div>
+      <div class="hdr-sub">Magnetic Solution — v1.17</div>
     </div>
     <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:4px" title="Sync status"></span>
     <div class="user-chip" onclick="logout()">
@@ -542,7 +542,14 @@ function deobfuscate(t){try{return atob(t);}catch(e){return '';}}
 
 function uid(){return '_'+Date.now()+Math.random().toString(36).slice(2,7);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function hashPwd(s){let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return h.toString(36);}
+// Legacy hash (Math.imul) — kept only to detect old-format hashes during migration
+function hashPwdLegacy(s){let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return h.toString(36);}
+// SHA-256 via Web Crypto — async, returns hex string prefixed with 'sha256:'
+async function hashPwd(s){
+  var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
+  var hex=Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+  return 'sha256:'+hex;
+}
 // Keep encrypt/decrypt for password change re-encryption (not for token storage anymore)
 function encryptKey(k,h){if(!k)return '';var r='';for(var i=0;i<k.length;i++)r+=String.fromCharCode(k.charCodeAt(i)^h.charCodeAt(i%h.length));return 'enc:'+btoa(r);}
 function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=atob(e.slice(4));var r='';for(var i=0;i<s.length;i++)r+=String.fromCharCode(s.charCodeAt(i)^h.charCodeAt(i%h.length));return r;}catch(x){return '';}}
@@ -550,7 +557,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.16 — Architecture séparée
+// GITHUB SYNC v1.17 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -920,17 +927,38 @@ function selectUser(id){
   setTimeout(()=>document.getElementById('pwd-inp').focus(),100);
 }
 
-function checkPwd(){
+async function checkPwd(){
   const pwd=document.getElementById('pwd-inp').value;
   if(!pwd){toast('Enter your password');return;}
-  if(hashPwd(pwd)!==loginTarget.pwdHash){toast('Wrong password ❌');return;}
+
+  var stored=loginTarget.pwdHash||'';
+  var match=false;
+
+  if(stored.startsWith('sha256:')){
+    // New format — compare SHA-256 directly
+    var h=await hashPwd(pwd);
+    match=(h===stored);
+  } else {
+    // Legacy format — check with old hash
+    match=(hashPwdLegacy(pwd)===stored);
+    if(match){
+      // Silently migrate to SHA-256 on successful login
+      var newHash=await hashPwd(pwd);
+      loginTarget.pwdHash=newHash;
+      var users=getUsers();
+      var idx=users.findIndex(function(u){return u.id===loginTarget.id;});
+      if(idx>=0){users[idx].pwdHash=newHash;localStorage.setItem('ms_users',JSON.stringify(users));}
+      console.log('Password migrated to SHA-256 for',loginTarget.name);
+    }
+  }
+
+  if(!match){toast('Wrong password ❌');return;}
   S.user=loginTarget;
   updateHeaderUser();
   go('home');
   // Push data to GitHub after login — keeps data.json current for other devices
   var _tok=S.user.apiKey||sharedToken||localStorage.getItem('shared_token')||'';
   if(_tok){
-    if(!sharedToken)sharedToken=_tok;
     setTimeout(function(){ghSave();},800);
   } else if(S.user.isAdmin){
     setTimeout(function(){toast('⚙️ Enter your GitHub token in Settings');go('settings');},1000);
@@ -962,14 +990,16 @@ function createUser(){
   if(users.find(u=>u.name.toLowerCase()===name.toLowerCase())){toast('Name already taken');return;}
   // First user created is admin
   const isAdmin=users.length===0;
-  const u={id:uid(),name,pwdHash:hashPwd(pwd),color:COLORS[users.length%COLORS.length],apiKey:'',isAdmin};
-  users.push(u);
-  saveUsers(users);
-  S.user=u;
-  updateHeaderUser();
-  document.getElementById('add-user-box').style.display='none';
-  go('home');
-  setTimeout(function(){toast('⚙️ Enter your GitHub token in Settings');go('settings');},800);
+  hashPwd(pwd).then(function(pwdHash){
+    const u={id:uid(),name,pwdHash,color:COLORS[users.length%COLORS.length],apiKey:'',isAdmin};
+    users.push(u);
+    saveUsers(users);
+    S.user=u;
+    updateHeaderUser();
+    document.getElementById('add-user-box').style.display='none';
+    go('home');
+    setTimeout(function(){toast('⚙️ Enter your GitHub token in Settings');go('settings');},800);
+  });
 }
 
 function updateHeaderUser(){
@@ -981,14 +1011,24 @@ function updateHeaderUser(){
   nm.textContent=S.user.name;
 }
 
-function changePassword(){
+async function changePassword(){
   const oldPwd=document.getElementById('pwd-old').value;
   const newPwd=document.getElementById('pwd-new1').value;
   const newPwd2=document.getElementById('pwd-new2').value;
-  if(hashPwd(oldPwd)!==S.user.pwdHash){toast('Wrong current password ❌');return;}
   if(newPwd.length<4){toast('New password must be at least 4 characters');return;}
   if(newPwd!==newPwd2){toast('Passwords do not match');return;}
-  const newHash=hashPwd(newPwd);
+
+  // Check old password — support both legacy and SHA-256
+  var stored=S.user.pwdHash||'';
+  var oldMatch=false;
+  if(stored.startsWith('sha256:')){
+    oldMatch=((await hashPwd(oldPwd))===stored);
+  } else {
+    oldMatch=(hashPwdLegacy(oldPwd)===stored);
+  }
+  if(!oldMatch){toast('Wrong current password ❌');return;}
+
+  const newHash=await hashPwd(newPwd);
   S.user.pwdHash=newHash;
   const users=getUsers();
   const idx=users.findIndex(u=>u.id===S.user.id);
@@ -1400,31 +1440,33 @@ function startVoice(){
   if(!SR){toast('Voice not available — use Chrome or Safari');return;}
   const r=new SR();r.continuous=true;r.interimResults=true;r.lang='fr-FR';
   const vbox=document.getElementById('voice-box');
-  const existing=vbox.style.color.includes('muted')||vbox.textContent==='Tap "Start" to begin...'?'':vbox.textContent;
+  const existing=vbox.textContent==='Tap "Start" to begin...'?'':vbox.textContent;
 
-  // Track accumulated final text and last processed index to prevent iOS duplicates
-  let finalText=existing;
-  let lastFinalIndex=-1; // prevents reprocessing results already finalized
+  // Use a Set to track processed final result indices — prevents ALL mobile duplicates
+  // Mobile browsers (iOS/Android) often re-fire onresult with resultIndex=0,
+  // causing previously finalized results to be appended again
+  var processedIndices=new Set();
+  var finalText=existing;
 
-  r.onresult=e=>{
-    let interim='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
+  r.onresult=function(e){
+    var interim='';
+    for(var i=0;i<e.results.length;i++){
       if(e.results[i].isFinal){
-        // Only process if we haven't seen this result index before
-        if(i>lastFinalIndex){
+        if(!processedIndices.has(i)){
+          processedIndices.add(i);
           finalText+=e.results[i][0].transcript+' ';
-          lastFinalIndex=i;
         }
-      }else{
-        interim+=e.results[i][0].transcript;
+      } else {
+        // Only show interim for results at or after current resultIndex
+        if(i>=e.resultIndex) interim+=e.results[i][0].transcript;
       }
     }
     vbox.textContent=finalText+interim;
     vbox.style.color=interim?'var(--orange)':'var(--text)';
     vbox.style.fontStyle='normal';
   };
-  r.onerror=()=>stopVoice();
-  r.onend=()=>{if(S.recording)stopVoice();};
+  r.onerror=function(){stopVoice();};
+  r.onend=function(){if(S.recording)stopVoice();};
   r.start();S.recog=r;S.recording=true;
   document.getElementById('voice-btn').innerHTML='■ Stop';
   document.getElementById('voice-btn').style.background='#FEE2E2';
