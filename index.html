@@ -147,7 +147,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.25</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.26</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -235,7 +235,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.25</div>
+      <div class="hdr-sub">Magnetic Solution — v1.26</div>
     </div>
     <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:6px" title="Sync status"></span>
     <div id="hdr-avatar" onclick="go('settings')" title="Profil & Réglages" style="cursor:pointer;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;letter-spacing:-.5px;transition:background .15s;flex-shrink:0"></div>
@@ -396,10 +396,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </select>
       </div>
     </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Visibilité</div>
+      <div style="display:flex;gap:8px">
+        <button id="vis-private" onclick="setVisibility('private')" class="btn btn-s btn-sm" style="flex:1;border-color:var(--blue);background:var(--blue-pale);color:var(--blue)">🔒 Privée</button>
+        <button id="vis-shared" onclick="setVisibility('shared')" class="btn btn-s btn-sm" style="flex:1">👥 Partagée</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5" id="vis-desc">
+        Visible uniquement par vous (et l'admin).
+      </div>
+    </div>
   </div>
   <div class="ftr">
-    <button class="btn btn-s" onclick="go('home')">Cancel</button>
-    <button class="btn btn-p" onclick="createProc()">Create & start →</button>
+    <button class="btn btn-s" onclick="go('home')">Annuler</button>
+    <button class="btn btn-p" onclick="createProc()">Créer →</button>
   </div>
 </div>
 
@@ -570,7 +580,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.25 — Architecture séparée
+// GITHUB SYNC v1.26 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -853,9 +863,11 @@ async function ghLoad(){
         var fetched=await Promise.all(idsToFetch.map(ghFetchProc));
         fetched.forEach(function(p){
           if(!p)return;
+          // Migration: existing procs without visibility default to 'shared'
+          if(!p.visibility) p.visibility='shared';
           var idx=localProcs.findIndex(function(lp){return lp.id===p.id;});
-          if(idx>=0)localProcs[idx]=p; // update existing
-          else localProcs.push(p);     // add new
+          if(idx>=0)localProcs[idx]=p;
+          else localProcs.push(p);
         });
         localStorage.setItem('ms_procs',JSON.stringify(localProcs));
       }
@@ -1436,25 +1448,59 @@ function renderHome(){
     return;
   }
   const icons={Assembly:'🔧',Electronics:'⚡',Cabling:'🔌',Packaging:'📦',Testing:'🔬',Other:'📋'};
-  el.innerHTML=[...procs].reverse().map(p=>{
+  const isAdmin=S.user&&S.user.isAdmin;
+  const myProcs=[...procs].reverse().filter(p=>
+    p.userId===S.user?.id||(isAdmin&&(p.visibility==='private'||!p.visibility))
+  );
+  const sharedProcs=[...procs].reverse().filter(p=>
+    (p.visibility==='shared'||(!p.visibility&&p.userId!==S.user?.id))&&p.userId!==S.user?.id
+  );
+  function procCard(p){
     const author=users.find(u=>u.id===p.userId);
     const isMe=p.userId===S.user?.id;
-    const canDelete=isMe||(S.user&&S.user.isAdmin);
+    const canDelete=isMe||isAdmin;
     const isDone=p.status==='generated'||p.status==='exported';
-    return `<div class="proc-item" style="border-left-color:${author?.color||'var(--blue-mid)'}">
+    const isPrivate=p.visibility==='private'||(isMe&&!p.visibility);
+    const canToggleVis=isMe||isAdmin;
+    return `<div class="proc-item" style="border-bottom-color:${author?.color||'var(--blue-mid)'}">
       <div class="proc-icon" onclick="openProc('${p.id}')" style="cursor:pointer">${icons[p.cat]||'📋'}</div>
       <div class="proc-info">
         <div class="proc-title" onclick="openProc('${p.id}')" style="cursor:pointer">${esc(p.title)}</div>
-        <div class="proc-meta">${esc(p.ref)} · ${esc(author?.name||'Unknown')}${isMe?' (you)':''} · ${new Date(p.created).toLocaleDateString()}</div>
-        ${isDone?`<div style="display:flex;gap:6px;margin-top:5px">
-          <button onclick="event.stopPropagation();openProc('${p.id}','edit')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:#F8FAFC;color:var(--muted);cursor:pointer;font-weight:600">✏️ Edit</button>
-          <button onclick="event.stopPropagation();openProc('${p.id}','review')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--blue-pale);background:var(--blue-pale);color:var(--blue-mid);cursor:pointer;font-weight:600">📄 Review</button>
-        </div>`:''}
+        <div class="proc-meta">${esc(p.ref)} · ${esc(author?.name||'Unknown')}${isMe?' (moi)':''} · ${new Date(p.created).toLocaleDateString()}</div>
+        <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;align-items:center">
+          ${isDone?`<button onclick="event.stopPropagation();openProc('${p.id}','edit')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:#F8FAFC;color:var(--muted);cursor:pointer;font-weight:600">✏️ Edit</button>
+          <button onclick="event.stopPropagation();openProc('${p.id}','review')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--blue-pale);background:var(--blue-pale);color:var(--blue-mid);cursor:pointer;font-weight:600">📄 Review</button>`:''}
+          ${canToggleVis?`<button onclick="event.stopPropagation();toggleVisibility('${p.id}')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;font-weight:600" title="${isPrivate?'Rendre partagée':'Rendre privée'}">${isPrivate?'🔒':'👥'}</button>`:''}
+        </div>
       </div>
       <span class="badge badge-${p.status}">${p.status}</span>
-      ${canDelete?`<button onclick="deleteProc('${p.id}')" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;opacity:.6" title="Delete">🗑️</button>`:''}
+      ${canDelete?`<button onclick="deleteProc('${p.id}')" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;opacity:.6" title="Supprimer">🗑️</button>`:''}
     </div>`;
-  }).join('');
+  }
+  var html='';
+  if(myProcs.length>0){
+    html+=`<div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;margin-top:4px">🔒 Mes procédures</div>`;
+    html+=myProcs.map(procCard).join('');
+  }
+  if(sharedProcs.length>0){
+    html+=`<div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;margin-top:${myProcs.length>0?'16px':'4px'}">👥 Partagées équipe</div>`;
+    html+=sharedProcs.map(procCard).join('');
+  }
+  if(!html) html='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">Aucune procédure — créez-en une !</div>';
+  el.innerHTML=html;
+}
+
+function toggleVisibility(id){
+  const procs=getProcs();
+  const p=procs.find(p=>p.id===id);
+  if(!p)return;
+  p.visibility=p.visibility==='shared'?'private':'shared';
+  saveProcs(procs);
+  renderHome();
+  // Sync to GitHub
+  var tok=getBestToken();
+  if(tok) ghSaveProc(p);
+  toast(p.visibility==='shared'?'👥 Proc. partagée avec l\'équipe':'🔒 Proc. rendue privée');
 }
 
 function deleteProc(id){
@@ -1489,6 +1535,24 @@ function initForm(){
   document.getElementById('f-op').value=S.user?.name||'';
 }
 
+var _newProcVisibility='private'; // default private
+
+function setVisibility(v){
+  _newProcVisibility=v;
+  var btnP=document.getElementById('vis-private');
+  var btnS=document.getElementById('vis-shared');
+  var desc=document.getElementById('vis-desc');
+  if(v==='private'){
+    btnP.style.cssText='flex:1;border-color:var(--blue);background:var(--blue-pale);color:var(--blue)';
+    btnS.style.cssText='flex:1';
+    desc.textContent='Visible uniquement par vous (et l\'admin).';
+  } else {
+    btnP.style.cssText='flex:1';
+    btnS.style.cssText='flex:1;border-color:var(--blue-mid);background:var(--blue-pale);color:var(--blue-mid)';
+    desc.textContent='Visible par tous les membres.';
+  }
+}
+
 function createProc(){
   const title=document.getElementById('f-title').value.trim();
   const ref=document.getElementById('f-ref').value.trim();
@@ -1499,8 +1563,10 @@ function createProc(){
     cat:document.getElementById('f-cat').value,
     status:'draft',userId:S.user?.id||'',
     created:new Date().toISOString(),
+    visibility:_newProcVisibility||'private',
     sections:[],genText:''
   };
+  _newProcVisibility='private'; // reset for next time
   const procs=getProcs();procs.push(p);saveProcs(procs);
   S.cur=p;go('capture');
 }
