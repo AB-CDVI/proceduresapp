@@ -148,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.20</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.21</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -236,7 +236,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.20</div>
+      <div class="hdr-sub">Magnetic Solution — v1.21</div>
     </div>
     <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:4px" title="Sync status"></span>
     <div class="user-chip" onclick="logout()">
@@ -558,7 +558,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.20 — Architecture séparée
+// GITHUB SYNC v1.21 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -681,20 +681,48 @@ async function ghSave(){
 }
 
 // ─── Save ONE procedure to procs/[id].json ──────────────
+// Photos stored separately in photos/[procId]/[photoId].b64
+// to keep each file well under GitHub's 1MB API limit.
 async function ghSaveProc(proc){
   var tok=getBestToken();
   if(!tok||!proc)return false;
   try{
-    var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(proc))));
-    return await ghPutFile('procs/'+proc.id+'.json',encoded,tok);
+    // Deep clone — strip photo data from json, keep only id references
+    var procNoPhotos=JSON.parse(JSON.stringify(proc));
+    var photoJobs=[];
+    (procNoPhotos.sections||[]).forEach(function(sec){
+      (sec.steps||[]).forEach(function(st){
+        if(st.photos&&st.photos.length){
+          st.photos.forEach(function(ph){
+            if(ph.data&&ph.data.length>0){
+              photoJobs.push({path:'photos/'+proc.id+'/'+ph.id+'.b64',data:ph.data});
+              ph.data=''; // remove from json
+            }
+          });
+        }
+      });
+    });
+    // Save lightweight proc json
+    var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(procNoPhotos))));
+    var ok=await ghPutFile('procs/'+proc.id+'.json',encoded,tok);
+    if(!ok)return false;
+    // Upload photos in parallel — each file is small
+    if(photoJobs.length>0){
+      await Promise.all(photoJobs.map(function(job){
+        var b64content=btoa(unescape(encodeURIComponent(job.data)));
+        return ghPutFile(job.path,b64content,tok);
+      }));
+    }
+    return true;
   }catch(e){console.warn('ghSaveProc:',e);return false;}
 }
 
-// ─── Load ONE procedure from GitHub ─────────────────────
+// ─── Load ONE procedure from GitHub + its photos ────────
 async function ghFetchProc(procId){
   var tok=getBestToken();
   if(!tok)return null;
   try{
+    // Fetch proc json (no photo data inside)
     var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/procs/'+procId+'.json',{
       headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
     });
@@ -702,7 +730,35 @@ async function ghFetchProc(procId){
     var meta=await resp.json();
     var raw=atob(meta.content.replace(/\s/g,''));
     var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
-    return JSON.parse(decoded);
+    var proc=JSON.parse(decoded);
+
+    // Fetch photos for each step that has photo references (data='')
+    var photoFetches=[];
+    (proc.sections||[]).forEach(function(sec){
+      (sec.steps||[]).forEach(function(st){
+        (st.photos||[]).forEach(function(ph){
+          if(ph.data===''||!ph.data){
+            photoFetches.push({ph:ph,path:'photos/'+procId+'/'+ph.id+'.b64'});
+          }
+        });
+      });
+    });
+
+    if(photoFetches.length>0){
+      await Promise.all(photoFetches.map(async function(job){
+        try{
+          var pr=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+job.path,{
+            headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
+          });
+          if(!pr.ok)return;
+          var pm=await pr.json();
+          var rawData=atob(pm.content.replace(/\s/g,''));
+          var photoData;try{photoData=decodeURIComponent(escape(rawData));}catch(e){photoData=rawData;}
+          job.ph.data=photoData;
+        }catch(e){console.warn('photo fetch failed:',job.path);}
+      }));
+    }
+    return proc;
   }catch(e){return null;}
 }
 
@@ -1167,11 +1223,13 @@ async function manualSync(){
   showOverlay('Pushing all data to GitHub...');
   // Push users + procIds + token to data.json
   await ghSave();
-  // Push all individual procedure files in parallel
+  // Push all individual procedure files in parallel (includes photos)
   var procs=getProcs();
   if(procs.length>0){
-    showOverlay('Pushing '+procs.length+' procedure(s)...');
-    await Promise.all(procs.map(function(p){return ghSaveProc(p);}));
+    for(var i=0;i<procs.length;i++){
+      showOverlay('Pushing procedure '+(i+1)+'/'+procs.length+'...');
+      await ghSaveProc(procs[i]);
+    }
   }
   hideOverlay();
   toast('✓ Pushed — other devices will sync automatically');
