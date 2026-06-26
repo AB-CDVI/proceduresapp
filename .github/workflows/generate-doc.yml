@@ -1,47 +1,40 @@
-name: Generate Procedure Document
+name: Generate Word Document
 
 on:
   workflow_dispatch:
     inputs:
       procedure_id:
-        description: 'Procedure ID to generate'
+        description: 'Procedure ID'
         required: true
-        type: string
       user_name:
-        description: 'Username for output subfolder'
-        required: false
-        type: string
-        default: 'unknown'
-
-permissions:
-  contents: write
+        description: 'User name (for output folder)'
+        required: true
 
 jobs:
   generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    permissions:
+      contents: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout data repo
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install docx library
-        run: npm install docx@8.5.0
+      - name: Install dependencies
+        run: npm install docx
 
       - name: Generate Word document
-        run: node generate.js "${{ inputs.procedure_id }}" "${{ inputs.user_name }}"
+        run: node generate.js "${{ github.event.inputs.procedure_id }}" "${{ github.event.inputs.user_name }}"
 
-      - name: Commit and push document
+      - name: Commit generated document
         run: |
-          git config user.name "ProceduresApp Bot"
-          git config user.email "bot@proceduresapp.local"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/
-          git diff --cached --quiet || git commit -m "doc: ${{ inputs.user_name }}/${{ inputs.procedure_id }}"
+          git diff --staged --quiet || git commit -m "doc: ${{ github.event.inputs.procedure_id }}"
           git push
