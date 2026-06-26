@@ -54,6 +54,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .user-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0}
 
 /* HOME */
+.filter-btn{padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:11px;font-weight:700;cursor:pointer;color:var(--muted);transition:all .15s}
+.filter-btn.filter-active{background:var(--blue);color:#fff;border-color:var(--blue)}
 .proc-item{background:#fff;border-radius:var(--r);padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow);display:flex;align-items:flex-start;gap:12px;cursor:pointer;border-bottom:3px solid var(--blue-mid);transition:transform .1s,box-shadow .1s}
 .proc-item:active{transform:scale(.99);box-shadow:0 1px 4px rgba(27,58,107,.08)}
 .proc-icon{font-size:26px;flex-shrink:0;margin-top:2px}
@@ -147,7 +149,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.26</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.27</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -235,12 +237,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.26</div>
+      <div class="hdr-sub">Magnetic Solution — v1.27</div>
     </div>
     <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:6px" title="Sync status"></span>
     <div id="hdr-avatar" onclick="go('settings')" title="Profil & Réglages" style="cursor:pointer;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;letter-spacing:-.5px;transition:background .15s;flex-shrink:0"></div>
   </header>
   <div class="content">
+    <div style="display:flex;gap:6px;margin-bottom:12px">
+      <button id="filter-mine" onclick="setHomeFilter('mine')" class="filter-btn filter-active">🔒 Moi</button>
+      <button id="filter-others" onclick="setHomeFilter('others')" class="filter-btn">👥 Équipe</button>
+      <button id="filter-all" onclick="setHomeFilter('all')" class="filter-btn">📋 Tout</button>
+    </div>
     <div id="home-list"></div>
   </div>
   <button class="fab" onclick="initForm();go('form')">+</button>
@@ -580,7 +587,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.26 — Architecture séparée
+// GITHUB SYNC v1.27 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -865,6 +872,10 @@ async function ghLoad(){
           if(!p)return;
           // Migration: existing procs without visibility default to 'shared'
           if(!p.visibility) p.visibility='shared';
+          // Security: non-admin users must not store private procs from others
+          var currentUser=S.user||JSON.parse(localStorage.getItem('ms_users')||'[]')[0];
+          var isAdmin=currentUser&&currentUser.isAdmin;
+          if(p.visibility==='private'&&p.userId!==currentUser?.id&&!isAdmin) return;
           var idx=localProcs.findIndex(function(lp){return lp.id===p.id;});
           if(idx>=0)localProcs[idx]=p;
           else localProcs.push(p);
@@ -1382,14 +1393,22 @@ async function backgroundSync(){
     });
     if(idsToFetch.length>0){
       var fetched=await Promise.all(idsToFetch.map(ghFetchProc));
+      var isAdminUser=S.user&&S.user.isAdmin;
       fetched.forEach(function(p){
         if(!p)return;
+        if(!p.visibility) p.visibility='shared';
+        if(p.visibility==='private'&&p.userId!==S.user?.id&&!isAdminUser) return;
         var idx=localProcs.findIndex(function(lp){return lp.id===p.id;});
         if(idx>=0)localProcs[idx]=p;
         else localProcs.push(p);
       });
+      // Purge any private procs from others stored before this fix
+      if(!isAdminUser){
+        localProcs=localProcs.filter(function(p){
+          return p.visibility!=='private'||p.userId===S.user?.id;
+        });
+      }
       localStorage.setItem('ms_procs',JSON.stringify(localProcs));
-      // Refresh home if visible
       if(document.getElementById('home').style.display!=='none') renderHome();
     }
     setSyncStatus('ok');
@@ -1449,13 +1468,9 @@ function renderHome(){
   }
   const icons={Assembly:'🔧',Electronics:'⚡',Cabling:'🔌',Packaging:'📦',Testing:'🔬',Other:'📋'};
   const isAdmin=S.user&&S.user.isAdmin;
-  const myProcs=[...procs].reverse().filter(p=>
-    p.userId===S.user?.id||(isAdmin&&(p.visibility==='private'||!p.visibility))
-  );
-  const sharedProcs=[...procs].reverse().filter(p=>
-    (p.visibility==='shared'||(!p.visibility&&p.userId!==S.user?.id))&&p.userId!==S.user?.id
-  );
-  function procCard(p){
+  const allSorted=[...procs].sort(function(a,b){return new Date(b.created)-new Date(a.created);});
+
+  function procCard(p,showAuthor){
     const author=users.find(u=>u.id===p.userId);
     const isMe=p.userId===S.user?.id;
     const canDelete=isMe||isAdmin;
@@ -1466,7 +1481,7 @@ function renderHome(){
       <div class="proc-icon" onclick="openProc('${p.id}')" style="cursor:pointer">${icons[p.cat]||'📋'}</div>
       <div class="proc-info">
         <div class="proc-title" onclick="openProc('${p.id}')" style="cursor:pointer">${esc(p.title)}</div>
-        <div class="proc-meta">${esc(p.ref)} · ${esc(author?.name||'Unknown')}${isMe?' (moi)':''} · ${new Date(p.created).toLocaleDateString()}</div>
+        <div class="proc-meta">${esc(p.ref)}${showAuthor?' · '+esc(author?.name||'?'):''} · ${new Date(p.created).toLocaleDateString()}</div>
         <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;align-items:center">
           ${isDone?`<button onclick="event.stopPropagation();openProc('${p.id}','edit')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:#F8FAFC;color:var(--muted);cursor:pointer;font-weight:600">✏️ Edit</button>
           <button onclick="event.stopPropagation();openProc('${p.id}','review')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--blue-pale);background:var(--blue-pale);color:var(--blue-mid);cursor:pointer;font-weight:600">📄 Review</button>`:''}
@@ -1477,16 +1492,44 @@ function renderHome(){
       ${canDelete?`<button onclick="deleteProc('${p.id}')" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;opacity:.6" title="Supprimer">🗑️</button>`:''}
     </div>`;
   }
+
+  function sectionLabel(txt){
+    return `<div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin:12px 0 8px">` + txt + `</div>`;
+  }
+
   var html='';
-  if(myProcs.length>0){
-    html+=`<div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;margin-top:4px">🔒 Mes procédures</div>`;
-    html+=myProcs.map(procCard).join('');
+  if(_homeFilter==='mine'){
+    // My procs: created by me (+ admin sees all private)
+    var mine=allSorted.filter(function(p){
+      return p.userId===S.user?.id||(isAdmin&&p.visibility==='private'&&p.userId!==S.user?.id);
+    });
+    if(mine.length) html=mine.map(function(p){return procCard(p,isAdmin);}).join('');
+    else html='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">Aucune proc. pour vous.</div>';
+
+  } else if(_homeFilter==='others'){
+    // Shared procs from other users
+    var shared=allSorted.filter(function(p){
+      return p.userId!==S.user?.id&&(p.visibility==='shared'||(!p.visibility));
+    });
+    if(shared.length) html=shared.map(function(p){return procCard(p,true);}).join('');
+    else html='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">Aucune proc. partagée par l\'équipe.</div>';
+
+  } else {
+    // All — chronological, with section separators when author changes
+    var mine2=allSorted.filter(function(p){return p.userId===S.user?.id;});
+    var others2=allSorted.filter(function(p){
+      return p.userId!==S.user?.id&&(p.visibility==='shared'||!p.visibility);
+    });
+    if(mine2.length){
+      html+=sectionLabel('🔒 Mes procédures');
+      html+=mine2.map(function(p){return procCard(p,false);}).join('');
+    }
+    if(others2.length){
+      html+=sectionLabel('👥 Équipe');
+      html+=others2.map(function(p){return procCard(p,true);}).join('');
+    }
+    if(!html) html='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">Aucune procédure — créez-en une !</div>';
   }
-  if(sharedProcs.length>0){
-    html+=`<div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;margin-top:${myProcs.length>0?'16px':'4px'}">👥 Partagées équipe</div>`;
-    html+=sharedProcs.map(procCard).join('');
-  }
-  if(!html) html='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">Aucune procédure — créez-en une !</div>';
   el.innerHTML=html;
 }
 
@@ -1536,6 +1579,16 @@ function initForm(){
 }
 
 var _newProcVisibility='private'; // default private
+var _homeFilter='mine'; // current filter: 'mine' | 'others' | 'all'
+
+function setHomeFilter(f){
+  _homeFilter=f;
+  ['mine','others','all'].forEach(function(k){
+    var btn=document.getElementById('filter-'+k);
+    if(btn) btn.className='filter-btn'+(f===k?' filter-active':'');
+  });
+  renderHome();
+}
 
 function setVisibility(v){
   _newProcVisibility=v;
