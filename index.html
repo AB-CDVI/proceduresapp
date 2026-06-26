@@ -148,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.17</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.18</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -236,7 +236,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.17</div>
+      <div class="hdr-sub">Magnetic Solution — v1.18</div>
     </div>
     <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:4px" title="Sync status"></span>
     <div class="user-chip" onclick="logout()">
@@ -486,7 +486,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
   <div class="ftr">
-    <button class="btn btn-s" onclick="go('capture')">← Back</button>
+    <button class="btn btn-s" onclick="go('capture')">✏️ Edit steps</button>
     <button class="btn btn-p" onclick="exportWord()">📄 Export Word</button>
   </div>
 </div>
@@ -557,7 +557,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.17 — Architecture séparée
+// GITHUB SYNC v1.18 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -1230,10 +1230,15 @@ function openProc(id){
   S.cur=procs.find(p=>p.id===id);
   if(!S.cur)return;
   if(S.cur.status==='generated'||S.cur.status==='exported'){
-    go('review');
-    document.getElementById('review-display').textContent=S.cur.genText||'';
-    document.getElementById('review-edit').value=S.cur.genText||'';
-    renderReviewPhotos();
+    // Show choice: edit steps or open AI review
+    if(confirm('Open AI Review?\n\nOK = Open review / export\nCancel = Edit steps')){
+      go('review');
+      document.getElementById('review-display').textContent=S.cur.genText||'';
+      document.getElementById('review-edit').value=S.cur.genText||'';
+      renderReviewPhotos();
+    }else{
+      go('capture');
+    }
   }else{go('capture');}
 }
 
@@ -1435,38 +1440,52 @@ function quickPhoto(secId,stepId){
 // ═══════════════════════════════════════════════════════
 function toggleVoice(){S.recording?stopVoice():startVoice();}
 
+// ─── Voice recording ─────────────────────────────────────────────
+// Chrome/Android mobile cuts recognition at silence and restarts,
+// re-firing onresult from index 0 each time → duplication.
+// Fix: track finals by COUNT not by index. On each onresult event,
+// count how many finals exist in e.results — only append the NEW ones
+// (those beyond _voiceFinalCount). Works across all restarts.
+var _voiceFinal='';
+var _voiceFinalCount=0;
+
 function startVoice(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){toast('Voice not available — use Chrome or Safari');return;}
-  const r=new SR();r.continuous=true;r.interimResults=true;r.lang='fr-FR';
   const vbox=document.getElementById('voice-box');
-  const existing=vbox.textContent==='Tap "Start" to begin...'?'':vbox.textContent;
-
-  // Use a Set to track processed final result indices — prevents ALL mobile duplicates
-  // Mobile browsers (iOS/Android) often re-fire onresult with resultIndex=0,
-  // causing previously finalized results to be appended again
-  var processedIndices=new Set();
-  var finalText=existing;
-
+  // Seed accumulated text only on fresh start (not on auto-restart after silence)
+  if(!S.recording){
+    _voiceFinal=vbox.textContent==='Tap "Start" to begin...'?'':vbox.textContent;
+    _voiceFinalCount=0;
+  }
+  const r=new SR();
+  r.continuous=true;r.interimResults=true;r.lang='fr-FR';
   r.onresult=function(e){
-    var interim='';
+    var finals=[];
     for(var i=0;i<e.results.length;i++){
-      if(e.results[i].isFinal){
-        if(!processedIndices.has(i)){
-          processedIndices.add(i);
-          finalText+=e.results[i][0].transcript+' ';
-        }
-      } else {
-        // Only show interim for results at or after current resultIndex
-        if(i>=e.resultIndex) interim+=e.results[i][0].transcript;
-      }
+      if(e.results[i].isFinal) finals.push(e.results[i][0].transcript);
     }
-    vbox.textContent=finalText+interim;
+    // Append only finals not yet processed
+    for(var j=_voiceFinalCount;j<finals.length;j++){
+      _voiceFinal+=finals[j]+' ';
+    }
+    _voiceFinalCount=finals.length;
+    // Show last interim result if any
+    var interim='';
+    var last=e.results[e.results.length-1];
+    if(last&&!last.isFinal) interim=last[0].transcript;
+    vbox.textContent=_voiceFinal+interim;
     vbox.style.color=interim?'var(--orange)':'var(--text)';
     vbox.style.fontStyle='normal';
   };
-  r.onerror=function(){stopVoice();};
-  r.onend=function(){if(S.recording)stopVoice();};
+  r.onerror=function(ev){
+    if(ev.error==='no-speech'||ev.error==='audio-capture')return;
+    stopVoice();
+  };
+  r.onend=function(){
+    // Auto-restart on silence cut — only if user hasn't clicked Stop
+    if(S.recording){try{r.start();}catch(e){stopVoice();}}
+  };
   r.start();S.recog=r;S.recording=true;
   document.getElementById('voice-btn').innerHTML='■ Stop';
   document.getElementById('voice-btn').style.background='#FEE2E2';
@@ -1474,15 +1493,14 @@ function startVoice(){
 }
 
 function stopVoice(){
-  if(S.recog){try{S.recog.stop();}catch(e){}S.recog=null;}
+  // Set false BEFORE stop() so onend auto-restart is skipped
   S.recording=false;
+  if(S.recog){try{S.recog.stop();}catch(e){}S.recog=null;}
   const btn=document.getElementById('voice-btn');
   if(btn){btn.innerHTML='▶ Start';btn.style.background='';}
   const rb=document.getElementById('rec-bar');if(rb)rb.style.display='none';
   const vbox=document.getElementById('voice-box');if(vbox)vbox.style.color='var(--text)';
-  const stxt=document.getElementById('step-txt');
-  if(stxt&&!stxt.value.trim()&&vbox&&vbox.textContent&&vbox.textContent!=='Tap "Start" to begin...')
-    stxt.value=vbox.textContent.trim();
+  // No auto-copy to notes — user clicks "Copy to notes" explicitly
 }
 
 function clearVoice(){
