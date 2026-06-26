@@ -867,7 +867,7 @@ async function loadFromGitHubLogin(){
     renderLoginUsers();
     toast('✓ Comptes chargés depuis GitHub');
   } else if(result.reason==='not_found'){
-    toast('Aucune donnée sur GitHub — l'admin doit d'abord se connecter et pousser');
+    toast('Aucune donnée sur GitHub — l\'admin doit d\'abord se connecter et pousser');
   } else if(result.reason==='auth_error'){
     toast('Token invalide ('+result.status+') — vérifiez le token');
     document.getElementById('load-gh-box').style.display='block';
