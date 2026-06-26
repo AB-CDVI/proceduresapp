@@ -148,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.15</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.16</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -236,7 +236,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.15</div>
+      <div class="hdr-sub">Magnetic Solution — v1.16</div>
     </div>
     <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:4px" title="Sync status"></span>
     <div class="user-chip" onclick="logout()">
@@ -542,11 +542,11 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.15 — Architecture séparée
+// GITHUB SYNC v1.16 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
-var GH_REPO='AB-CDVI/proceduresapp';
+var GH_REPO='AB-CDVI/proceduresapp-data';
 var GH_DATA='data.json';
 var GH_SHA=null;
 var sharedToken=localStorage.getItem('shared_token')||'';
@@ -605,28 +605,15 @@ async function ghPutFile(path,content,tok){
 }
 
 
-// ─── Load token from data.json (public read, no auth needed) ────
-// data.json always has 'st' field written by ghSave() which works
+// ─── Token is never stored in GitHub (security) ─────────────────
+// Token lives only in localStorage, entered manually once per device.
 async function loadSharedToken(){
-  if(sharedToken)return true;
-  try{
-    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
-      headers:{'Accept':'application/vnd.github.v3+json'}
-    });
-    if(!resp.ok){console.warn('loadSharedToken: HTTP',resp.status);return false;}
-    var meta=await resp.json();
-    var raw=atob(meta.content.replace(/\s/g,''));
-    var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
-    var data=JSON.parse(decoded);
-    if(data.st){
-      var tok=deobfuscate(data.st);
-      if(tok&&tok.length>10){
-        sharedToken=tok;
-        localStorage.setItem('shared_token',tok);
-        return true;
-      }
-    }
-  }catch(e){console.warn('loadSharedToken error:',e);}
+  // Re-read from localStorage every time (no early return — token may have changed)
+  var stored=localStorage.getItem('shared_token')||'';
+  if(stored&&stored.length>10){
+    sharedToken=stored;
+    return true;
+  }
   return false;
 }
 
@@ -634,7 +621,6 @@ async function loadSharedToken(){
 async function ghSave(){
   var tok=getBestToken();
   if(!tok){setSyncStatus('error');return;}
-  if(!sharedToken)sharedToken=tok;
   setSyncStatus('syncing');
   try{
     var rawUsers=getUsers();
@@ -647,7 +633,6 @@ async function ghSave(){
     var data={
       users:safeUsers,
       procIds:getProcs().map(function(p){return p.id;}),
-      st:obfuscate(tok),
       updated:new Date().toISOString()
     };
     var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
@@ -699,9 +684,6 @@ async function ghLoad(){
     var raw=atob(meta.content.replace(/\s/g,''));
     var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
     var data=JSON.parse(decoded);
-
-    // Update shared token
-    if(data.st){var t=deobfuscate(data.st);if(t){sharedToken=t;localStorage.setItem('shared_token',t);}}
 
     // Merge users — isAdmin is STICKY (once true, always true)
     if(data.users){
@@ -863,7 +845,7 @@ function showLoadFromGH(){
 async function loadFromGitHubLogin(){
   showOverlay('Loading accounts from GitHub...');
 
-  // Check for manually entered bootstrap token (fallback only)
+  // Use manually entered bootstrap token
   var bootstrapInp=document.getElementById('bootstrap-token');
   var bootstrapTok=bootstrapInp?bootstrapInp.value.trim():'';
   if(bootstrapTok){
@@ -871,14 +853,10 @@ async function loadFromGitHubLogin(){
     localStorage.setItem('shared_token',bootstrapTok);
   }
 
-  // Try to get token from public data.json
-  if(!sharedToken) await loadSharedToken();
-
   if(!sharedToken){
     hideOverlay();
-    // Show manual token input as fallback
     document.getElementById('load-gh-box').style.display='block';
-    toast('⚠️ Admin: Settings → enter token → Save → Push to GitHub first');
+    toast('Entrez votre token GitHub pour charger les comptes');
     return;
   }
 
@@ -887,14 +865,14 @@ async function loadFromGitHubLogin(){
   if(result.ok){
     document.getElementById('load-gh-box').style.display='none';
     renderLoginUsers();
-    toast('✓ Accounts loaded');
+    toast('✓ Comptes chargés depuis GitHub');
   } else if(result.reason==='not_found'){
-    toast('No data on GitHub yet — admin must log in first from their device');
+    toast('Aucune donnée sur GitHub — l'admin doit d'abord se connecter et pousser');
   } else if(result.reason==='auth_error'){
-    toast('Token error ('+result.status+') — enter a valid token below');
+    toast('Token invalide ('+result.status+') — vérifiez le token');
     document.getElementById('load-gh-box').style.display='block';
   } else {
-    toast('Error: '+result.reason);
+    toast('Erreur : '+result.reason);
   }
 }
 
@@ -1109,7 +1087,6 @@ async function testToken(){
 async function manualSync(){
   var tok=getBestToken();
   if(!tok){toast('No token — enter it in Settings');go('settings');return;}
-  if(!sharedToken)sharedToken=tok;
   showOverlay('Pushing all data to GitHub...');
   // Push users + procIds + token to data.json
   await ghSave();
@@ -1588,7 +1565,7 @@ async function exportWord(){
   const triggerTime=new Date();
   try{
   var uName=(S.user?S.user.name:'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
-  const resp=await fetch('https://api.github.com/repos/AB-CDVI/proceduresapp/actions/workflows/generate-doc.yml/dispatches',{
+  const resp=await fetch('https://api.github.com/repos/AB-CDVI/proceduresapp-data/actions/workflows/generate-doc.yml/dispatches',{
       method:'POST',
       headers:{
         'Authorization':'Bearer '+token,
@@ -1624,7 +1601,7 @@ async function exportWord(){
     try{
       var uName=(S.user?S.user.name:'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
       var docPath='docs/'+uName+'/'+p.id+'.docx';
-      var checkResp=await fetch('https://api.github.com/repos/AB-CDVI/proceduresapp/commits?path='+docPath+'&per_page=1',{
+      var checkResp=await fetch('https://api.github.com/repos/AB-CDVI/proceduresapp-data/commits?path='+docPath+'&per_page=1',{
         headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github.v3+json'}
       });
       if(checkResp.ok){
@@ -1654,7 +1631,7 @@ async function exportWord(){
 async function downloadDocx(p,token){
   try{
     var uName=(S.user?S.user.name:'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
-    var resp=await fetch('https://api.github.com/repos/AB-CDVI/proceduresapp/contents/docs/'+uName+'/'+p.id+'.docx',{
+    var resp=await fetch('https://api.github.com/repos/AB-CDVI/proceduresapp-data/contents/docs/'+uName+'/'+p.id+'.docx',{
       headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github.v3+json'}
     });
     if(!resp.ok)throw new Error('Download failed: '+resp.status);
@@ -1872,29 +1849,26 @@ function toast(msg){const el=document.getElementById('toast');el.textContent=msg
 window.addEventListener('DOMContentLoaded',async function(){
   showOverlay('Connecting...');
 
-  // Always try to get token from localStorage first (fast)
-  if(!sharedToken) sharedToken=localStorage.getItem('shared_token')||'';
+  // Always read token from localStorage (never from GitHub — security)
+  sharedToken=localStorage.getItem('shared_token')||'';
 
   var localUsers=getUsers();
 
   if(localUsers.length===0){
-    // New device — load everything from GitHub automatically
-    showOverlay('Loading accounts...');
-    // Step 1: get token from public data.json (no auth needed)
-    await loadSharedToken();
-    // Step 2: if we have a token, load users and procs
-    if(sharedToken){
-      var r=await ghLoad();
-      if(r.ok){
-        hideOverlay();
-        renderLoginUsers();
-        return;
-      }
-    }
-    // No data on GitHub yet — show empty login screen
+    // New device — need token to load from GitHub
+    hideOverlay();
+    renderLoginUsers();
+    // Show a hint to enter token
+    setTimeout(function(){
+      toast('Nouvel appareil — entrez votre token GitHub dans Paramètres ⚙️');
+    },600);
   } else {
-    // Existing device — push local data to keep GitHub in sync (background)
-    if(sharedToken) setTimeout(function(){ghSave();},1000);
+    // Existing device — silently sync from GitHub in background to get latest users/procs
+    if(sharedToken){
+      ghLoad().then(function(r){
+        if(r.ok) renderLoginUsers(); // refresh list if new users appeared
+      });
+    }
   }
 
   hideOverlay();
