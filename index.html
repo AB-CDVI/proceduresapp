@@ -148,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.19</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.20</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -236,7 +236,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.19</div>
+      <div class="hdr-sub">Magnetic Solution — v1.20</div>
     </div>
     <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:4px" title="Sync status"></span>
     <div class="user-chip" onclick="logout()">
@@ -524,8 +524,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 // ═══════════════════════════════════════════════════════
 const COLORS=['#2E75B6','#E8610A','#16A34A','#7C3AED','#DC2626','#0891B2'];
 
-// ─── Access code (change this to control who can sign up) ────────────────────
-var ACCESS_CODE='MAGNETIC';
+// ─── Access code — stored as SHA-256 hash (never in clear text) ─────────────
+// To change: compute sha256 of new code and replace the hash below
+var ACCESS_CODE_HASH='fb6ee56073b36c399fcfb33ee1200c6cc9561ece42ca460dda39a66e26d9db40';
 var siteCodeVerified=false;
 
 // Bootstrap token — read-only access to proceduresapp-data (private repo)
@@ -557,7 +558,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.19 — Architecture séparée
+// GITHUB SYNC v1.20 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -850,9 +851,12 @@ function go(screen){
 // ═══════════════════════════════════════════════════════
 let loginTarget=null;
 
-function checkSiteCode(){
+async function checkSiteCode(){
   var code=document.getElementById('site-code-inp').value.trim().toUpperCase();
-  if(code!==ACCESS_CODE){toast('Invalid code ❌');return;}
+  // Hash what the user typed and compare — code itself never stored in clear text
+  var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(code));
+  var hex=Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+  if(hex!==ACCESS_CODE_HASH){toast('Invalid code ❌');return;}
   siteCodeVerified=true;
   document.getElementById('site-code-box').style.display='none';
   document.getElementById('user-selection-box').style.display='block';
