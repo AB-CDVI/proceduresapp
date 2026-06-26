@@ -149,7 +149,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.29</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.30</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -237,7 +237,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.29</div>
+      <div class="hdr-sub">Magnetic Solution — v1.30</div>
     </div>
     <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:6px" title="Sync status"></span>
     <div id="hdr-avatar" onclick="go('settings')" title="Profil & Réglages" style="cursor:pointer;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;letter-spacing:-.5px;transition:background .15s;flex-shrink:0"></div>
@@ -587,7 +587,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.29 — Architecture séparée
+// GITHUB SYNC v1.30 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -867,22 +867,30 @@ async function ghLoad(){
         return hasEmptyPhoto;
       });
       if(idsToFetch.length>0){
+        var currentUser=S.user||JSON.parse(localStorage.getItem('ms_users')||'[]')[0];
+        var isAdminU=currentUser&&currentUser.isAdmin;
         var fetched=await Promise.all(idsToFetch.map(ghFetchProc));
         fetched.forEach(function(p){
           if(!p)return;
-          // Migration: procs without visibility
-          // - from the current user: treat as 'shared' (their own legacy procs)
-          // - from others: treat as 'private' (don't expose without explicit sharing)
-          var currentUser=S.user||JSON.parse(localStorage.getItem('ms_users')||'[]')[0];
-          var isAdminU=currentUser&&currentUser.isAdmin;
+          // Migration: assign visibility based on ownership
           if(!p.visibility){
             p.visibility=p.userId===currentUser?.id?'shared':'private';
           }
-          if(p.visibility==='private'&&p.userId!==currentUser?.id&&!isAdminU) return;
+          // BLOCK: never store private procs from other users (except admin)
+          if(p.visibility==='private'&&p.userId!==currentUser?.id&&!isAdminU){
+            console.log('Blocked private proc from other user:',p.id,p.userId);
+            return;
+          }
           var idx=localProcs.findIndex(function(lp){return lp.id===p.id;});
           if(idx>=0)localProcs[idx]=p;
           else localProcs.push(p);
         });
+        // Also purge any previously stored private procs from others
+        if(!isAdminU){
+          localProcs=localProcs.filter(function(p){
+            return p.userId===currentUser?.id||p.visibility==='shared';
+          });
+        }
         localStorage.setItem('ms_procs',JSON.stringify(localProcs));
       }
     }
@@ -1334,14 +1342,23 @@ async function forceSyncFromGH(){
     if(procIds.length===0){hideOverlay();toast('Aucune procédure sur GitHub');return;}
     // Re-fetch every proc with photos
     var localProcs=getProcs();
+    var isAdminSync=S.user&&S.user.isAdmin;
     for(var i=0;i<procIds.length;i++){
       showOverlay('Chargement procédure '+(i+1)+'/'+procIds.length+' (photos incluses)...');
       var p=await ghFetchProc(procIds[i]);
-      if(p){
-        var idx=localProcs.findIndex(function(lp){return lp.id===p.id;});
-        if(idx>=0)localProcs[idx]=p;
-        else localProcs.push(p);
-      }
+      if(!p) continue;
+      if(!p.visibility) p.visibility=p.userId===S.user?.id?'shared':'private';
+      // Block private procs from others unless admin
+      if(p.visibility==='private'&&p.userId!==S.user?.id&&!isAdminSync) continue;
+      var idx=localProcs.findIndex(function(lp){return lp.id===p.id;});
+      if(idx>=0)localProcs[idx]=p;
+      else localProcs.push(p);
+    }
+    // Final purge
+    if(!isAdminSync){
+      localProcs=localProcs.filter(function(p){
+        return p.userId===S.user?.id||p.visibility==='shared';
+      });
     }
     localStorage.setItem('ms_procs',JSON.stringify(localProcs));
     hideOverlay();
@@ -1410,7 +1427,7 @@ async function backgroundSync(){
       var isAdminUser=S.user&&S.user.isAdmin;
       fetched.forEach(function(p){
         if(!p)return;
-        if(!p.visibility) p.visibility='shared';
+        if(!p.visibility) p.visibility=p.userId===S.user?.id?'shared':'private';
         if(p.visibility==='private'&&p.userId!==S.user?.id&&!isAdminUser) return;
         var idx=localProcs.findIndex(function(lp){return lp.id===p.id;});
         if(idx>=0)localProcs[idx]=p;
@@ -1419,7 +1436,7 @@ async function backgroundSync(){
       // Purge any private procs from others stored before this fix
       if(!isAdminUser){
         localProcs=localProcs.filter(function(p){
-          return p.visibility!=='private'||p.userId===S.user?.id;
+          return p.userId===S.user?.id||p.visibility==='shared';
         });
       }
       localStorage.setItem('ms_procs',JSON.stringify(localProcs));
