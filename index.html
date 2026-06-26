@@ -148,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.22</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.23</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -236,7 +236,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.22</div>
+      <div class="hdr-sub">Magnetic Solution — v1.23</div>
     </div>
     <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:4px" title="Sync status"></span>
     <div class="user-chip" onclick="logout()">
@@ -293,6 +293,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="btn btn-s btn-sm" style="flex:1" onclick="testToken()">🔌 Test connection</button>
         <button class="btn btn-s btn-sm" style="flex:1" onclick="manualSync()">☁️ Push to GitHub</button>
       </div>
+    </div>
+    <!-- Sync from GitHub -->
+    <div class="card">
+      <div class="card-title">☁️ Synchronisation</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.5">
+        Force le rechargement de toutes les procédures depuis GitHub (photos incluses).
+      </div>
+      <button class="btn btn-s btn-sm btn-full" onclick="forceSyncFromGH()">🔄 Tout recharger depuis GitHub</button>
     </div>
     <!-- Change password -->
     <div class="card">
@@ -558,7 +566,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.22 — Architecture séparée
+// GITHUB SYNC v1.23 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -825,10 +833,26 @@ async function ghLoad(){
       localStorage.setItem('ms_procs',JSON.stringify(localProcs));
     }else if(procIds.length){
       var localProcs=getProcs();
-      var missingIds=procIds.filter(function(id){return !localProcs.find(function(p){return p.id===id;});});
-      if(missingIds.length>0){
-        var fetched=await Promise.all(missingIds.map(ghFetchProc));
-        fetched.forEach(function(p){if(p)localProcs.push(p);});
+      // Fetch procs that are either missing OR have photos with empty data
+      var idsToFetch=procIds.filter(function(id){
+        var local=localProcs.find(function(p){return p.id===id;});
+        if(!local)return true; // missing entirely
+        // Check if any photo has empty data (uploaded from another device)
+        var hasEmptyPhoto=(local.sections||[]).some(function(sec){
+          return (sec.steps||[]).some(function(st){
+            return (st.photos||[]).some(function(ph){return !ph.data||ph.data==='';});
+          });
+        });
+        return hasEmptyPhoto;
+      });
+      if(idsToFetch.length>0){
+        var fetched=await Promise.all(idsToFetch.map(ghFetchProc));
+        fetched.forEach(function(p){
+          if(!p)return;
+          var idx=localProcs.findIndex(function(lp){return lp.id===p.id;});
+          if(idx>=0)localProcs[idx]=p; // update existing
+          else localProcs.push(p);     // add new
+        });
         localStorage.setItem('ms_procs',JSON.stringify(localProcs));
       }
     }
@@ -1243,6 +1267,40 @@ async function manualSync(){
   }
   hideOverlay();
   toast('✓ Pushed — other devices will sync automatically');
+}
+
+async function forceSyncFromGH(){
+  var tok=getBestToken();
+  if(!tok){toast('No token — enter it in Settings');return;}
+  showOverlay('Rechargement depuis GitHub...');
+  try{
+    // Force re-fetch ALL procedures from GitHub including photos
+    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
+      headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(!resp.ok){hideOverlay();toast('Erreur GitHub: '+resp.status);return;}
+    var meta=await resp.json();
+    var raw=atob(meta.content.replace(/\s/g,''));
+    var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
+    var data=JSON.parse(decoded);
+    var procIds=data.procIds||[];
+    if(procIds.length===0){hideOverlay();toast('Aucune procédure sur GitHub');return;}
+    // Re-fetch every proc with photos
+    var localProcs=getProcs();
+    for(var i=0;i<procIds.length;i++){
+      showOverlay('Chargement procédure '+(i+1)+'/'+procIds.length+' (photos incluses)...');
+      var p=await ghFetchProc(procIds[i]);
+      if(p){
+        var idx=localProcs.findIndex(function(lp){return lp.id===p.id;});
+        if(idx>=0)localProcs[idx]=p;
+        else localProcs.push(p);
+      }
+    }
+    localStorage.setItem('ms_procs',JSON.stringify(localProcs));
+    hideOverlay();
+    toast('✓ '+procIds.length+' procédure(s) rechargée(s) avec photos');
+    renderHome();
+  }catch(e){hideOverlay();toast('Erreur: '+e.message);}
 }
 
 function clearMyData(){
