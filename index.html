@@ -149,7 +149,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.27</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.28</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -237,7 +237,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.27</div>
+      <div class="hdr-sub">Magnetic Solution — v1.28</div>
     </div>
     <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:6px" title="Sync status"></span>
     <div id="hdr-avatar" onclick="go('settings')" title="Profil & Réglages" style="cursor:pointer;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;letter-spacing:-.5px;transition:background .15s;flex-shrink:0"></div>
@@ -587,7 +587,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.27 — Architecture séparée
+// GITHUB SYNC v1.28 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -1499,27 +1499,28 @@ function renderHome(){
 
   var html='';
   if(_homeFilter==='mine'){
-    // My procs: created by me (+ admin sees all private)
-    var mine=allSorted.filter(function(p){
-      return p.userId===S.user?.id||(isAdmin&&p.visibility==='private'&&p.userId!==S.user?.id);
-    });
-    if(mine.length) html=mine.map(function(p){return procCard(p,isAdmin);}).join('');
+    // Mes procédures uniquement — créées par moi
+    var mine=allSorted.filter(function(p){ return p.userId===S.user?.id; });
+    if(mine.length) html=mine.map(function(p){return procCard(p,false);}).join('');
     else html='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">Aucune proc. pour vous.</div>';
 
   } else if(_homeFilter==='others'){
-    // Shared procs from other users
+    // Procédures partagées des autres
     var shared=allSorted.filter(function(p){
-      return p.userId!==S.user?.id&&(p.visibility==='shared'||(!p.visibility));
+      return p.userId!==S.user?.id&&(p.visibility==='shared'||!p.visibility);
     });
     if(shared.length) html=shared.map(function(p){return procCard(p,true);}).join('');
-    else html='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">Aucune proc. partagée par l\'équipe.</div>';
+    else html='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">Aucune proc. partagée.</div>';
 
   } else {
-    // All — chronological, with section separators when author changes
-    var mine2=allSorted.filter(function(p){return p.userId===S.user?.id;});
+    // Tout — mes procs + partagées + admin voit les privées des autres
+    var mine2=allSorted.filter(function(p){ return p.userId===S.user?.id; });
     var others2=allSorted.filter(function(p){
       return p.userId!==S.user?.id&&(p.visibility==='shared'||!p.visibility);
     });
+    var adminPrivate=isAdmin?allSorted.filter(function(p){
+      return p.userId!==S.user?.id&&p.visibility==='private';
+    }):[];
     if(mine2.length){
       html+=sectionLabel('🔒 Mes procédures');
       html+=mine2.map(function(p){return procCard(p,false);}).join('');
@@ -1528,7 +1529,11 @@ function renderHome(){
       html+=sectionLabel('👥 Équipe');
       html+=others2.map(function(p){return procCard(p,true);}).join('');
     }
-    if(!html) html='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">Aucune procédure — créez-en une !</div>';
+    if(adminPrivate.length){
+      html+=sectionLabel('🔐 Privées équipe (admin)');
+      html+=adminPrivate.map(function(p){return procCard(p,true);}).join('');
+    }
+    if(!html) html='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">Aucune procédure.</div>';
   }
   el.innerHTML=html;
 }
