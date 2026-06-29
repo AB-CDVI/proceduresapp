@@ -149,7 +149,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.39</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.40</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -237,7 +237,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.39</div>
+      <div class="hdr-sub">Magnetic Solution — v1.40</div>
     </div>
     <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:6px" title="Sync status"></span>
     <div id="hdr-avatar" onclick="go('settings')" title="Profil & Réglages" style="cursor:pointer;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;letter-spacing:-.5px;transition:background .15s;flex-shrink:0"></div>
@@ -601,7 +601,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.39 — Architecture séparée
+// GITHUB SYNC v1.40 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -651,39 +651,45 @@ async function _processGhQueue(){
 }
 
 async function ghPutFile(path,content,tok){
-  // Get current SHA (needed for updates)
+  var maxAttempts=4;
+  var delay=800; // ms between retries — gives GitHub time to propagate commits
   var sha=null;
-  try{
-    var r=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+path,{
-      headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
-    });
-    if(r.ok){var m=await r.json();sha=m.sha;}
-  }catch(e){}
 
-  var payload={message:'sync: '+path.split('/').pop().slice(0,20),content:content};
-  if(sha)payload.sha=sha;
-
-  var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+path,{
-    method:'PUT',
-    headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
-    body:JSON.stringify(payload)
-  });
-
-  // 409 = stale SHA, 422 = SHA mismatch (race condition) → retry with fresh SHA
-  if(resp.status===409||resp.status===422){
+  for(var attempt=1;attempt<=maxAttempts;attempt++){
+    // Always fetch fresh SHA before each attempt
     try{
-      var r2=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+path,{
+      var r=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+path,{
         headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
       });
-      if(r2.ok){var m2=await r2.json();sha=m2.sha;payload.sha=sha;}
-    }catch(e){}
-    resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+path,{
+      if(r.ok){var m=await r.json();sha=m.sha;}
+      else sha=null; // file doesn't exist yet — create
+    }catch(e){sha=null;}
+
+    var payload={message:'sync: '+path.split('/').pop().slice(0,20),content:content};
+    if(sha) payload.sha=sha;
+
+    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+path,{
       method:'PUT',
       headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
       body:JSON.stringify(payload)
     });
+
+    if(resp.ok) return true;
+
+    if(resp.status===409||resp.status===422){
+      // SHA conflict — wait and retry with fresh SHA
+      console.warn('ghPutFile 409/422 on attempt '+attempt+', retrying in '+delay+'ms...');
+      await new Promise(function(r){setTimeout(r,delay);});
+      delay*=1.5; // back-off
+      continue;
+    }
+
+    // Other error (401, 404, etc.) — don't retry
+    console.warn('ghPutFile failed with status',resp.status,'for',path);
+    return false;
   }
-  return resp.ok;
+  console.warn('ghPutFile failed after',maxAttempts,'attempts for',path);
+  return false;
 }
 
 
@@ -2272,8 +2278,8 @@ async function exportWord(){
   showOverlay('1/3 — Saving procedure to GitHub...');
   if(!sharedToken)sharedToken=token;
   var ok=await ghSaveProc(p);
-  // Also update data.json procIds list
-  ghSave();
+  // Update data.json after proc is saved (sequential to avoid SHA conflicts)
+  await ghSave();
   // Brief wait for GitHub to process the commit
   await new Promise(function(r){setTimeout(r,2000);});
 
