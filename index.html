@@ -149,7 +149,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.41</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.42</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -237,7 +237,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.41</div>
+      <div class="hdr-sub">Magnetic Solution — v1.42</div>
     </div>
     <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:6px" title="Sync status"></span>
     <div id="hdr-avatar" onclick="go('settings')" title="Profil & Réglages" style="cursor:pointer;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;letter-spacing:-.5px;transition:background .15s;flex-shrink:0"></div>
@@ -601,7 +601,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.41 — Architecture séparée
+// GITHUB SYNC v1.42 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -1625,7 +1625,7 @@ function renderHome(){
     const author=users.find(u=>u.id===p.userId);
     const isMe=p.userId===S.user?.id;
     const canDelete=isMe||isAdmin;
-    const isDone=p.status==='generated'||p.status==='exported';
+    const isDone=p.status==='generated'||p.status==='exported'||p.status==='generating';
     const isPrivate=p.visibility==='private'||(isMe&&!p.visibility);
     const canToggleVis=isMe||isAdmin;
     return `<div class="proc-item" style="border-bottom-color:${author?.color||'var(--blue-mid)'}">
@@ -2199,6 +2199,13 @@ function openPreview(){
   var stepIdx=0;
   var html='';
 
+  if(!txt&&(!sections||sections.length===0)){
+    var el=document.getElementById('preview-content');
+    if(el) el.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">Aucun contenu &#8212; g&eacute;n&eacute;rez via AI Review.</div>';
+    go('preview');
+    return;
+  }
+
   // Title block
   html+='<div style="text-align:center;margin-bottom:24px;padding-bottom:16px;border-bottom:3px solid var(--blue)">'
     +'<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Procédure de fabrication</div>'
@@ -2313,7 +2320,9 @@ async function exportWord(){
   }catch(err){
     hideOverlay();
     toast('Export error: '+err.message);
-    p.status='generated';syncCur();
+    p.status='generated';
+    var _ep=getProcs();var _ei=_ep.findIndex(function(lp){return lp.id===p.id;});
+    if(_ei>=0)_ep[_ei]=p;localStorage.setItem('ms_procs',JSON.stringify(_ep));
     return;
   }
 
@@ -2349,7 +2358,9 @@ async function exportWord(){
     }else{
       hideOverlay();
       toast('Timeout — check GitHub Actions tab in your repo for errors');
-      p.status='generated';syncCur();
+      p.status='generated';
+      var _tp=getProcs();var _ti=_tp.findIndex(function(lp){return lp.id===p.id;});
+      if(_ti>=0)_tp[_ti]=p;localStorage.setItem('ms_procs',JSON.stringify(_tp));
     }
   }
 
