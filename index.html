@@ -149,7 +149,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.42</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.43</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -237,7 +237,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.42</div>
+      <div class="hdr-sub">Magnetic Solution — v1.43</div>
     </div>
     <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:6px" title="Sync status"></span>
     <div id="hdr-avatar" onclick="go('settings')" title="Profil & Réglages" style="cursor:pointer;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;letter-spacing:-.5px;transition:background .15s;flex-shrink:0"></div>
@@ -601,7 +601,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.42 — Architecture séparée
+// GITHUB SYNC v1.43 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -2195,16 +2195,7 @@ function openPreview(){
 
   var txt=p.genText||'';
   var sections=p.sections||[];
-  var secIdx=-1;
-  var stepIdx=0;
   var html='';
-
-  if(!txt&&(!sections||sections.length===0)){
-    var el=document.getElementById('preview-content');
-    if(el) el.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">Aucun contenu &#8212; g&eacute;n&eacute;rez via AI Review.</div>';
-    go('preview');
-    return;
-  }
 
   // Title block
   html+='<div style="text-align:center;margin-bottom:24px;padding-bottom:16px;border-bottom:3px solid var(--blue)">'
@@ -2213,59 +2204,83 @@ function openPreview(){
     +'<div style="font-size:13px;color:var(--muted);margin-top:4px">'+esc(p.ref||'')+(p.op?' · '+esc(p.op):'')+'</div>'
     +'</div>';
 
-  // Build TOC
-  var secTitles=[];
-  var cleanTxt=txt.replace(/[*]{2}(.*?)[*]{2}/g,'$1').replace(/[*](.*?)[*]/g,'$1');
-  cleanTxt.split('\n').forEach(function(line){
-    var t=line.trim();
-    var c=t.replace(/^#{1,3}\s*/,'');
-    if(/^(I{1,3}|IV|V|VI{1,3}|IX|X)\. /i.test(c)) secTitles.push(c);
-  });
+  if(txt){
+    // ── Mode genText : parser le texte généré par IA ──────────────
+    var cleanTxt=txt.replace(/[*]{2}(.*?)[*]{2}/g,'$1').replace(/[*](.*?)[*]/g,'$1');
+    var secIdx=-1;
+    var stepIdx=0;
 
-  if(secTitles.length>0){
-    html+='<div style="background:#F8FAFF;border-radius:10px;padding:14px 16px;margin-bottom:20px;border-left:4px solid var(--blue)">'
-      +'<div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Sommaire</div>';
-    secTitles.forEach(function(t){
-      html+='<div style="font-size:13px;color:var(--text);padding:3px 0;border-bottom:1px dotted var(--border)">'+esc(t)+'</div>';
+    // TOC
+    var secTitles=[];
+    cleanTxt.split('\n').forEach(function(line){
+      var c=line.trim().replace(/^#{1,3}\s*/,'');
+      if(/^(I{1,3}|IV|V|VI{1,3}|IX|X)\. /i.test(c)) secTitles.push(c);
     });
-    html+='</div>';
-  }
-
-  // Parse content
-  cleanTxt.split('\n').forEach(function(line){
-    var t=line.trim();
-    if(!t) return;
-    var clean=t.replace(/^#{1,3}\s*/,'');
-
-    if(/^(I{1,3}|IV|V|VI{1,3}|IX|X)\. /i.test(clean)){
-      secIdx++; stepIdx=0;
-      html+='<div style="margin-top:20px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--blue)">'
-        +'<span style="font-size:15px;font-weight:800;color:var(--blue)">'+esc(clean)+'</span>'
-        +'</div>';
-
-    } else if(/^\d+[.)]\s/.test(t)){
-      var sec=sections[secIdx];
-      var st=sec?sec.steps[stepIdx]:null;
-      stepIdx++;
-      var photos=(st&&st.photos&&st.photos.length)?st.photos:[];
-      html+='<div style="background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:8px;border:1px solid var(--border);border-left:3px solid var(--blue-pale)">'
-        +'<div style="font-size:13px;color:var(--text);font-weight:600;margin-bottom:'+(photos.length?'8':'0')+'px">'+esc(t)+'</div>';
-      if(photos.length){
-        html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">';
-        photos.forEach(function(ph){
-          if(ph.data) html+='<img src="'+ph.data+'" style="max-width:120px;max-height:90px;border-radius:6px;border:1px solid var(--border);object-fit:cover">';
-        });
-        html+='</div>';
-      }
+    if(secTitles.length>0){
+      html+='<div style="background:#F8FAFF;border-radius:10px;padding:14px 16px;margin-bottom:20px;border-left:4px solid var(--blue)">'
+        +'<div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Sommaire</div>';
+      secTitles.forEach(function(t){
+        html+='<div style="font-size:13px;padding:3px 0;border-bottom:1px dotted var(--border)">'+esc(t)+'</div>';
+      });
       html+='</div>';
-
-    } else if(/^[-•]\s/.test(t)){
-      html+='<div style="padding:3px 12px;font-size:13px;color:var(--muted)">• '+esc(t.slice(2))+'</div>';
-
-    } else {
-      html+='<div style="font-size:12px;color:var(--muted);padding:4px 0">'+esc(clean)+'</div>';
     }
-  });
+
+    // Content
+    cleanTxt.split('\n').forEach(function(line){
+      var t=line.trim();
+      if(!t) return;
+      var clean=t.replace(/^#{1,3}\s*/,'');
+      if(/^(I{1,3}|IV|V|VI{1,3}|IX|X)\. /i.test(clean)){
+        secIdx++; stepIdx=0;
+        html+='<div style="margin-top:20px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--blue)">'
+          +'<span style="font-size:15px;font-weight:800;color:var(--blue)">'+esc(clean)+'</span></div>';
+      } else if(/^\d+[.)]\s/.test(t)){
+        var sec=sections[secIdx];
+        var st=sec?sec.steps[stepIdx]:null;
+        stepIdx++;
+        var photos=(st&&st.photos&&st.photos.length)?st.photos:[];
+        html+='<div style="background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:8px;border:1px solid var(--border);border-left:3px solid var(--blue-pale)">'
+          +'<div style="font-size:13px;font-weight:600;margin-bottom:'+(photos.length?'8':'0')+'px">'+esc(t)+'</div>';
+        if(photos.length){
+          html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">';
+          photos.forEach(function(ph){
+            if(ph.data) html+='<img src="'+ph.data+'" style="max-width:120px;max-height:90px;border-radius:6px;border:1px solid var(--border);object-fit:cover">';
+          });
+          html+='</div>';
+        }
+        html+='</div>';
+      } else if(/^[-•]\s/.test(t)){
+        html+='<div style="padding:3px 12px;font-size:13px;color:var(--muted)">• '+esc(t.slice(2))+'</div>';
+      } else {
+        html+='<div style="font-size:12px;color:var(--muted);padding:4px 0">'+esc(clean)+'</div>';
+      }
+    });
+
+  } else if(sections.length>0){
+    // ── Mode sections brutes : pas encore de genText ──────────────
+    html+='<div style="background:#FFF8E1;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#856404">'
+      +'Document non encore généré par IA — affichage des étapes brutes.</div>';
+    sections.forEach(function(sec,si){
+      html+='<div style="margin-top:16px;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid var(--blue)">'
+        +'<span style="font-size:14px;font-weight:800;color:var(--blue)">'+(si+1)+'. '+esc(sec.title||'Section')+'</span></div>';
+      (sec.steps||[]).forEach(function(st,sti){
+        var photos=st.photos||[];
+        html+='<div style="background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:6px;border:1px solid var(--border)">'
+          +'<div style="font-size:13px;font-weight:600">'+(sti+1)+'. '+esc(st.text||'')+'</div>';
+        if(photos.length){
+          html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">';
+          photos.forEach(function(ph){
+            if(ph.data) html+='<img src="'+ph.data+'" style="max-width:120px;max-height:90px;border-radius:6px;object-fit:cover">';
+          });
+          html+='</div>';
+        }
+        html+='</div>';
+      });
+    });
+
+  } else {
+    html+='<div style="text-align:center;color:var(--muted);padding:40px">Aucun contenu — ajoutez des étapes ou générez via AI Review.</div>';
+  }
 
   var el=document.getElementById('preview-content');
   if(el) el.innerHTML=html;
