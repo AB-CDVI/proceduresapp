@@ -149,7 +149,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.31</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.34</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -237,7 +237,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.31</div>
+      <div class="hdr-sub">Magnetic Solution — v1.34</div>
     </div>
     <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:6px" title="Sync status"></span>
     <div id="hdr-avatar" onclick="go('settings')" title="Profil & Réglages" style="cursor:pointer;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;letter-spacing:-.5px;transition:background .15s;flex-shrink:0"></div>
@@ -516,8 +516,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="ftr">
     <button class="btn btn-s" onclick="go('capture')">✏️ Edit steps</button>
+    <button class="btn btn-s" onclick="openPreview()" style="background:var(--blue-pale);color:var(--blue);border-color:var(--blue-mid)">👁️ Aperçu</button>
     <button class="btn btn-p" onclick="exportWord()">📄 Export Word</button>
   </div>
+
+<!-- ══════════════════════════════════════════
+     PREVIEW SCREEN
+════════════════════════════════════════════ -->
+<div id="preview" class="screen" style="display:none">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('review')">←</button>
+    <div>
+      <div class="hdr-title">Aperçu</div>
+      <div class="hdr-sub" id="preview-ref"></div>
+    </div>
+  </header>
+  <div class="content" id="preview-content" style="padding:16px;background:#fff"></div>
 </div>
 
 <!-- ══════════════════════════════════════════
@@ -587,7 +601,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.31 — Architecture séparée
+// GITHUB SYNC v1.34 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -696,9 +710,16 @@ async function ghSave(){
       return safe;
     });
     // data.json only stores users + procIds + token (no proc content = always small)
+    // procIds stored per user: {username: [id1, id2, ...]}
+    var procIdsByUser={};
+    getProcs().forEach(function(p){
+      var uname=(p.userId?(users.find(function(u){return u.id===p.userId;})||{}).name||'unknown':'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
+      if(!procIdsByUser[uname]) procIdsByUser[uname]=[];
+      if(!procIdsByUser[uname].includes(p.id)) procIdsByUser[uname].push(p.id);
+    });
     var data={
       users:safeUsers,
-      procIds:getProcs().map(function(p){return p.id;}),
+      procIds:procIdsByUser,
       st:obfuscate(tok),
       updated:new Date().toISOString()
     };
@@ -731,27 +752,70 @@ async function ghSaveProc(proc){
         }
       });
     });
-    // Save lightweight proc json
+    // Save lightweight proc json — path: procs/[username]/[id].json
+    var uname=(S.user&&S.user.name?S.user.name:'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
     var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(procNoPhotos))));
-    var ok=await ghPutFile('procs/'+proc.id+'.json',encoded,tok);
+    var ok=await ghPutFile('procs/'+uname+'/'+proc.id+'.json',encoded,tok);
     if(!ok)return false;
-    // Upload photos in parallel — each file is small
-    // Photos are data URLs: "data:image/jpeg;base64,/9j/..."
-    // GitHub API needs raw base64 content — extract the part after the comma
+    // Upload photos — path: photos/[username]/[procId]/[photoId].b64
     if(photoJobs.length>0){
       await Promise.all(photoJobs.map(function(job){
         var rawB64=job.data.indexOf(',')>=0?job.data.split(',')[1]:job.data;
-        // Store as: MIME_HEADER|base64data so we can reconstruct the data URL on load
         var mime=job.data.indexOf(',')>=0?job.data.split(',')[0]:'data:image/jpeg;base64';
         var fileContent=btoa(mime+'|'+rawB64);
-        return ghPutFile(job.path,fileContent,tok);
+        var photoPath='photos/'+uname+'/'+proc.id+'/'+job.path.split('/').pop();
+        return ghPutFile(photoPath,fileContent,tok);
       }));
     }
     return true;
   }catch(e){console.warn('ghSaveProc:',e);return false;}
 }
 
+// ─── Load ONE procedure by username/id ──────────────────
+async function ghFetchProcByUser(procId, uname){
+  var tok=getBestToken();
+  if(!tok)return null;
+  try{
+    var path='procs/'+uname+'/'+procId+'.json';
+    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+path,{
+      headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(!resp.ok)return null;
+    var meta=await resp.json();
+    var raw=atob(meta.content.replace(/\s/g,''));
+    var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
+    var proc=JSON.parse(decoded);
+    // Fetch photos from photos/[username]/[procId]/
+    var photoFetches=[];
+    (proc.sections||[]).forEach(function(sec){
+      (sec.steps||[]).forEach(function(st){
+        (st.photos||[]).forEach(function(ph){
+          if(!ph.data||ph.data===''){
+            photoFetches.push({ph:ph,path:'photos/'+uname+'/'+procId+'/'+ph.id+'.b64'});
+          }
+        });
+      });
+    });
+    if(photoFetches.length>0){
+      await Promise.all(photoFetches.map(async function(job){
+        try{
+          var pr=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+job.path,{
+            headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
+          });
+          if(!pr.ok)return;
+          var pm=await pr.json();
+          var rawData=atob(pm.content.replace(/\s/g,''));
+          var pipeIdx=rawData.indexOf('|');
+          job.ph.data=pipeIdx>=0?rawData.slice(0,pipeIdx)+','+rawData.slice(pipeIdx+1):rawData;
+        }catch(e){console.warn('photo fetch failed:',job.path);}
+      }));
+    }
+    return proc;
+  }catch(e){return null;}
+}
+
 // ─── Load ONE procedure from GitHub + its photos ────────
+// Legacy: tries procs/[id].json (old flat structure)
 async function ghFetchProc(procId){
   var tok=getBestToken();
   if(!tok)return null;
@@ -844,55 +908,62 @@ async function ghLoad(){
     }
 
     // Load procedures — fetch ones not already in localStorage
-    var procIds=data.procIds||[];
-    // Also handle old format where procs were embedded
-    if(!data.procIds&&data.procs&&data.procs.length){
-      var localProcs=getProcs();
-      data.procs.forEach(function(p){
-        if(!localProcs.find(function(lp){return lp.id===p.id;}))localProcs.push(p);
-      });
-      localStorage.setItem('ms_procs',JSON.stringify(localProcs));
-    }else if(procIds.length){
-      var localProcs=getProcs();
-      // Fetch procs that are either missing OR have photos with empty data
-      var idsToFetch=procIds.filter(function(id){
-        var local=localProcs.find(function(p){return p.id===id;});
-        if(!local)return true; // missing entirely
-        // Check if any photo has empty data (uploaded from another device)
-        var hasEmptyPhoto=(local.sections||[]).some(function(sec){
-          return (sec.steps||[]).some(function(st){
-            return (st.photos||[]).some(function(ph){return !ph.data||ph.data==='';});
-          });
+    // procIds is now per-user: {username: [id1, id2, ...]}
+    // Support old flat array format for backward compat
+    var procIdsByUser=data.procIds||{};
+    var currentUser=S.user||JSON.parse(localStorage.getItem('ms_users')||'[]')[0];
+    var currentUname=currentUser?(currentUser.name||'unknown').replace(/[^a-zA-Z0-9_-]/g,'_'):'unknown';
+    var isAdminU=currentUser&&currentUser.isAdmin;
+
+    // Build fetch list: own procs + shared procs from others
+    // Own procs: from procs/[myUsername]/
+    // Others' shared procs: only fetched if visibility='shared' in their proc json
+    var toFetch=[]; // [{id, username}]
+
+    if(Array.isArray(procIdsByUser)){
+      // Old flat format — treat all as own procs for migration
+      procIdsByUser.forEach(function(id){ toFetch.push({id:id,uname:currentUname}); });
+    } else {
+      // New per-user format
+      Object.keys(procIdsByUser).forEach(function(uname){
+        procIdsByUser[uname].forEach(function(id){
+          toFetch.push({id:id,uname:uname});
         });
-        return hasEmptyPhoto;
       });
-      if(idsToFetch.length>0){
-        var currentUser=S.user||JSON.parse(localStorage.getItem('ms_users')||'[]')[0];
-        var isAdminU=currentUser&&currentUser.isAdmin;
-        var fetched=await Promise.all(idsToFetch.map(ghFetchProc));
-        fetched.forEach(function(p){
-          if(!p)return;
-          // Migration: assign visibility based on ownership
-          if(!p.visibility){
-            p.visibility=p.userId===currentUser?.id?'shared':'private';
-          }
-          // BLOCK: never store private procs from other users (except admin)
-          if(p.visibility==='private'&&p.userId!==currentUser?.id&&!isAdminU){
-            console.log('Blocked private proc from other user:',p.id,p.userId);
-            return;
-          }
-          var idx=localProcs.findIndex(function(lp){return lp.id===p.id;});
-          if(idx>=0)localProcs[idx]=p;
-          else localProcs.push(p);
+    }
+
+    var localProcs=getProcs();
+    // Only fetch procs that are missing or have empty photos
+    var needFetch=toFetch.filter(function(item){
+      var local=localProcs.find(function(p){return p.id===item.id;});
+      if(!local) return true;
+      return (local.sections||[]).some(function(sec){
+        return (sec.steps||[]).some(function(st){
+          return (st.photos||[]).some(function(ph){return !ph.data||ph.data==='';});
         });
-        // Also purge any previously stored private procs from others
-        if(!isAdminU){
-          localProcs=localProcs.filter(function(p){
-            return p.userId===currentUser?.id||p.visibility==='shared';
-          });
-        }
-        localStorage.setItem('ms_procs',JSON.stringify(localProcs));
+      });
+    });
+
+    if(needFetch.length>0){
+      var fetched=await Promise.all(needFetch.map(function(item){
+        return ghFetchProcByUser(item.id, item.uname);
+      }));
+      fetched.forEach(function(p){
+        if(!p) return;
+        if(!p.visibility) p.visibility=p.userId===currentUser?.id?'shared':'private';
+        // Block private procs from others unless admin
+        if(p.visibility==='private'&&p.userId!==currentUser?.id&&!isAdminU) return;
+        var idx=localProcs.findIndex(function(lp){return lp.id===p.id;});
+        if(idx>=0) localProcs[idx]=p;
+        else localProcs.push(p);
+      });
+      // Final purge — non-admin never stores private procs from others
+      if(!isAdminU){
+        localProcs=localProcs.filter(function(p){
+          return p.userId===currentUser?.id||p.visibility==='shared';
+        });
       }
+      localStorage.setItem('ms_procs',JSON.stringify(localProcs));
     }
 
     localStorage.setItem('last_save_time',String(Date.now()));
@@ -1335,18 +1406,28 @@ async function forceSyncFromGH(){
     // Re-fetch every proc with photos
     var localProcs=getProcs();
     var isAdminSync=S.user&&S.user.isAdmin;
-    for(var i=0;i<procIds.length;i++){
-      showOverlay('Chargement procédure '+(i+1)+'/'+procIds.length+' (photos incluses)...');
-      var p=await ghFetchProc(procIds[i]);
+    var procIdsByUser=data.procIds||{};
+    // Build flat list of {id,uname} to fetch
+    var allToFetch=[];
+    if(Array.isArray(procIdsByUser)){
+      var myUname=(S.user.name||'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
+      procIdsByUser.forEach(function(id){allToFetch.push({id:id,uname:myUname});});
+    } else {
+      Object.keys(procIdsByUser).forEach(function(uname){
+        procIdsByUser[uname].forEach(function(id){allToFetch.push({id:id,uname:uname});});
+      });
+    }
+    for(var i=0;i<allToFetch.length;i++){
+      showOverlay('Chargement '+(i+1)+'/'+allToFetch.length+' (photos incluses)...');
+      var item=allToFetch[i];
+      var p=await ghFetchProcByUser(item.id,item.uname);
       if(!p) continue;
       if(!p.visibility) p.visibility=p.userId===S.user?.id?'shared':'private';
-      // Block private procs from others unless admin
       if(p.visibility==='private'&&p.userId!==S.user?.id&&!isAdminSync) continue;
       var idx=localProcs.findIndex(function(lp){return lp.id===p.id;});
       if(idx>=0)localProcs[idx]=p;
       else localProcs.push(p);
     }
-    // Final purge
     if(!isAdminSync){
       localProcs=localProcs.filter(function(p){
         return p.userId===S.user?.id||p.visibility==='shared';
@@ -1512,7 +1593,7 @@ function renderHome(){
         </div>
       </div>
       <span class="badge badge-${p.status}">${p.status}</span>
-      ${canDelete?`<button onclick="deleteProc('${p.id}')" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;opacity:.6" title="Supprimer">🗑️</button>`:''}
+      <!-- Delete button hidden — use GitHub directly to delete procs for now -->
     </div>`;
   }
 
@@ -2060,6 +2141,80 @@ function renderReviewPhotos(){
 // ═══════════════════════════════════════════════════════
 // EXPORT — CDVI Template style with photos
 // ═══════════════════════════════════════════════════════
+async // ─── Preview screen ──────────────────────────────────────────────────────────
+function openPreview(){
+  if(!S.cur){toast('Aucune procédure sélectionnée');return;}
+  var p=S.cur;
+  var ref=document.getElementById('preview-ref');
+  if(ref) ref.textContent=p.ref||'';
+
+  // Parse genText into structured HTML
+  var txt=p.genText||'';
+  var sections=p.sections||[];
+  var secIdx=-1;
+  var stepIdx=0;
+  var html='';
+
+  // Add title block
+  html+=`<div style="text-align:center;margin-bottom:24px;padding-bottom:16px;border-bottom:3px solid var(--blue)">
+    <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Procédure de fabrication</div>
+    <div style="font-size:20px;font-weight:800;color:var(--blue)">${esc(p.title)}</div>
+    <div style="font-size:13px;color:var(--muted);margin-top:4px">${esc(p.ref||'')} ${p.op?'· '+esc(p.op):''}</div>
+  </div>`;
+
+  // Build TOC
+  var secTitles=[];
+  txt.replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').split('\n').forEach(function(line){
+      var t=line.trim();
+      if(/^(I{1,3}|IV|V|VI{1,3}|IX|X)\.\s/i.test(t.replace(/^#{1,3}\s*/,''))) secTitles.push(t.replace(/^#{1,3}\s*/,''));
+    });
+
+  if(secTitles.length>0){
+    html+=`<div style="background:#F8FAFF;border-radius:10px;padding:14px 16px;margin-bottom:20px;border-left:4px solid var(--blue)">
+      <div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Sommaire</div>`;
+    secTitles.forEach(function(t,i){
+      html+=`<div style="font-size:13px;color:var(--text);padding:3px 0;border-bottom:1px dotted var(--border)">${esc(t)}</div>`;
+    });
+    html+='</div>';
+  }
+
+  // Parse content
+  txt.replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').split('\n').forEach(function(line){
+      var t=line.trim();
+      if(!t) return;
+      var clean=t.replace(/^#{1,3}\s*/,'');
+      if(/^(I{1,3}|IV|V|VI{1,3}|IX|X)\.\s/i.test(clean)){
+        secIdx++; stepIdx=0;
+        html+=`<div style="margin-top:20px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--blue)">
+          <span style="font-size:15px;font-weight:800;color:var(--blue)">${esc(clean)}</span>
+        </div>`;
+      } else if(/^\d+[.)]\s/.test(t)){
+        var sec=sections[secIdx];
+        var st=sec?sec.steps[stepIdx]:null;
+        stepIdx++;
+        var photos=(st&&st.photos&&st.photos.length)?st.photos:[];
+        html+=`<div style="background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:8px;border:1px solid var(--border);border-left:3px solid var(--blue-pale)">
+          <div style="font-size:13px;color:var(--text);font-weight:600;margin-bottom:${photos.length?'8px':'0'}">${esc(t)}</div>`;
+        if(photos.length){
+          html+=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">`;
+          photos.forEach(function(ph){
+            if(ph.data) html+=`<img src="${ph.data}" style="max-width:120px;max-height:90px;border-radius:6px;border:1px solid var(--border);object-fit:cover">`;
+          });
+          html+=`</div>`;
+        }
+        html+=`</div>`;
+      } else if(/^[-•]\s/.test(t)){
+        html+=`<div style="padding:3px 12px;font-size:13px;color:var(--muted)">• ${esc(t.slice(2))}</div>`;
+      } else {
+        html+=`<div style="font-size:12px;color:var(--muted);padding:4px 0">${esc(clean)}</div>`;
+      }
+    });
+
+  var el=document.getElementById('preview-content');
+  if(el) el.innerHTML=html;
+  go('preview');
+}
+
 async function exportWord(){
   const p=S.cur;
   const txt=document.getElementById('review-edit').value;
