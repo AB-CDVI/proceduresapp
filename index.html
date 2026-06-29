@@ -149,7 +149,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.37</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.38</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -237,7 +237,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.37</div>
+      <div class="hdr-sub">Magnetic Solution — v1.38</div>
     </div>
     <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:6px" title="Sync status"></span>
     <div id="hdr-avatar" onclick="go('settings')" title="Profil & Réglages" style="cursor:pointer;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;letter-spacing:-.5px;transition:background .15s;flex-shrink:0"></div>
@@ -601,7 +601,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.37 — Architecture séparée
+// GITHUB SYNC v1.38 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -737,6 +737,8 @@ async function ghSaveProc(proc){
   var tok=getBestToken();
   if(!tok||!proc)return false;
   try{
+    // Username for file paths — defined first as used in both photo and proc paths
+    var uname=(S.user&&S.user.name?S.user.name:'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
     // Deep clone — strip photo data from json, keep only id references
     var procNoPhotos=JSON.parse(JSON.stringify(proc));
     var photoJobs=[];
@@ -745,7 +747,7 @@ async function ghSaveProc(proc){
         if(st.photos&&st.photos.length){
           st.photos.forEach(function(ph){
             if(ph.data&&ph.data.length>0){
-              photoJobs.push({path:'photos/'+proc.id+'/'+ph.id+'.b64',data:ph.data});
+              photoJobs.push({path:'photos/'+uname+'/'+proc.id+'/'+ph.id+'.b64',data:ph.data});
               ph.data=''; // remove from json
             }
           });
@@ -753,7 +755,6 @@ async function ghSaveProc(proc){
       });
     });
     // Save lightweight proc json — path: procs/[username]/[id].json
-    var uname=(S.user&&S.user.name?S.user.name:'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
     var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(procNoPhotos))));
     var ok=await ghPutFile('procs/'+uname+'/'+proc.id+'.json',encoded,tok);
     if(!ok)return false;
