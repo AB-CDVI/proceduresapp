@@ -1800,11 +1800,14 @@ function toggleVisibility(id){
   const p=procs.find(p=>p.id===id);
   if(!p)return;
   p.visibility=p.visibility==='shared'?'private':'shared';
-  saveProcs(procs);
+  localStorage.setItem('ms_procs',JSON.stringify(procs));
   renderHome();
-  // Sync to GitHub
+  // Sync to GitHub: push the proc itself, then data.json (procIds list)
+  // so other users' next ghLoad() actually picks it up
   var tok=getBestToken();
-  if(tok) ghSaveProc(p);
+  if(tok){
+    ghSaveProc(p).then(function(){ ghSave(); });
+  }
   toast(p.visibility==='shared'?'👥 Proc. partagée avec l\'équipe':'🔒 Proc. rendue privée');
 }
 
