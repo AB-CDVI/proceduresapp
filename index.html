@@ -7,37 +7,39 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1B3A6B">
 <title>ProceduresApp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --blue:#1B3A6B;--blue-mid:#2E75B6;--blue-pale:#D6E4F0;
-  --orange:#E8610A;--white:#fff;--bg:#F0F4F8;
-  --border:#E2E8F0;--text:#1A1A2E;--muted:#7A8AA0;
+  --blue:#1B3A6B;--blue-mid:#2E75B6;--blue-pale:#D6E4F0;--blue-soft:#EEF4FB;
+  --orange:#E8610A;--white:#fff;--bg:#F5F7FA;
+  --border:#EDF0F4;--text:#1A2332;--muted:#9AA5B4;
   --green:#16A34A;--red:#DC2626;
-  --r:12px;--shadow:0 2px 12px rgba(27,58,107,.1);
+  --r:14px;--r-lg:18px;--shadow:0 2px 8px rgba(27,58,107,.06);
 }
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;overflow-x:hidden}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;overflow-x:hidden}
 .screen{display:none;flex-direction:column;min-height:100vh}
 .screen.active{display:flex}
-.hdr{background:var(--blue);color:#fff;padding:0 16px;height:58px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 3px 0 var(--blue-mid),0 4px 16px rgba(27,58,107,.3)}
-.hdr-title{font-size:17px;font-weight:800;flex:1;line-height:1.2;letter-spacing:-.3px}
-.hdr-sub{font-size:10px;opacity:.6;font-weight:500;letter-spacing:.2px}
-.btn-back{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:6px;line-height:1}
+.hdr{background:var(--blue);color:#fff;padding:0 18px;height:58px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(27,58,107,.18)}
+.hdr-title{font-size:17px;font-weight:800;flex:1;line-height:1.2;letter-spacing:-.4px}
+.hdr-sub{font-size:10px;opacity:.5;font-weight:500;letter-spacing:.3px}
+.btn-back{background:rgba(255,255,255,.1);border:none;color:#fff;font-size:18px;cursor:pointer;padding:6px 10px;line-height:1;border-radius:9px;display:flex;align-items:center;justify-content:center}
 .content{flex:1;overflow-y:auto;padding:16px;padding-bottom:86px}
-.ftr{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;border-top:2px solid var(--blue);padding:10px 14px;display:flex;gap:8px;z-index:100}
-.btn{padding:12px 18px;border-radius:var(--r);border:none;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:opacity .15s,transform .1s;font-family:inherit}
+.ftr{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;border-top:1px solid var(--border);padding:10px 14px;display:flex;gap:8px;z-index:100;box-shadow:0 -4px 16px rgba(27,58,107,.05)}
+.btn{padding:13px 18px;border-radius:13px;border:none;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:opacity .15s,transform .1s;font-family:inherit;letter-spacing:-.1px}
 .btn:active{transform:scale(.97)}
-.btn-p{background:var(--blue);color:#fff;flex:1}
-.btn-s{background:var(--bg);color:var(--text);border:1.5px solid var(--border)}
-.btn-o{background:var(--blue-mid);color:#fff;flex:1}
+.btn-p{background:var(--blue);color:#fff;flex:1;box-shadow:0 4px 14px rgba(27,58,107,.25)}
+.btn-s{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.btn-o{background:var(--blue-mid);color:#fff;flex:1;box-shadow:0 4px 14px rgba(46,117,182,.25)}
 .btn-full{width:100%}
-.btn-sm{padding:8px 14px;font-size:13px}
+.btn-sm{padding:9px 14px;font-size:13px}
 .btn-danger{background:var(--red);color:#fff}
-.card{background:#fff;border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);border-bottom:2px solid var(--blue-pale)}
-.card-title{font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.card{background:#fff;border-radius:var(--r-lg);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.card-title{font-size:12px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px}
 .fg{margin-bottom:14px}
-.fl{display:block;font-size:12px;font-weight:700;color:var(--blue);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
-.fi,.fs,.fta{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:15px;font-family:inherit;background:#fff;color:var(--text);transition:border-color .2s}
+.fl{display:block;font-size:11px;font-weight:700;color:var(--blue);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.fi,.fs,.fta{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:11px;font-size:15px;font-family:inherit;background:#fff;color:var(--text);transition:border-color .2s}
 .fi:focus,.fs:focus,.fta:focus{outline:none;border-color:var(--blue-mid)}
 .fs{appearance:none}
 .fta{resize:none;line-height:1.5}
@@ -53,12 +55,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .user-btn:hover,.user-btn:active{border-color:var(--blue-mid);background:var(--blue-pale)}
 .user-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0}
 
-/* HOME */
-.filter-btn{padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:11px;font-weight:700;cursor:pointer;color:var(--muted);transition:all .15s}
-.filter-btn.filter-active{background:var(--blue);color:#fff;border-color:var(--blue)}
+/* HOME — header with stats */
+.home-hdr{background:var(--blue);padding:22px 18px 20px;position:relative;overflow:hidden}
+.home-hdr::before{content:'';position:absolute;top:-50px;right:-50px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.04)}
+.home-hdr::after{content:'';position:absolute;bottom:-40px;left:50px;width:140px;height:140px;border-radius:50%;background:rgba(46,117,182,.18)}
+.home-hdr-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;position:relative;z-index:1}
+.home-hdr-greet{font-size:11px;font-weight:500;color:rgba(255,255,255,.4);letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px}
+.home-hdr-name{font-size:23px;font-weight:800;color:#fff;letter-spacing:-.6px;line-height:1}
+.home-stats{display:flex;gap:8px;position:relative;z-index:1}
+.home-stat{flex:1;background:rgba(255,255,255,.09);border-radius:13px;padding:10px 11px;border:1px solid rgba(255,255,255,.07)}
+.home-stat-n{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px}
+.home-stat-l{font-size:9px;font-weight:500;color:rgba(255,255,255,.38);letter-spacing:.4px;margin-top:2px}
+.home-stat.hi{background:rgba(46,117,182,.35);border-color:rgba(46,117,182,.4)}
+.home-stat.hi .home-stat-n{color:#A8D0F5}
+
+/* Filters */
+.filter-btn{padding:7px 14px;border-radius:10px;border:1px solid var(--border);background:#fff;font-size:11px;font-weight:700;cursor:pointer;color:var(--muted);transition:all .15s}
+.filter-btn.filter-active{background:var(--blue);color:#fff;border-color:var(--blue);box-shadow:0 3px 10px rgba(27,58,107,.25)}
 
 /* Accordion procedure cards */
-.proc-card{background:#fff;border-radius:16px;margin-bottom:8px;box-shadow:0 2px 8px rgba(27,58,107,.06);border:1px solid #EDF0F4;overflow:hidden}
+.proc-card{background:#fff;border-radius:16px;margin-bottom:8px;box-shadow:0 2px 8px rgba(27,58,107,.06);border:1px solid var(--border);overflow:hidden}
 .proc-card-accent{height:3px;width:100%}
 .proc-card-accent-draft{background:#E2E8F0}
 .proc-card-accent-generated{background:linear-gradient(90deg,#16A34A,#4ADE80)}
@@ -66,46 +82,47 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .proc-card-accent-generating{background:linear-gradient(90deg,var(--blue-mid),#5B9FD4)}
 .proc-card-row{padding:13px 14px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:background .1s}
 .proc-card-row:active{background:#FAFBFD}
-.proc-card-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;background:var(--blue-pale)}
+.proc-card-icon{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--blue-soft)}
+.proc-card-icon svg{width:18px;height:18px;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .proc-card-icon-generated{background:#EDFBF1}
-.proc-card-icon-exported{background:var(--blue-pale)}
-.proc-card-icon-draft{background:#F0F4F8}
+.proc-card-icon-exported{background:var(--blue-soft)}
+.proc-card-icon-draft{background:#F5F7FA}
 .proc-info{flex:1;min-width:0}
-.proc-title{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--blue)}
+.proc-title{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--blue);letter-spacing:-.2px}
 .proc-meta{font-size:11px;color:var(--muted);margin-top:2px}
 .proc-card-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
 .proc-chevron{width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:transform .2s}
 .proc-chevron-open{transform:rotate(180deg)}
 .proc-card-expand{border-top:1px solid #F0F3F7;padding:11px 14px;background:#FAFBFD;display:flex;gap:6px}
 .proc-action-btn{flex:1;background:#fff;border:1px solid var(--border);color:#4A5568;font-size:11px;font-weight:700;padding:8px 6px;border-radius:10px;cursor:pointer;font-family:inherit;text-align:center}
-.proc-action-btn-review{background:var(--blue-pale);color:var(--blue);border-color:#C5DAFA}
+.proc-action-btn-review{background:var(--blue-soft);color:var(--blue);border-color:#C5DAFA}
 .proc-action-btn-apercu{background:var(--blue);color:#fff;border-color:var(--blue)}
-.badge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700;white-space:nowrap;flex-shrink:0}
+.badge{font-size:9px;padding:4px 9px;border-radius:8px;font-weight:800;white-space:nowrap;flex-shrink:0;letter-spacing:.3px;text-transform:uppercase}
 .badge-draft{background:var(--bg);color:var(--muted)}
 .badge-generated{background:#DCFCE7;color:#15803D}
-.badge-exported{background:var(--blue-pale);color:var(--blue)}
+.badge-exported{background:var(--blue-soft);color:var(--blue)}
 .badge-generating{background:#EFF6FF;color:var(--blue-mid)}
 
 /* CAPTURE */
-.sec-hdr{background:var(--blue);color:#fff;padding:10px 14px;border-radius:9px;margin-bottom:8px;display:flex;align-items:center;gap:10px;border-bottom:3px solid var(--blue-mid)}
-.sec-num{font-size:12px;opacity:.7;flex-shrink:0}
-.sec-title{font-size:14px;font-weight:700;flex:1}
-.sec-edit{background:none;border:none;color:#fff;opacity:.8;font-size:16px;cursor:pointer;padding:2px}
-.step-card{background:#fff;border-radius:9px;margin-bottom:8px;margin-left:16px;border:1px solid var(--border);overflow:hidden}
-.step-top{padding:10px 13px;display:flex;align-items:flex-start;gap:10px;cursor:pointer}
-.step-n{width:26px;height:26px;background:var(--blue-pale);color:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px}
-.step-txt{font-size:13px;color:var(--text);flex:1;line-height:1.45}
-.step-txt.empty{color:var(--muted);font-style:italic}
-.step-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
-.step-tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600}
-.tag-photo{background:#E0F2FE;color:#0369A1}
-.tag-voice{background:#FEF3C7;color:#92400E}
+.sec-hdr{background:linear-gradient(90deg,var(--blue),#163566);color:#fff;padding:11px 14px;border-radius:13px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.sec-num{font-size:9px;font-weight:800;color:rgba(255,255,255,.5);letter-spacing:1.5px;text-transform:uppercase;background:rgba(255,255,255,.12);border-radius:6px;padding:2px 8px;flex-shrink:0}
+.sec-title{font-size:13px;font-weight:700;flex:1;letter-spacing:-.1px}
+.sec-edit{background:rgba(255,255,255,.1);border:none;color:#fff;opacity:.85;font-size:14px;cursor:pointer;padding:5px 7px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+.step-card{background:#fff;border-radius:14px;margin-bottom:8px;margin-left:16px;border:1px solid var(--border);overflow:hidden}
+.step-top{padding:11px 13px;display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.step-n{width:25px;height:25px;background:var(--blue-soft);color:var(--blue);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px}
+.step-txt{font-size:13px;color:var(--text);flex:1;line-height:1.45;font-weight:500}
+.step-txt.empty{color:var(--muted);font-style:italic;font-weight:400}
+.step-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.step-tag{font-size:9px;padding:3px 8px;border-radius:7px;font-weight:700;letter-spacing:.2px}
+.tag-photo{background:#DBEAFE;color:#1D4ED8}
+.tag-voice{background:#FEF9C3;color:#854D0E}
 .step-btns{display:flex;border-top:1px solid var(--border)}
-.cap-btn{flex:1;padding:9px 6px;border:none;font-size:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;background:#fff;border-right:1px solid var(--border);transition:background .1s;font-family:inherit}
+.cap-btn{flex:1;padding:9px 6px;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;background:#fff;border-right:1px solid var(--border);transition:background .1s;font-family:inherit}
 .cap-btn:last-child{border-right:none}
 .cap-btn:active{background:var(--bg)}
-.cap-btn span{font-size:10px;font-weight:600;color:var(--muted)}
-.cap-btn.cv{background:#FFFBEB}.cap-btn.cp{background:#F0F9FF}.cap-btn.ct{background:#F0FFF4}.cap-btn.cd{background:#FFF1F2}
+.cap-btn svg{width:15px;height:15px;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;color:var(--muted)}
+.cap-btn span{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.2px;text-transform:uppercase}
 .add-row{display:flex;gap:8px;margin-top:4px;margin-bottom:16px;margin-left:16px}
 
 /* STEP DETAIL */
@@ -168,7 +185,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.45</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.46</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -253,19 +270,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
      HOME
 ══════════════════════════════════════════ -->
 <div id="s-home" class="screen">
-  <header class="hdr">
-    <div style="flex:1">
-      <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.45</div>
+  <div class="home-hdr">
+    <div class="home-hdr-row">
+      <div>
+        <div class="home-hdr-greet">Bonjour</div>
+        <div class="home-hdr-name" id="home-username">—</div>
+      </div>
+      <span id="sync-indicator" style="font-size:13px;opacity:.7;margin-right:2px;align-self:flex-start" title="Sync status"></span>
+      <div id="hdr-avatar" onclick="go('settings')" title="Profil & Réglages" style="cursor:pointer;width:40px;height:40px;border-radius:13px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;letter-spacing:-.5px;flex-shrink:0;position:relative;z-index:1"></div>
     </div>
-    <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:6px" title="Sync status"></span>
-    <div id="hdr-avatar" onclick="go('settings')" title="Profil & Réglages" style="cursor:pointer;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;letter-spacing:-.5px;transition:background .15s;flex-shrink:0"></div>
-  </header>
+    <div class="home-stats">
+      <div class="home-stat"><div class="home-stat-n" id="stat-total">0</div><div class="home-stat-l">Procédures</div></div>
+      <div class="home-stat"><div class="home-stat-n" id="stat-generated">0</div><div class="home-stat-l">Générées</div></div>
+      <div class="home-stat hi"><div class="home-stat-n" id="stat-exported">0</div><div class="home-stat-l">Exportées</div></div>
+    </div>
+  </div>
   <div class="content">
-    <div style="display:flex;gap:6px;margin-bottom:12px">
-      <button id="filter-mine" onclick="setHomeFilter('mine')" class="filter-btn filter-active">🔒 Moi</button>
-      <button id="filter-others" onclick="setHomeFilter('others')" class="filter-btn">👥 Équipe</button>
-      <button id="filter-all" onclick="setHomeFilter('all')" class="filter-btn">📋 Tout</button>
+    <div style="display:flex;gap:6px;margin-bottom:14px">
+      <button id="filter-mine" onclick="setHomeFilter('mine')" class="filter-btn filter-active">Moi</button>
+      <button id="filter-others" onclick="setHomeFilter('others')" class="filter-btn">Équipe</button>
+      <button id="filter-all" onclick="setHomeFilter('all')" class="filter-btn">Tout</button>
     </div>
     <div id="home-list"></div>
   </div>
@@ -621,7 +645,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.45 — Architecture séparée
+// GITHUB SYNC v1.46 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -1640,11 +1664,31 @@ function renderHome(){
   const el=document.getElementById('home-list');
   const procs=getProcs();
   const users=getUsers();
+
+  // Update greeting name
+  const nameEl=document.getElementById('home-username');
+  if(nameEl) nameEl.textContent=S.user?.name||'—';
+
+  // Update stats
+  const mineProcs=procs.filter(p=>p.userId===S.user?.id);
+  document.getElementById('stat-total').textContent=mineProcs.length;
+  document.getElementById('stat-generated').textContent=mineProcs.filter(p=>p.status==='generated'||p.status==='exported').length;
+  document.getElementById('stat-exported').textContent=mineProcs.filter(p=>p.status==='exported').length;
+
   if(!procs.length){
     el.innerHTML=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-t">No procedures yet</div><div class="empty-s">Tap + to create the first manufacturing procedure.</div></div>`;
     return;
   }
-  const icons={Assembly:'🔧',Electronics:'⚡',Cabling:'🔌',Packaging:'📦',Testing:'🔬',Other:'📋'};
+
+  // SVG icon set — replaces emoji category icons
+  const icons={
+    Assembly:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+    Electronics:'<polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    Cabling:'<path d="M21 6a3 3 0 1 0-5.83 1H8.83A3 3 0 1 0 3 8a3 3 0 0 0 4.17 2.77v2.46A3 3 0 1 0 8 19a3 3 0 0 0 .83-5.77v-2.46A3 3 0 0 0 8.83 9h6.34A3 3 0 1 0 21 6z"/>',
+    Packaging:'<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
+    Testing:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+    Other:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>'
+  };
   const isAdmin=S.user&&S.user.isAdmin;
   const allSorted=[...procs].sort(function(a,b){return new Date(b.created)-new Date(a.created);});
 
@@ -1656,10 +1700,13 @@ function renderHome(){
     const isPrivate=p.visibility==='private'||(isMe&&!p.visibility);
     const canToggleVis=isMe||isAdmin;
     const isOpen=_expandedProcId===p.id;
+    const iconColor=p.status==='exported'?'var(--blue)':p.status==='generated'?'#16A34A':'var(--muted)';
     return `<div class="proc-card">
       <div class="proc-card-accent proc-card-accent-${p.status}"></div>
       <div class="proc-card-row" onclick="toggleProcExpand('${p.id}')">
-        <div class="proc-card-icon proc-card-icon-${p.status}">${icons[p.cat]||'📋'}</div>
+        <div class="proc-card-icon proc-card-icon-${p.status}">
+          <svg viewBox="0 0 24 24" stroke="${iconColor}">${icons[p.cat]||icons.Other}</svg>
+        </div>
         <div class="proc-info">
           <div class="proc-title">${esc(p.title)}</div>
           <div class="proc-meta">${esc(p.ref)}${showAuthor?' · '+esc(author?.name||'?'):''} · ${new Date(p.created).toLocaleDateString()}</div>
@@ -1672,9 +1719,9 @@ function renderHome(){
         </div>
       </div>
       ${isOpen?`<div class="proc-card-expand">
-        <button class="proc-action-btn" onclick="event.stopPropagation();openProc('${p.id}','edit')">✏️ Éditer</button>
-        ${isDone?`<button class="proc-action-btn proc-action-btn-review" onclick="event.stopPropagation();openProc('${p.id}','review')">📄 Review</button>
-        <button class="proc-action-btn proc-action-btn-apercu" onclick="event.stopPropagation();openProc('${p.id}','review');setTimeout(openPreview,50)">👁️ Aperçu</button>`:''}
+        <button class="proc-action-btn" onclick="event.stopPropagation();openProc('${p.id}','edit')">Éditer</button>
+        ${isDone?`<button class="proc-action-btn proc-action-btn-review" onclick="event.stopPropagation();openProc('${p.id}','review')">Review</button>
+        <button class="proc-action-btn proc-action-btn-apercu" onclick="event.stopPropagation();openProc('${p.id}','review');setTimeout(openPreview,50)">Aperçu</button>`:''}
         ${canToggleVis?`<button class="proc-action-btn" onclick="event.stopPropagation();toggleVisibility('${p.id}')" title="${isPrivate?'Rendre partagée':'Rendre privée'}">${isPrivate?'🔒':'👥'}</button>`:''}
       </div>`:''}
     </div>`;
@@ -1866,10 +1913,10 @@ function renderCapture(){
   }
   el.innerHTML=p.sections.map((sec,si)=>`
     <div class="sec-hdr">
-      <span class="sec-num">${roman(si+1)}.</span>
+      <span class="sec-num">Sec. ${roman(si+1)}</span>
       <span class="sec-title">${esc(sec.title||'Untitled')}</span>
-      <button class="sec-edit" onclick="editSecTitle('${sec.id}')">✏️</button>
-      <button class="sec-edit" onclick="deleteSection('${sec.id}')" style="opacity:.7">🗑️</button>
+      <button class="sec-edit" onclick="editSecTitle('${sec.id}')"><svg viewBox="0 0 24 24" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="sec-edit" onclick="deleteSection('${sec.id}')" style="opacity:.7"><svg viewBox="0 0 24 24" width="13" height="13"><polyline points="3 6 5 6 21 6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 6l-1 14H6L5 6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
     ${sec.steps.map((st,idx)=>`
       <div class="step-card">
@@ -1878,16 +1925,16 @@ function renderCapture(){
           <div style="flex:1">
             <div class="step-txt ${!st.text?'empty':''}">${st.text?esc(st.text.slice(0,90))+(st.text.length>90?'…':''):'Tap to add content...'}</div>
             <div class="step-tags">
-              ${st.photos&&st.photos.length?`<span class="step-tag tag-photo">📷 ${st.photos.length}</span>`:''}
-              ${st.voice?`<span class="step-tag tag-voice">🎙️</span>`:''}
+              ${st.photos&&st.photos.length?`<span class="step-tag tag-photo">${st.photos.length} photo${st.photos.length>1?'s':''}</span>`:''}
+              ${st.voice?`<span class="step-tag tag-voice">voix</span>`:''}
             </div>
           </div>
         </div>
         <div class="step-btns">
-          <button class="cap-btn cv" onclick="quickVoice('${sec.id}','${st.id}')">🎙️<span>Voice</span></button>
-          <button class="cap-btn cp" onclick="quickPhoto('${sec.id}','${st.id}')">📷<span>Photo</span></button>
-          <button class="cap-btn ct" onclick="editStep('${sec.id}','${st.id}')">✍️<span>Edit</span></button>
-          <button class="cap-btn cd" onclick="deleteStep('${sec.id}','${st.id}')">🗑️<span>Del</span></button>
+          <button class="cap-btn" onclick="quickVoice('${sec.id}','${st.id}')"><svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Voix</span></button>
+          <button class="cap-btn" onclick="quickPhoto('${sec.id}','${st.id}')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>Photo</span></button>
+          <button class="cap-btn" onclick="editStep('${sec.id}','${st.id}')"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>Éditer</span></button>
+          <button class="cap-btn" onclick="deleteStep('${sec.id}','${st.id}')"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg><span>Suppr.</span></button>
         </div>
       </div>`).join('')}
     <div class="add-row">
