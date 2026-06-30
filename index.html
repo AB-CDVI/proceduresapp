@@ -29,7 +29,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .btn:active{transform:scale(.97)}
 .btn-p{background:var(--blue);color:#fff;flex:1}
 .btn-s{background:var(--bg);color:var(--text);border:1.5px solid var(--border)}
-.btn-o{background:var(--orange);color:#fff;flex:1}
+.btn-o{background:var(--blue-mid);color:#fff;flex:1}
 .btn-full{width:100%}
 .btn-sm{padding:8px 14px;font-size:13px}
 .btn-danger{background:var(--red);color:#fff}
@@ -56,16 +56,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* HOME */
 .filter-btn{padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:11px;font-weight:700;cursor:pointer;color:var(--muted);transition:all .15s}
 .filter-btn.filter-active{background:var(--blue);color:#fff;border-color:var(--blue)}
-.proc-item{background:#fff;border-radius:var(--r);padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow);display:flex;align-items:flex-start;gap:12px;cursor:pointer;border-bottom:3px solid var(--blue-mid);transition:transform .1s,box-shadow .1s}
-.proc-item:active{transform:scale(.99);box-shadow:0 1px 4px rgba(27,58,107,.08)}
-.proc-icon{font-size:26px;flex-shrink:0;margin-top:2px}
+
+/* Accordion procedure cards */
+.proc-card{background:#fff;border-radius:16px;margin-bottom:8px;box-shadow:0 2px 8px rgba(27,58,107,.06);border:1px solid #EDF0F4;overflow:hidden}
+.proc-card-accent{height:3px;width:100%}
+.proc-card-accent-draft{background:#E2E8F0}
+.proc-card-accent-generated{background:linear-gradient(90deg,#16A34A,#4ADE80)}
+.proc-card-accent-exported{background:linear-gradient(90deg,var(--blue),var(--blue-mid))}
+.proc-card-accent-generating{background:linear-gradient(90deg,var(--blue-mid),#5B9FD4)}
+.proc-card-row{padding:13px 14px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:background .1s}
+.proc-card-row:active{background:#FAFBFD}
+.proc-card-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;background:var(--blue-pale)}
+.proc-card-icon-generated{background:#EDFBF1}
+.proc-card-icon-exported{background:var(--blue-pale)}
+.proc-card-icon-draft{background:#F0F4F8}
 .proc-info{flex:1;min-width:0}
 .proc-title{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--blue)}
 .proc-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.proc-card-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.proc-chevron{width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:transform .2s}
+.proc-chevron-open{transform:rotate(180deg)}
+.proc-card-expand{border-top:1px solid #F0F3F7;padding:11px 14px;background:#FAFBFD;display:flex;gap:6px}
+.proc-action-btn{flex:1;background:#fff;border:1px solid var(--border);color:#4A5568;font-size:11px;font-weight:700;padding:8px 6px;border-radius:10px;cursor:pointer;font-family:inherit;text-align:center}
+.proc-action-btn-review{background:var(--blue-pale);color:var(--blue);border-color:#C5DAFA}
+.proc-action-btn-apercu{background:var(--blue);color:#fff;border-color:var(--blue)}
 .badge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700;white-space:nowrap;flex-shrink:0}
 .badge-draft{background:var(--bg);color:var(--muted)}
 .badge-generated{background:#DCFCE7;color:#15803D}
 .badge-exported{background:var(--blue-pale);color:var(--blue)}
+.badge-generating{background:#EFF6FF;color:var(--blue-mid)}
 
 /* CAPTURE */
 .sec-hdr{background:var(--blue);color:#fff;padding:10px 14px;border-radius:9px;margin-bottom:8px;display:flex;align-items:center;gap:10px;border-bottom:3px solid var(--blue-mid)}
@@ -118,7 +137,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .empty-s{font-size:14px;color:var(--muted);line-height:1.5}
 
 /* FAB */
-.fab{position:fixed;bottom:82px;right:16px;width:54px;height:54px;background:var(--orange);color:#fff;border:none;border-radius:50%;font-size:28px;cursor:pointer;box-shadow:0 4px 16px rgba(232,97,10,.45);display:flex;align-items:center;justify-content:center;z-index:50;transition:transform .15s;font-family:inherit}
+.fab{position:fixed;bottom:82px;right:16px;width:54px;height:54px;background:var(--blue-mid);color:#fff;border:none;border-radius:50%;font-size:28px;cursor:pointer;box-shadow:0 4px 16px rgba(46,117,182,.45);display:flex;align-items:center;justify-content:center;z-index:50;transition:transform .15s;font-family:inherit}
 .fab:active{transform:scale(.9)}
 
 /* OVERLAY */
@@ -149,7 +168,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.44</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.45</div>
     </div>
 
     <!-- Step 1: Site access code -->
@@ -237,7 +256,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <header class="hdr">
     <div style="flex:1">
       <div class="hdr-title">ProceduresApp</div>
-      <div class="hdr-sub">Magnetic Solution — v1.44</div>
+      <div class="hdr-sub">Magnetic Solution — v1.45</div>
     </div>
     <span id="sync-indicator" style="font-size:13px;opacity:.85;margin-right:6px" title="Sync status"></span>
     <div id="hdr-avatar" onclick="go('settings')" title="Profil & Réglages" style="cursor:pointer;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;letter-spacing:-.5px;transition:background .15s;flex-shrink:0"></div>
@@ -430,7 +449,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="hdr-title" id="cap-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Procedure</div>
       <div class="hdr-sub" id="cap-ref"></div>
     </div>
-    <button onclick="generateAI()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px">🤖</button>
   </header>
   <div class="content">
     <div id="cap-content"></div>
@@ -440,7 +458,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
   <div class="ftr">
-    <button class="btn btn-s" onclick="go('home')">Save draft</button>
+    <button class="btn btn-s" onclick="go('home')">🏠 Accueil</button>
     <button class="btn btn-o" onclick="generateAI()">🤖 Generate AI</button>
   </div>
 </div>
@@ -603,7 +621,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.44 — Architecture séparée
+// GITHUB SYNC v1.45 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -1611,6 +1629,13 @@ function resetAllLocal(){
 // ═══════════════════════════════════════════════════════
 // HOME
 // ═══════════════════════════════════════════════════════
+var _expandedProcId=null; // currently expanded card on home (accordion — only one open at a time)
+
+function toggleProcExpand(id){
+  _expandedProcId=(_expandedProcId===id)?null:id;
+  renderHome();
+}
+
 function renderHome(){
   const el=document.getElementById('home-list');
   const procs=getProcs();
@@ -1630,19 +1655,28 @@ function renderHome(){
     const isDone=p.status==='generated'||p.status==='exported'||p.status==='generating';
     const isPrivate=p.visibility==='private'||(isMe&&!p.visibility);
     const canToggleVis=isMe||isAdmin;
-    return `<div class="proc-item" style="border-bottom-color:${author?.color||'var(--blue-mid)'}">
-      <div class="proc-icon" onclick="openProc('${p.id}')" style="cursor:pointer">${icons[p.cat]||'📋'}</div>
-      <div class="proc-info">
-        <div class="proc-title" onclick="openProc('${p.id}')" style="cursor:pointer">${esc(p.title)}</div>
-        <div class="proc-meta">${esc(p.ref)}${showAuthor?' · '+esc(author?.name||'?'):''} · ${new Date(p.created).toLocaleDateString()}</div>
-        <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;align-items:center">
-          ${isDone?`<button onclick="event.stopPropagation();openProc('${p.id}','edit')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:#F8FAFC;color:var(--muted);cursor:pointer;font-weight:600">✏️ Edit</button>
-          <button onclick="event.stopPropagation();openProc('${p.id}','review')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--blue-pale);background:var(--blue-pale);color:var(--blue-mid);cursor:pointer;font-weight:600">📄 Review</button>`:''}
-          ${canToggleVis?`<button onclick="event.stopPropagation();toggleVisibility('${p.id}')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;font-weight:600" title="${isPrivate?'Rendre partagée':'Rendre privée'}">${isPrivate?'🔒':'👥'}</button>`:''}
+    const isOpen=_expandedProcId===p.id;
+    return `<div class="proc-card">
+      <div class="proc-card-accent proc-card-accent-${p.status}"></div>
+      <div class="proc-card-row" onclick="toggleProcExpand('${p.id}')">
+        <div class="proc-card-icon proc-card-icon-${p.status}">${icons[p.cat]||'📋'}</div>
+        <div class="proc-info">
+          <div class="proc-title">${esc(p.title)}</div>
+          <div class="proc-meta">${esc(p.ref)}${showAuthor?' · '+esc(author?.name||'?'):''} · ${new Date(p.created).toLocaleDateString()}</div>
+        </div>
+        <div class="proc-card-right">
+          <span class="badge badge-${p.status}">${p.status}</span>
+          <div class="proc-chevron${isOpen?' proc-chevron-open':''}">
+            <svg viewBox="0 0 24 24" width="12" height="12"><polyline points="6 9 12 15 18 9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
         </div>
       </div>
-      <span class="badge badge-${p.status}">${p.status}</span>
-      <!-- Delete button hidden — use GitHub directly to delete procs for now -->
+      ${isOpen?`<div class="proc-card-expand">
+        <button class="proc-action-btn" onclick="event.stopPropagation();openProc('${p.id}','edit')">✏️ Éditer</button>
+        ${isDone?`<button class="proc-action-btn proc-action-btn-review" onclick="event.stopPropagation();openProc('${p.id}','review')">📄 Review</button>
+        <button class="proc-action-btn proc-action-btn-apercu" onclick="event.stopPropagation();openProc('${p.id}','review');setTimeout(openPreview,50)">👁️ Aperçu</button>`:''}
+        ${canToggleVis?`<button class="proc-action-btn" onclick="event.stopPropagation();toggleVisibility('${p.id}')" title="${isPrivate?'Rendre partagée':'Rendre privée'}">${isPrivate?'🔒':'👥'}</button>`:''}
+      </div>`:''}
     </div>`;
   }
 
