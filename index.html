@@ -185,81 +185,72 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.46</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.47</div>
     </div>
 
-    <!-- Step 1: Site access code -->
     <div id="site-code-box" class="login-card">
-      <div class="login-title">Site access code</div>
+      <div class="login-title" data-i18n="site_code">Site access code</div>
       <div class="fg">
         <input type="password" id="site-code-inp" class="fi" placeholder="••••••••"
           onkeydown="if(event.key==='Enter')checkSiteCode()" autocomplete="off" />
       </div>
-      <button class="btn btn-p btn-full" onclick="checkSiteCode()">Enter →</button>
+      <button class="btn btn-p btn-full" onclick="checkSiteCode()" data-i18n="enter">Enter →</button>
     </div>
 
-    <!-- Step 2: User selection (shown after correct code) -->
     <div id="user-selection-box" style="display:none;width:100%;max-width:380px">
       <div class="login-card">
-        <div class="login-title">Select your account</div>
+        <div class="login-title" data-i18n="select_account">Select your account</div>
         <div id="user-list"></div>
         <div style="text-align:center;margin-top:16px;display:flex;flex-direction:column;gap:8px">
-          <button class="btn btn-s btn-sm" onclick="showAddUser()">+ Create account</button>
-          <button class="btn btn-s btn-sm" id="btn-load-gh" style="display:none" onclick="showLoadFromGH()">☁️ Load accounts from GitHub</button>
+          <button class="btn btn-s btn-sm" onclick="showAddUser()" data-i18n="create_account">+ Create account</button>
+          <button class="btn btn-s btn-sm" id="btn-load-gh" style="display:none" onclick="showLoadFromGH()" data-i18n="load_gh">☁️ Load accounts from GitHub</button>
         </div>
       </div>
 
-      <!-- Load from GitHub panel (shown when no token cached) -->
       <div id="load-gh-box" style="display:none;margin-top:16px">
         <div class="login-card">
-          <div class="login-title">☁️ Load from GitHub</div>
-          <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5">
-            The admin must first click <strong>"☁️ Push to GitHub"</strong> in Settings on their device.<br><br>
-            Once done, close this panel and tap "Load accounts from GitHub" again — it will work automatically.<br><br>
-            <em>Or enter the token below if you have it:</em>
-          </div>
+          <div class="login-title" data-i18n="load_gh_title">☁️ Load from GitHub</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5" data-i18n="load_gh_desc"></div>
           <div class="fg">
-            <label class="fl">GitHub Token</label>
+            <label class="fl" data-i18n="gh_token">GitHub Token</label>
             <input type="text" id="bootstrap-token" class="fi" placeholder="ghp_..." style="font-family:monospace;font-size:13px" autocomplete="off"/>
           </div>
-          <button class="btn btn-p btn-full" onclick="loadFromGitHubLogin()">Load accounts →</button>
-          <button class="btn btn-s btn-full" style="margin-top:8px" onclick="document.getElementById('load-gh-box').style.display='none'">Cancel</button>
+          <button class="btn btn-p btn-full" onclick="loadFromGitHubLogin()" data-i18n="load_accounts">Load accounts →</button>
+          <button class="btn btn-s btn-full" style="margin-top:8px" onclick="document.getElementById('load-gh-box').style.display='none'" data-i18n="cancel">Cancel</button>
         </div>
       </div>
 
-      <!-- Password prompt -->
       <div id="pwd-box" style="display:none;margin-top:16px">
         <div class="login-card">
-          <div class="login-title" id="pwd-title">Enter password</div>
+          <div class="login-title" id="pwd-title" data-i18n="enter_pwd">Enter password</div>
           <div class="fg">
-            <input type="password" id="pwd-inp" class="fi" placeholder="Password"
+            <input type="password" id="pwd-inp" class="fi" data-i18n="pwd_placeholder" data-i18n-attr="placeholder"
               onkeydown="if(event.key==='Enter')checkPwd()" />
           </div>
-          <button class="btn btn-p btn-full" onclick="checkPwd()">Login →</button>
-          <button class="btn btn-s btn-full" style="margin-top:8px" onclick="cancelLogin()">← Back</button>
+          <button class="btn btn-p btn-full" onclick="checkPwd()" data-i18n="login">Login →</button>
+          <button class="btn btn-s btn-full" style="margin-top:8px" onclick="cancelLogin()" data-i18n="back">← Back</button>
         </div>
       </div>
     </div>
 
-    <!-- Add user form -->
     <div id="add-user-box" style="display:none;width:100%;max-width:380px;margin-top:16px">
       <div class="login-card">
-        <div class="login-title">Create account</div>
+        <div class="login-title" data-i18n="create_account_title">Create account</div>
         <div class="fg">
-          <label class="fl">Name</label>
-          <input type="text" id="new-name" class="fi" placeholder="Your name" />
+          <label class="fl" data-i18n="name">Name</label>
+          <input type="text" id="new-name" class="fi" data-i18n="name_ph" data-i18n-attr="placeholder" />
         </div>
         <div class="fg">
-          <label class="fl">Password</label>
-          <input type="password" id="new-pwd" class="fi" placeholder="Choose a password" />
+          <label class="fl" data-i18n="pwd">Password</label>
+          <input type="password" id="new-pwd" class="fi" data-i18n="pwd_ph" data-i18n-attr="placeholder" />
         </div>
         <div class="fg" style="margin-bottom:0">
-          <label class="fl">Repeat password</label>
-          <input type="password" id="new-pwd2" class="fi" placeholder="Repeat password" />
+          <label class="fl" data-i18n="pwd_repeat">Repeat password</label>
+          <input type="password" id="new-pwd2" class="fi" data-i18n="pwd_repeat_ph" data-i18n-attr="placeholder" />
         </div>
         <div style="display:flex;gap:8px;margin-top:14px">
-          <button class="btn btn-s" style="flex:1" onclick="cancelLogin()">Cancel</button>
-          <button class="btn btn-p" style="flex:1" onclick="createUser()">Create →</button>
+          <button class="btn btn-s" style="flex:1" onclick="cancelLogin()" data-i18n="cancel">Cancel</button>
+          <button class="btn btn-p" style="flex:1" onclick="createUser()" data-i18n="create">Create →</button>
         </div>
       </div>
     </div>
@@ -287,67 +278,64 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   </div>
   <div class="content">
     <div style="display:flex;gap:6px;margin-bottom:14px">
-      <button id="filter-mine" onclick="setHomeFilter('mine')" class="filter-btn filter-active">Moi</button>
-      <button id="filter-others" onclick="setHomeFilter('others')" class="filter-btn">Équipe</button>
-      <button id="filter-all" onclick="setHomeFilter('all')" class="filter-btn">Tout</button>
+      <button id="filter-mine" onclick="setHomeFilter('mine')" class="filter-btn filter-active" data-i18n="me">Me</button>
+      <button id="filter-others" onclick="setHomeFilter('others')" class="filter-btn" data-i18n="team">Team</button>
+      <button id="filter-all" onclick="setHomeFilter('all')" class="filter-btn" data-i18n="all">All</button>
     </div>
     <div id="home-list"></div>
   </div>
   <button class="fab" onclick="initForm();go('form')">+</button>
   <div class="ftr">
-    <button class="btn btn-p" onclick="initForm();go('form')">＋ New procedure</button>
+    <button class="btn btn-p" onclick="initForm();go('form')" data-i18n="new_procedure">＋ New procedure</button>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
-     SETTINGS
-══════════════════════════════════════════ -->
 <div id="s-settings" class="screen">
   <header class="hdr">
     <button class="btn-back" onclick="go('home')">←</button>
-    <div class="hdr-title">Settings</div>
+    <div class="hdr-title" data-i18n="settings">Settings</div>
   </header>
   <div class="content">
-    <!-- Personal token — visible to ALL users -->
+    <!-- Language selector -->
+    <div class="card">
+      <div class="card-title" data-i18n="language">🌐 Language</div>
+      <div style="display:flex;gap:8px">
+        <button id="lang-en" onclick="setLang('en')" class="btn btn-sm" style="flex:1;background:var(--blue);color:#fff">English</button>
+        <button id="lang-fr" onclick="setLang('fr')" class="btn btn-sm" style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border)">Français</button>
+      </div>
+    </div>
+    <!-- Personal token -->
     <div class="card" id="personal-token-card">
-      <div class="card-title">🔑 GitHub Token (AI + Word export)</div>
+      <div class="card-title" data-i18n="gh_token_title">🔑 GitHub Token (AI + Word export)</div>
       <div id="personal-token-status" style="padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:12px;font-weight:500"></div>
       <div class="fg">
-        <label class="fl">Your token</label>
+        <label class="fl" data-i18n="your_token">Your token</label>
         <input type="text" id="inp-personal-apikey" class="fi" placeholder="ghp_..." style="font-family:monospace;font-size:13px" autocomplete="off" />
-        <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5">
-          Get it at <strong>github.com/settings/tokens</strong> — scope <strong>repo</strong> required.
-        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5" data-i18n="token_hint"></div>
       </div>
-      <button class="btn btn-s btn-sm btn-full" style="margin-top:8px" onclick="testPersonalToken()">🔌 Test connection</button>
+      <button class="btn btn-s btn-sm btn-full" style="margin-top:8px" onclick="testPersonalToken()" data-i18n="test_connection">🔌 Test connection</button>
     </div>
-    <!-- GitHub shared token (admin only) -->
+    <!-- Shared token (admin only) -->
     <div class="card" id="admin-token-card" style="display:none">
-      <div class="card-title">🔑 Shared GitHub Token (admin)</div>
-      <!-- Token status indicator -->
+      <div class="card-title" data-i18n="shared_token_title">🔑 Shared GitHub Token (admin)</div>
       <div id="token-status" style="padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:12px;font-weight:500"></div>
       <div class="fg">
-        <label class="fl">Enter / replace token</label>
+        <label class="fl" data-i18n="enter_replace_token">Enter / replace token</label>
         <input type="text" id="inp-apikey" class="fi" placeholder="ghp_..." style="font-family:monospace;font-size:13px" autocomplete="off" />
-        <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5">
-          Get it at <strong>github.com/settings/tokens</strong> — scope <strong>repo</strong> required.
-          One token for the whole team — all devices sync automatically once set.
-        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5" data-i18n="token_hint_team"></div>
       </div>
       <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="btn btn-s btn-sm" style="flex:1" onclick="testToken()">🔌 Test connection</button>
-        <button class="btn btn-s btn-sm" style="flex:1" onclick="manualSync()">☁️ Push to GitHub</button>
+        <button class="btn btn-s btn-sm" style="flex:1" onclick="testToken()" data-i18n="test_connection">🔌 Test connection</button>
+        <button class="btn btn-s btn-sm" style="flex:1" onclick="manualSync()" data-i18n="push_gh">☁️ Push to GitHub</button>
       </div>
     </div>
-    <!-- Sync from GitHub -->
+    <!-- Sync -->
     <div class="card">
-      <div class="card-title">☁️ Synchronisation</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.5">
-        Force le rechargement de toutes les procédures depuis GitHub (photos incluses).
-      </div>
-      <button class="btn btn-s btn-sm btn-full" onclick="forceSyncFromGH()">🔄 Tout recharger depuis GitHub</button>
+      <div class="card-title" data-i18n="sync_title">☁️ Synchronisation</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.5" data-i18n="sync_desc"></div>
+      <button class="btn btn-s btn-sm btn-full" onclick="forceSyncFromGH()" data-i18n="reload_gh">🔄 Reload from GitHub</button>
       <div style="margin-top:10px;display:flex;align-items:center;gap:8px;font-size:13px">
-        <span style="color:var(--muted)">Sync automatique toutes les</span>
+        <span style="color:var(--muted)" data-i18n="auto_sync">Auto sync every</span>
         <select id="sync-interval-sel" onchange="updateSyncInterval()" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);font-size:13px">
           <option value="1">1 min</option>
           <option value="5" selected>5 min</option>
@@ -358,57 +346,57 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     </div>
     <!-- Change password -->
     <div class="card">
-      <div class="card-title">Change password</div>
+      <div class="card-title" data-i18n="change_pwd">Change password</div>
       <div class="fg">
-        <label class="fl">Current password</label>
-        <input type="password" id="pwd-old" class="fi" placeholder="Current password" />
+        <label class="fl" data-i18n="current_pwd">Current password</label>
+        <input type="password" id="pwd-old" class="fi" data-i18n="current_pwd" data-i18n-attr="placeholder" />
       </div>
       <div class="fg">
-        <label class="fl">New password</label>
-        <input type="password" id="pwd-new1" class="fi" placeholder="New password" />
+        <label class="fl" data-i18n="new_pwd">New password</label>
+        <input type="password" id="pwd-new1" class="fi" data-i18n="new_pwd" data-i18n-attr="placeholder" />
       </div>
       <div class="fg" style="margin-bottom:0">
-        <label class="fl">Confirm new password</label>
-        <input type="password" id="pwd-new2" class="fi" placeholder="Repeat new password" />
+        <label class="fl" data-i18n="confirm_pwd">Confirm new password</label>
+        <input type="password" id="pwd-new2" class="fi" data-i18n="confirm_pwd" data-i18n-attr="placeholder" />
       </div>
-      <button class="btn btn-s btn-sm btn-full" style="margin-top:10px" onclick="changePassword()">Change password</button>
+      <button class="btn btn-s btn-sm btn-full" style="margin-top:10px" onclick="changePassword()" data-i18n="change_pwd_btn">Change password</button>
     </div>
     <!-- Admin: manage users -->
     <div class="card" id="admin-panel" style="display:none">
-      <div class="card-title">👑 Manage users (admin)</div>
+      <div class="card-title" data-i18n="manage_users">👑 Manage users (admin)</div>
       <div id="admin-user-list"></div>
     </div>
     <!-- Danger zone -->
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0">
         <div>
-          <div style="font-size:14px;font-weight:600">🗑️ Delete my procedures</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Delete only your procedures</div>
+          <div style="font-size:14px;font-weight:600" data-i18n="delete_my_procs">🗑️ Delete my procedures</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px" data-i18n="delete_my_procs_sub">Delete only your procedures</div>
         </div>
-        <button class="btn btn-sm btn-danger" onclick="clearMyData()">Delete</button>
+        <button class="btn btn-sm btn-danger" onclick="clearMyData()" data-i18n="delete">Delete</button>
       </div>
     </div>
     <div class="card" style="border:1px solid var(--red)">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0">
         <div>
-          <div style="font-size:14px;font-weight:600;color:var(--red)">⚠️ Reset all local data</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Deletes accounts + procedures from this device</div>
+          <div style="font-size:14px;font-weight:600;color:var(--red)" data-i18n="reset_all">⚠️ Reset all local data</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px" data-i18n="reset_all_sub">Deletes accounts + procedures from this device</div>
         </div>
-        <button class="btn btn-sm btn-danger" onclick="resetAllLocal()">Reset</button>
+        <button class="btn btn-sm btn-danger" onclick="resetAllLocal()" data-i18n="reset">Reset</button>
       </div>
     </div>
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0">
         <div>
-          <div style="font-size:14px;font-weight:600">🚪 Logout</div>
+          <div style="font-size:14px;font-weight:600" data-i18n="logout_title">🚪 Logout</div>
         </div>
-        <button class="btn btn-sm btn-s" onclick="logout()">Logout</button>
+        <button class="btn btn-sm btn-s" onclick="logout()" data-i18n="logout">Logout</button>
       </div>
     </div>
   </div>
   <div class="ftr">
-    <button class="btn btn-s" onclick="go('home')">Cancel</button>
-    <button class="btn btn-p" onclick="saveSettings()">Save ✓</button>
+    <button class="btn btn-s" onclick="go('home')" data-i18n="cancel_btn">Cancel</button>
+    <button class="btn btn-p" onclick="saveSettings()" data-i18n="save">Save ✓</button>
   </div>
 </div>
 
@@ -418,24 +406,24 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 <div id="s-form" class="screen">
   <header class="hdr">
     <button class="btn-back" onclick="go('home')">←</button>
-    <div class="hdr-title">New procedure</div>
+    <div class="hdr-title" data-i18n="new_procedure_title">New procedure</div>
   </header>
   <div class="content">
     <div class="card">
       <div class="fg">
-        <label class="fl">Title *</label>
-        <input type="text" id="f-title" class="fi" placeholder="e.g. SASIC F0527000014" />
+        <label class="fl" data-i18n="title_label">Title *</label>
+        <input type="text" id="f-title" class="fi" data-i18n="title_ph" data-i18n-attr="placeholder" />
       </div>
       <div class="fg">
-        <label class="fl">Reference *</label>
-        <input type="text" id="f-ref" class="fi" placeholder="e.g. FAB-001" />
+        <label class="fl" data-i18n="ref_label">Reference *</label>
+        <input type="text" id="f-ref" class="fi" data-i18n="ref_ph" data-i18n-attr="placeholder" />
       </div>
       <div class="fg">
-        <label class="fl">Operator</label>
-        <input type="text" id="f-op" class="fi" placeholder="Your name" />
+        <label class="fl" data-i18n="operator_label">Operator</label>
+        <input type="text" id="f-op" class="fi" data-i18n="operator_ph" data-i18n-attr="placeholder" />
       </div>
       <div class="fg" style="margin-bottom:0">
-        <label class="fl">Category</label>
+        <label class="fl" data-i18n="category_label">Category</label>
         <select id="f-cat" class="fs">
           <option>Assembly</option>
           <option>Electronics</option>
@@ -447,19 +435,17 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
       </div>
     </div>
     <div class="card" style="margin-bottom:0">
-      <div class="card-title">Visibilité</div>
+      <div class="card-title" data-i18n="visibility">Visibility</div>
       <div style="display:flex;gap:8px">
-        <button id="vis-private" onclick="setVisibility('private')" class="btn btn-s btn-sm" style="flex:1;border-color:var(--blue);background:var(--blue-pale);color:var(--blue)">🔒 Privée</button>
-        <button id="vis-shared" onclick="setVisibility('shared')" class="btn btn-s btn-sm" style="flex:1">👥 Partagée</button>
+        <button id="vis-private" onclick="setVisibility('private')" class="btn btn-s btn-sm" style="flex:1;border-color:var(--blue);background:var(--blue-pale);color:var(--blue)" data-i18n="private">🔒 Private</button>
+        <button id="vis-shared" onclick="setVisibility('shared')" class="btn btn-s btn-sm" style="flex:1" data-i18n="shared">👥 Shared</button>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5" id="vis-desc">
-        Visible uniquement par vous (et l'admin).
-      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5" id="vis-desc" data-i18n="private_desc"></div>
     </div>
   </div>
   <div class="ftr">
-    <button class="btn btn-s" onclick="go('home')">Annuler</button>
-    <button class="btn btn-p" onclick="createProc()">Créer →</button>
+    <button class="btn btn-s" onclick="go('home')" data-i18n="cancel_btn">Cancel</button>
+    <button class="btn btn-p" onclick="createProc()" data-i18n="create_btn">Create →</button>
   </div>
 </div>
 
@@ -477,13 +463,117 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="content">
     <div id="cap-content"></div>
     <div style="display:flex;gap:8px;margin-top:4px">
-      <button class="btn btn-s btn-sm" style="flex:1" onclick="addSection()">＋ Section</button>
-      <button class="btn btn-s btn-sm" style="flex:1" onclick="addStepLast()">＋ Sub-step</button>
+      <button class="btn btn-s btn-sm" style="flex:1" onclick="addSection()" data-i18n="add_section">＋ Section</button>
+      <button class="btn btn-s btn-sm" style="flex:1" onclick="addStepLast()" data-i18n="add_substep">＋ Sub-step</button>
     </div>
   </div>
   <div class="ftr">
-    <button class="btn btn-s" onclick="go('home')">🏠 Accueil</button>
-    <button class="btn btn-o" onclick="generateAI()">🤖 Generate AI</button>
+    <button class="btn btn-s" onclick="go('home')" data-i18n="save_draft">🏠 Home</button>
+    <button class="btn btn-o" onclick="generateAI()" data-i18n="generate_ai">🤖 Generate AI</button>
+  </div>
+</div>
+
+<div id="s-step" class="screen">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('capture')">←</button>
+    <div class="hdr-title" id="step-hdr">Step</div>
+  </header>
+  <div class="content">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="card-title" style="margin-bottom:0" data-i18n="voice_dictation">🎙️ Voice dictation</div>
+        <button id="voice-btn" class="btn btn-s btn-sm" onclick="toggleVoice()" data-i18n="start">▶ Start</button>
+      </div>
+      <div id="rec-bar" class="rec-bar" style="display:none">
+        <div class="rec-dot"></div>
+        <span style="font-size:13px;font-weight:500" data-i18n="recording">Recording — speak now</span>
+      </div>
+      <div id="voice-box" class="voice-box" style="color:var(--muted);font-style:italic" data-i18n="voice_ph">Tap "Start" to begin...</div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn btn-s btn-sm btn-full" onclick="clearVoice()" data-i18n="clear">Clear</button>
+        <button class="btn btn-s btn-sm btn-full" onclick="appendVoiceToText()" data-i18n="copy_to_notes">→ Copy to notes</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="card-title" style="margin-bottom:0" data-i18n="photos">📷 Photos</div>
+        <label class="btn btn-s btn-sm" style="cursor:pointer">
+          <span data-i18n="add_photo">Add photo</span>
+          <input type="file" accept="image/*" capture="environment" id="photo-inp" style="display:none" onchange="addPhoto(event)" multiple />
+        </label>
+      </div>
+      <div id="photo-grid" class="photo-grid"></div>
+    </div>
+    <div class="card">
+      <div class="card-title" data-i18n="notes">✍️ Notes</div>
+      <textarea id="step-txt" class="fta" rows="6" data-i18n="notes_ph" data-i18n-attr="placeholder"></textarea>
+    </div>
+  </div>
+  <div class="ftr">
+    <button class="btn btn-s" onclick="cancelStep()" data-i18n="cancel_step">Cancel</button>
+    <button class="btn btn-p" onclick="saveStep()" data-i18n="save_step">Save step ✓</button>
+  </div>
+</div>
+
+<div id="s-review" class="screen">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('capture')">←</button>
+    <div class="hdr-title" data-i18n="ai_review">AI Review</div>
+    <button onclick="generateAI()" style="background:rgba(255,255,255,.1);border:none;color:#fff;font-size:16px;cursor:pointer;padding:6px 10px;border-radius:9px">🔄</button>
+  </header>
+  <div class="content">
+    <div class="review-box">
+      <div class="review-label" data-i18n="generated_proc">Generated procedure — English</div>
+      <div id="review-display" class="review-text"></div>
+    </div>
+    <div id="review-photos" class="card" style="display:none">
+      <div class="card-title" data-i18n="photos_by_step">📷 Photos by step</div>
+      <div id="review-photos-content"></div>
+    </div>
+    <div class="card">
+      <div class="card-title" data-i18n="edit_before_export">Edit before export</div>
+      <textarea id="review-edit" class="fta" rows="14" style="font-size:13px;line-height:1.6"></textarea>
+    </div>
+  </div>
+  <div class="ftr">
+    <button class="btn btn-s" onclick="go('capture')" data-i18n="edit_steps">✏️ Edit steps</button>
+    <button class="btn btn-s" onclick="openPreview()" style="background:var(--blue-pale);color:var(--blue);border-color:var(--blue-mid)" data-i18n="apercu">👁️ Preview</button>
+    <button class="btn btn-p" onclick="exportWord()" data-i18n="export_word">📄 Export Word</button>
+  </div>
+</div><!-- /#s-review -->
+
+<div id="s-preview" class="screen">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('review')">←</button>
+    <div>
+      <div class="hdr-title" data-i18n="preview">Preview</div>
+      <div class="hdr-sub" id="preview-ref"></div>
+    </div>
+  </header>
+  <div class="content" id="preview-content" style="padding:16px;background:#fff"></div>
+</div>
+
+<div id="s-export" class="screen">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('review')">←</button>
+    <div class="hdr-title" data-i18n="export_word">Export</div>
+  </header>
+  <div class="content">
+    <div class="success-box">
+      <div class="success-icon">✅</div>
+      <div class="success-title" data-i18n="doc_ready">Document ready!</div>
+      <div class="success-sub" data-i18n="doc_ready_sub"></div>
+    </div>
+    <div class="card">
+      <div class="card-title" data-i18n="share">Share</div>
+      <div class="share-grid">
+        <button class="btn btn-s" onclick="shareEmail()" data-i18n="email">✉️ Email</button>
+        <button class="btn btn-s" onclick="shareTeams()" data-i18n="teams">💬 Teams</button>
+        <button class="btn btn-s" onclick="shareNative()" data-i18n="share_btn">📤 Share</button>
+        <button class="btn btn-s" onclick="go('capture')" data-i18n="edit_more">✏️ Edit more</button>
+      </div>
+    </div>
+    <button class="btn btn-p btn-full" onclick="go('home')" style="margin-top:8px" data-i18n="back_home">🏠 Back to home</button>
   </div>
 </div>
 
@@ -607,6 +697,347 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 
 <script>
 // ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// i18n — TRANSLATIONS
+// ═══════════════════════════════════════════════════════
+var _lang=localStorage.getItem('lang')||'en';
+
+var _i18n={
+  en:{
+    // Login
+    site_code:'Site access code',
+    enter:'Enter →',
+    select_account:'Select your account',
+    create_account:'+ Create account',
+    load_gh:'☁️ Load accounts from GitHub',
+    load_gh_title:'☁️ Load from GitHub',
+    load_gh_desc:'The admin must first click <strong>"☁️ Push to GitHub"</strong> in Settings on their device.<br><br>Once done, close this panel and tap "Load accounts from GitHub" again — it will work automatically.<br><br><em>Or enter the token below if you have it:</em>',
+    gh_token:'GitHub Token',
+    load_accounts:'Load accounts →',
+    cancel:'Cancel',
+    enter_pwd:'Enter password',
+    pwd_placeholder:'Password',
+    login:'Login →',
+    back:'← Back',
+    create_account_title:'Create account',
+    name:'Name',
+    name_ph:'Your name',
+    pwd:'Password',
+    pwd_ph:'Choose a password',
+    pwd_repeat:'Repeat password',
+    pwd_repeat_ph:'Repeat password',
+    create:'Create →',
+    // Home
+    hello:'Hello',
+    procedures:'Procedures',
+    generated:'Generated',
+    exported:'Exported',
+    me:'Me',
+    team:'Team',
+    all:'All',
+    new_procedure:'＋ New procedure',
+    no_procs:'No procedures yet',
+    no_procs_sub:'Tap + to create the first manufacturing procedure.',
+    no_mine:'No procedures for you.',
+    no_shared:'No shared procedures.',
+    no_all:'No procedures.',
+    edit:'Edit',
+    review:'Review',
+    preview:'Preview',
+    // Form
+    new_procedure_title:'New procedure',
+    title_label:'Title *',
+    title_ph:'e.g. SASIC F0527000014',
+    ref_label:'Reference *',
+    ref_ph:'e.g. FAB-001',
+    operator_label:'Operator',
+    operator_ph:'Your name',
+    category_label:'Category',
+    visibility:'Visibility',
+    private:'🔒 Private',
+    shared:'👥 Shared',
+    private_desc:'Only visible to you (and admin).',
+    shared_desc:'Visible to all team members.',
+    cancel_btn:'Cancel',
+    create_btn:'Create →',
+    // Capture
+    add_section:'＋ Section',
+    add_substep:'＋ Sub-step',
+    save_draft:'🏠 Home',
+    generate_ai:'🤖 Generate AI',
+    no_sections:'No sections yet',
+    no_sections_sub:'Add a section first',
+    voice:'Voice',
+    photo:'Photo',
+    edit_step:'Edit',
+    delete:'Delete',
+    add_substep_btn:'＋ Add sub-step',
+    // Step detail
+    voice_dictation:'🎙️ Voice dictation',
+    start:'▶ Start',
+    stop:'■ Stop',
+    recording:'Recording — speak now',
+    voice_ph:'Tap "Start" to begin...',
+    clear:'Clear',
+    copy_to_notes:'→ Copy to notes',
+    photos:'📷 Photos',
+    add_photo:'Add photo',
+    notes:'✍️ Notes',
+    notes_ph:'French or English — AI will translate...',
+    cancel_step:'Cancel',
+    save_step:'Save step ✓',
+    // Review
+    ai_review:'AI Review',
+    generated_proc:'Generated procedure — English',
+    photos_by_step:'📷 Photos by step',
+    edit_before_export:'Edit before export',
+    edit_steps:'✏️ Edit steps',
+    apercu:'👁️ Preview',
+    export_word:'📄 Export Word',
+    // Export
+    doc_ready:'Document ready!',
+    doc_ready_sub:'Your procedure has been downloaded.<br>Open it with Word or any Office app.',
+    share:'Share',
+    email:'✉️ Email',
+    teams:'💬 Teams',
+    share_btn:'📤 Share',
+    edit_more:'✏️ Edit more',
+    back_home:'🏠 Back to home',
+    // Settings
+    settings:'Settings',
+    gh_token_title:'🔑 GitHub Token (AI + Word export)',
+    no_token:'⚠️ No token — enter it below',
+    your_token:'Your token',
+    token_hint:'Get it at <strong>github.com/settings/tokens</strong> — scope <strong>repo</strong> required.',
+    test_connection:'🔌 Test connection',
+    shared_token_title:'🔑 Shared GitHub Token (admin)',
+    enter_replace_token:'Enter / replace token',
+    token_hint_team:'Get it at <strong>github.com/settings/tokens</strong> — scope <strong>repo</strong> required. One token for the whole team — all devices sync automatically once set.',
+    push_gh:'☁️ Push to GitHub',
+    sync_title:'☁️ Synchronisation',
+    sync_desc:'Force reload of all procedures from GitHub (photos included).',
+    reload_gh:'🔄 Reload from GitHub',
+    auto_sync:'Auto sync every',
+    change_pwd:'Change password',
+    current_pwd:'Current password',
+    new_pwd:'New password',
+    confirm_pwd:'Confirm new password',
+    change_pwd_btn:'Change password',
+    manage_users:'👑 Manage users (admin)',
+    delete_my_procs:'🗑️ Delete my procedures',
+    delete_my_procs_sub:'Delete only your procedures',
+    delete:'Delete',
+    reset_all:'⚠️ Reset all local data',
+    reset_all_sub:'Deletes accounts + procedures from this device',
+    reset:'Reset',
+    logout_title:'🚪 Logout',
+    logout:'Logout',
+    save:'Save ✓',
+    language:'🌐 Language',
+    // Toasts
+    toast_invalid_code:'Invalid code ❌',
+    toast_enter_name:'Enter a name',
+    toast_pwd_short:'Password must be at least 4 characters',
+    toast_pwd_match:'Passwords do not match',
+    toast_name_taken:'Name already taken',
+    toast_enter_gh_token:'Enter your GitHub token to load accounts',
+    toast_wrong_pwd:'Wrong password ❌',
+    toast_settings_gh:'⚙️ Enter your GitHub token in Settings',
+    toast_voice_na:'Voice not available — use Chrome or Safari',
+    toast_voice_copied:'Voice copied to notes',
+    toast_photo_added:'📷 Photo added',
+    toast_section_added:'Section added ✓',
+    toast_step_saved:'Step saved ✓',
+    toast_shared:'👥 Procedure shared with team',
+    toast_private:'🔒 Procedure set to private',
+    toast_pwd_changed:'Password changed ✓',
+    toast_pushed:'✓ Pushed — other devices will sync automatically',
+    toast_token_saved:'✓ Token saved — other devices can now sync',
+    toast_teams:'Download the .doc file and attach it in Teams',
+    toast_share_na:'Sharing not available on this browser',
+    toast_add_section:'Add a section first',
+    toast_section_deleted:'Section deleted',
+    toast_wrong_current_pwd:'Wrong current password ❌',
+  },
+  fr:{
+    // Login
+    site_code:'Code d\'accès du site',
+    enter:'Entrer →',
+    select_account:'Sélectionner votre compte',
+    create_account:'+ Créer un compte',
+    load_gh:'☁️ Charger les comptes depuis GitHub',
+    load_gh_title:'☁️ Charger depuis GitHub',
+    load_gh_desc:'L\'administrateur doit d\'abord cliquer sur <strong>"☁️ Push to GitHub"</strong> dans les Paramètres depuis son appareil.<br><br>Une fois fait, fermez ce panneau et appuyez sur "Charger les comptes depuis GitHub" — cela fonctionnera automatiquement.<br><br><em>Ou entrez le token ci-dessous si vous l\'avez :</em>',
+    gh_token:'Token GitHub',
+    load_accounts:'Charger les comptes →',
+    cancel:'Annuler',
+    enter_pwd:'Entrez votre mot de passe',
+    pwd_placeholder:'Mot de passe',
+    login:'Connexion →',
+    back:'← Retour',
+    create_account_title:'Créer un compte',
+    name:'Nom',
+    name_ph:'Votre nom',
+    pwd:'Mot de passe',
+    pwd_ph:'Choisissez un mot de passe',
+    pwd_repeat:'Répéter le mot de passe',
+    pwd_repeat_ph:'Répéter le mot de passe',
+    create:'Créer →',
+    // Home
+    hello:'Bonjour',
+    procedures:'Procédures',
+    generated:'Générées',
+    exported:'Exportées',
+    me:'Moi',
+    team:'Équipe',
+    all:'Tout',
+    new_procedure:'＋ Nouvelle procédure',
+    no_procs:'Aucune procédure',
+    no_procs_sub:'Appuyez sur + pour créer la première procédure de fabrication.',
+    no_mine:'Aucune procédure pour vous.',
+    no_shared:'Aucune procédure partagée.',
+    no_all:'Aucune procédure.',
+    edit:'Éditer',
+    review:'Révision',
+    preview:'Aperçu',
+    // Form
+    new_procedure_title:'Nouvelle procédure',
+    title_label:'Titre *',
+    title_ph:'ex. SASIC F0527000014',
+    ref_label:'Référence *',
+    ref_ph:'ex. FAB-001',
+    operator_label:'Opérateur',
+    operator_ph:'Votre nom',
+    category_label:'Catégorie',
+    visibility:'Visibilité',
+    private:'🔒 Privée',
+    shared:'👥 Partagée',
+    private_desc:'Visible uniquement par vous (et l\'admin).',
+    shared_desc:'Visible par tous les membres.',
+    cancel_btn:'Annuler',
+    create_btn:'Créer →',
+    // Capture
+    add_section:'＋ Section',
+    add_substep:'＋ Sous-étape',
+    save_draft:'🏠 Accueil',
+    generate_ai:'🤖 Générer IA',
+    no_sections:'Aucune section',
+    no_sections_sub:'Ajoutez une section d\'abord',
+    voice:'Voix',
+    photo:'Photo',
+    edit_step:'Éditer',
+    delete:'Suppr.',
+    add_substep_btn:'＋ Ajouter une sous-étape',
+    // Step detail
+    voice_dictation:'🎙️ Dictée vocale',
+    start:'▶ Démarrer',
+    stop:'■ Arrêter',
+    recording:'Enregistrement — parlez maintenant',
+    voice_ph:'Appuyez sur "Démarrer" pour commencer...',
+    clear:'Effacer',
+    copy_to_notes:'→ Copier dans les notes',
+    photos:'📷 Photos',
+    add_photo:'Ajouter photo',
+    notes:'✍️ Notes',
+    notes_ph:'Français ou anglais — l\'IA traduira...',
+    cancel_step:'Annuler',
+    save_step:'Sauvegarder ✓',
+    // Review
+    ai_review:'Révision IA',
+    generated_proc:'Procédure générée — Anglais',
+    photos_by_step:'📷 Photos par étape',
+    edit_before_export:'Modifier avant export',
+    edit_steps:'✏️ Modifier les étapes',
+    apercu:'👁️ Aperçu',
+    export_word:'📄 Exporter Word',
+    // Export
+    doc_ready:'Document prêt !',
+    doc_ready_sub:'Votre procédure a été téléchargée.<br>Ouvrez-la avec Word ou toute application Office.',
+    share:'Partager',
+    email:'✉️ Email',
+    teams:'💬 Teams',
+    share_btn:'📤 Partager',
+    edit_more:'✏️ Modifier encore',
+    back_home:'🏠 Retour à l\'accueil',
+    // Settings
+    settings:'Paramètres',
+    gh_token_title:'🔑 Token GitHub (IA + Export Word)',
+    no_token:'⚠️ Aucun token — entrez-le ci-dessous',
+    your_token:'Votre token',
+    token_hint:'Obtenez-le sur <strong>github.com/settings/tokens</strong> — scope <strong>repo</strong> requis.',
+    test_connection:'🔌 Tester la connexion',
+    shared_token_title:'🔑 Token GitHub partagé (admin)',
+    enter_replace_token:'Entrer / remplacer le token',
+    token_hint_team:'Obtenez-le sur <strong>github.com/settings/tokens</strong> — scope <strong>repo</strong> requis. Un token pour toute l\'équipe — tous les appareils se synchronisent automatiquement.',
+    push_gh:'☁️ Push vers GitHub',
+    sync_title:'☁️ Synchronisation',
+    sync_desc:'Force le rechargement de toutes les procédures depuis GitHub (photos incluses).',
+    reload_gh:'🔄 Tout recharger depuis GitHub',
+    auto_sync:'Sync automatique toutes les',
+    change_pwd:'Changer le mot de passe',
+    current_pwd:'Mot de passe actuel',
+    new_pwd:'Nouveau mot de passe',
+    confirm_pwd:'Confirmer le nouveau mot de passe',
+    change_pwd_btn:'Changer le mot de passe',
+    manage_users:'👑 Gérer les utilisateurs (admin)',
+    delete_my_procs:'🗑️ Supprimer mes procédures',
+    delete_my_procs_sub:'Supprimer uniquement vos procédures',
+    delete:'Supprimer',
+    reset_all:'⚠️ Réinitialiser toutes les données locales',
+    reset_all_sub:'Supprime les comptes + procédures de cet appareil',
+    reset:'Réinitialiser',
+    logout_title:'🚪 Déconnexion',
+    logout:'Déconnexion',
+    save:'Enregistrer ✓',
+    language:'🌐 Langue',
+    // Toasts
+    toast_invalid_code:'Code invalide ❌',
+    toast_enter_name:'Entrez un nom',
+    toast_pwd_short:'Le mot de passe doit contenir au moins 4 caractères',
+    toast_pwd_match:'Les mots de passe ne correspondent pas',
+    toast_name_taken:'Ce nom est déjà pris',
+    toast_enter_gh_token:'Entrez votre token GitHub pour charger les comptes',
+    toast_wrong_pwd:'Mot de passe incorrect ❌',
+    toast_settings_gh:'⚙️ Entrez votre token GitHub dans les Paramètres',
+    toast_voice_na:'Voix non disponible — utilisez Chrome ou Safari',
+    toast_voice_copied:'Voix copiée dans les notes',
+    toast_photo_added:'📷 Photo ajoutée',
+    toast_section_added:'Section ajoutée ✓',
+    toast_step_saved:'Étape sauvegardée ✓',
+    toast_shared:'👥 Procédure partagée avec l\'équipe',
+    toast_private:'🔒 Procédure rendue privée',
+    toast_pwd_changed:'Mot de passe modifié ✓',
+    toast_pushed:'✓ Synchronisé — les autres appareils se mettront à jour',
+    toast_token_saved:'✓ Token enregistré — les autres appareils peuvent maintenant synchroniser',
+    toast_teams:'Téléchargez le fichier .doc et joignez-le dans Teams',
+    toast_share_na:'Partage non disponible sur ce navigateur',
+    toast_add_section:'Ajoutez d\'abord une section',
+    toast_section_deleted:'Section supprimée',
+    toast_wrong_current_pwd:'Mot de passe actuel incorrect ❌',
+  }
+};
+
+function t(key){return (_i18n[_lang]&&_i18n[_lang][key])||_i18n['en'][key]||key;}
+
+function setLang(lang){
+  _lang=lang;
+  localStorage.setItem('lang',lang);
+  applyI18n();
+}
+
+function applyI18n(){
+  // Update all data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(function(el){
+    var k=el.getAttribute('data-i18n');
+    var attr=el.getAttribute('data-i18n-attr');
+    if(attr) el.setAttribute(attr,t(k));
+    else el.innerHTML=t(k);
+  });
+  // Update html lang attribute
+  document.documentElement.lang=_lang;
+}
+
+// ═══════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════
 const COLORS=['#2E75B6','#E8610A','#16A34A','#7C3AED','#DC2626','#0891B2'];
@@ -645,7 +1076,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.46 — Architecture séparée
+// GITHUB SYNC v1.47 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -1083,6 +1514,18 @@ function go(screen){
   if(screen==='home')renderHome();
   if(screen==='capture')renderCapture();
   if(screen==='settings'){
+    // Update language buttons
+    var langEn=document.getElementById('lang-en');
+    var langFr=document.getElementById('lang-fr');
+    if(langEn&&langFr){
+      if(_lang==='fr'){
+        langEn.style.cssText='flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border)';
+        langFr.style.cssText='flex:1;background:var(--blue);color:#fff';
+      } else {
+        langEn.style.cssText='flex:1;background:var(--blue);color:#fff';
+        langFr.style.cssText='flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border)';
+      }
+    }
     // Personal token status (all users)
     const pStatus=document.getElementById('personal-token-status');
     const userTok=S.user&&S.user.apiKey||'';
@@ -1118,6 +1561,8 @@ function go(screen){
     renderAdminPanel();
   }
   window.scrollTo(0,0);
+  // Re-apply translations after screen switch (catches static elements)
+  applyI18n();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1130,7 +1575,7 @@ async function checkSiteCode(){
   // Hash what the user typed and compare — code itself never stored in clear text
   var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(code));
   var hex=Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
-  if(hex!==ACCESS_CODE_HASH){toast('Invalid code ❌');return;}
+  if(hex!==ACCESS_CODE_HASH){toast(t('toast_invalid_code'));return;}
   siteCodeVerified=true;
   document.getElementById('site-code-box').style.display='none';
   document.getElementById('user-selection-box').style.display='block';
@@ -1174,7 +1619,7 @@ async function loadFromGitHubLogin(){
   if(!sharedToken){
     hideOverlay();
     document.getElementById('load-gh-box').style.display='block';
-    toast('Entrez votre token GitHub pour charger les comptes');
+    toast(t('toast_enter_gh_token'));
     return;
   }
 
@@ -1230,7 +1675,7 @@ async function checkPwd(){
     }
   }
 
-  if(!match){toast('Wrong password ❌');return;}
+  if(!match){toast(t('toast_wrong_pwd'));return;}
   S.user=loginTarget;
   updateHeaderUser();
   // Hard purge: remove ALL procs that don't belong to this user and aren't shared
@@ -1247,7 +1692,7 @@ async function checkPwd(){
   if(_tok){
     setTimeout(function(){ghSave();},800);
   } else if(S.user.isAdmin){
-    setTimeout(function(){toast('⚙️ Enter your GitHub token in Settings');go('settings');},1000);
+    setTimeout(function(){toast(t('toast_settings_gh'));go('settings');},1000);
   }
 }
 
@@ -1269,11 +1714,11 @@ function createUser(){
   const name=document.getElementById('new-name').value.trim();
   const pwd=document.getElementById('new-pwd').value;
   const pwd2=document.getElementById('new-pwd2').value;
-  if(!name){toast('Enter a name');return;}
-  if(pwd.length<4){toast('Password must be at least 4 characters');return;}
-  if(pwd!==pwd2){toast('Passwords do not match');return;}
+  if(!name){toast(t('toast_enter_name'));return;}
+  if(pwd.length<4){toast(t('toast_pwd_short'));return;}
+  if(pwd!==pwd2){toast(t('toast_pwd_match'));return;}
   const users=getUsers();
-  if(users.find(u=>u.name.toLowerCase()===name.toLowerCase())){toast('Name already taken');return;}
+  if(users.find(u=>u.name.toLowerCase()===name.toLowerCase())){toast(t('toast_name_taken'));return;}
   // First user created is admin
   const isAdmin=users.length===0;
   hashPwd(pwd).then(function(pwdHash){
@@ -1284,7 +1729,7 @@ function createUser(){
     updateHeaderUser();
     document.getElementById('add-user-box').style.display='none';
     go('home');
-    setTimeout(function(){toast('⚙️ Enter your GitHub token in Settings');go('settings');},800);
+    setTimeout(function(){toast(t('toast_settings_gh'));go('settings');},800);
   });
 }
 
@@ -1303,7 +1748,7 @@ async function changePassword(){
   const newPwd=document.getElementById('pwd-new1').value;
   const newPwd2=document.getElementById('pwd-new2').value;
   if(newPwd.length<4){toast('New password must be at least 4 characters');return;}
-  if(newPwd!==newPwd2){toast('Passwords do not match');return;}
+  if(newPwd!==newPwd2){toast(t('toast_pwd_match'));return;}
 
   // Check old password — support both legacy and SHA-256
   var stored=S.user.pwdHash||'';
@@ -1313,7 +1758,7 @@ async function changePassword(){
   } else {
     oldMatch=(hashPwdLegacy(oldPwd)===stored);
   }
-  if(!oldMatch){toast('Wrong current password ❌');return;}
+  if(!oldMatch){toast(t('toast_wrong_current_pwd'));return;}
 
   const newHash=await hashPwd(newPwd);
   S.user.pwdHash=newHash;
@@ -1323,7 +1768,7 @@ async function changePassword(){
   document.getElementById('pwd-old').value='';
   document.getElementById('pwd-new1').value='';
   document.getElementById('pwd-new2').value='';
-  toast('Password changed ✓');
+  toast(t('toast_pwd_changed'));
 }
 
 function deleteUser(id){
@@ -1387,7 +1832,7 @@ async function saveSettings(){
     const pStatus=document.getElementById('personal-token-status');
     if(pStatus){pStatus.style.background='#DCFCE7';pStatus.style.color='#15803D';pStatus.textContent='✓ Token saved — '+personalTok.slice(0,8)+'••••••••';}
     document.getElementById('inp-personal-apikey').value='';
-    toast('✓ Token saved — other devices can now sync');
+    toast(t('toast_token_saved'));
     return;
   }
 
@@ -1459,7 +1904,7 @@ async function manualSync(){
     }
   }
   hideOverlay();
-  toast('✓ Pushed — other devices will sync automatically');
+  toast(t('toast_pushed'));
 }
 
 async function forceSyncFromGH(){
@@ -1676,7 +2121,7 @@ function renderHome(){
   document.getElementById('stat-exported').textContent=mineProcs.filter(p=>p.status==='exported').length;
 
   if(!procs.length){
-    el.innerHTML=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-t">No procedures yet</div><div class="empty-s">Tap + to create the first manufacturing procedure.</div></div>`;
+    el.innerHTML=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-t">${t('no_procs')}</div><div class="empty-s">${t('no_procs_sub')}</div></div>`;
     return;
   }
 
@@ -1736,7 +2181,7 @@ function renderHome(){
     // Mes procédures uniquement — créées par moi
     var mine=allSorted.filter(function(p){ return p.userId===S.user?.id; });
     if(mine.length) html=mine.map(function(p){return procCard(p,false);}).join('');
-    else html='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">Aucune proc. pour vous.</div>';
+    else html='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">'+t('no_mine')+'</div>';
 
   } else if(_homeFilter==='others'){
     // Procédures EXPLICITEMENT partagées des autres (visibility='shared' obligatoire)
@@ -1744,7 +2189,7 @@ function renderHome(){
       return p.userId!==S.user?.id&&p.visibility==='shared';
     });
     if(shared.length) html=shared.map(function(p){return procCard(p,true);}).join('');
-    else html='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">Aucune proc. partagée.</div>';
+    else html='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">'+t('no_shared')+'</div>';
 
   } else {
     // Tout — mes procs + partagées + admin voit les privées des autres
@@ -1767,7 +2212,7 @@ function renderHome(){
       html+=sectionLabel('🔐 Privées équipe (admin)');
       html+=adminPrivate.map(function(p){return procCard(p,true);}).join('');
     }
-    if(!html) html='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">Aucune procédure.</div>';
+    if(!html) html='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">'+t('no_all')+'</div>';
   }
   el.innerHTML=html;
 }
@@ -1911,7 +2356,7 @@ function renderCapture(){
   document.getElementById('cap-ref').textContent=p.ref;
   const el=document.getElementById('cap-content');
   if(!p.sections.length){
-    el.innerHTML=`<div class="card" style="text-align:center;padding:28px;color:var(--muted)"><div style="font-size:40px;margin-bottom:12px">📝</div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">No sections yet</div><div style="font-size:13px">Add a section first</div></div>`;
+    el.innerHTML=`<div class="card" style="text-align:center;padding:28px;color:var(--muted)"><div style="font-size:40px;margin-bottom:12px">📝</div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">${t('no_sections')}</div><div style="font-size:13px">${t('no_sections_sub')}</div></div>`;
     return;
   }
   el.innerHTML=p.sections.map((sec,si)=>`
@@ -1934,10 +2379,10 @@ function renderCapture(){
           </div>
         </div>
         <div class="step-btns">
-          <button class="cap-btn" onclick="quickVoice('${sec.id}','${st.id}')"><svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Voix</span></button>
-          <button class="cap-btn" onclick="quickPhoto('${sec.id}','${st.id}')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>Photo</span></button>
-          <button class="cap-btn" onclick="editStep('${sec.id}','${st.id}')"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>Éditer</span></button>
-          <button class="cap-btn" onclick="deleteStep('${sec.id}','${st.id}')"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg><span>Suppr.</span></button>
+          <button class="cap-btn" onclick="quickVoice('${sec.id}','${st.id}')"><svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>${t('voice')}</span></button>
+          <button class="cap-btn" onclick="quickPhoto('${sec.id}','${st.id}')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>${t('photo')}</span></button>
+          <button class="cap-btn" onclick="editStep('${sec.id}','${st.id}')"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>${t('edit_step')}</span></button>
+          <button class="cap-btn" onclick="deleteStep('${sec.id}','${st.id}')"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg><span>${t('delete')}</span></button>
         </div>
       </div>`).join('')}
     <div class="add-row">
@@ -1950,7 +2395,7 @@ function addSection(){
   if(!title||!title.trim())return;
   const sec={id:uid(),title:title.trim(),steps:[]};
   S.cur.sections.push(sec);S.curSecId=sec.id;
-  syncCur();renderCapture();toast('Section added ✓');
+  syncCur();renderCapture();toast(t('toast_section_added'));
 }
 
 function editSecTitle(secId){
@@ -1963,11 +2408,11 @@ function deleteSection(secId){
   const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
   if(!confirm('Delete section "'+sec.title+'" and all its steps?'))return;
   S.cur.sections=S.cur.sections.filter(s=>s.id!==secId);
-  syncCur();renderCapture();toast('Section deleted');
+  syncCur();renderCapture();toast(t('toast_section_deleted'));
 }
 
 function addStepLast(){
-  if(!S.cur.sections.length){toast('Add a section first');return;}
+  if(!S.cur.sections.length){toast(t('toast_add_section'));return;}
   addStepTo(S.cur.sections[S.cur.sections.length-1].id);
 }
 
@@ -2019,7 +2464,7 @@ function saveStep(){
   const vt=document.getElementById('voice-box').textContent;
   if(vt&&vt!=='Tap "Start" to begin...')st.voice=vt.trim();
   if(!st.text&&st.voice)st.text=st.voice;
-  stopVoice();syncCur();toast('Step saved ✓');go('capture');
+  stopVoice();syncCur();toast(t('toast_step_saved'));go('capture');
 }
 
 function quickVoice(secId,stepId){editStep(secId,stepId);setTimeout(startVoice,400);}
@@ -2044,7 +2489,7 @@ function quickPhoto(secId,stepId){
           const c=document.createElement('canvas');c.width=w;c.height=h;
           c.getContext('2d').drawImage(img,0,0,w,h);
           st.photos.push({id:uid(),data:c.toDataURL('image/jpeg',0.88)});
-          done++;if(done===e.target.files.length){syncCur();renderCapture();toast('📷 Photo added');}
+          done++;if(done===e.target.files.length){syncCur();renderCapture();toast(t('toast_photo_added'));}
         };
         img.src=ev.target.result;
       };
@@ -2070,7 +2515,7 @@ var _voiceFinal='';
 
 function startVoice(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){toast('Voice not available — use Chrome or Safari');return;}
+  if(!SR){toast(t('toast_voice_na'));return;}
   const vbox=document.getElementById('voice-box');
   if(!S.recording){
     // Fresh start — seed from existing box content
@@ -2150,7 +2595,7 @@ function appendVoiceToText(){
   if(!vt||vt==='Tap "Start" to begin...')return;
   const ta=document.getElementById('step-txt');
   ta.value=(ta.value?ta.value+'\n':'')+vt.trim();
-  toast('Voice copied to notes');
+  toast(t('toast_voice_copied'));
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2673,8 +3118,8 @@ function buildWordHTML(p,txt){
 // SHARE
 // ═══════════════════════════════════════════════════════
 function shareEmail(){const p=S.cur;window.location.href=`mailto:?subject=Procedure: ${encodeURIComponent(p.title)}&body=Please find the manufacturing procedure for ${encodeURIComponent(p.title)} (${encodeURIComponent(p.ref)}) attached.`;}
-function shareTeams(){toast('Download the .doc file and attach it in Teams');}
-function shareNative(){if(navigator.share)navigator.share({title:'Manufacturing Procedure',text:'Generated with ProceduresApp — Magnetic Solution'});else toast('Sharing not available on this browser');}
+function shareTeams(){toast(t('toast_teams'));}
+function shareNative(){if(navigator.share)navigator.share({title:'Manufacturing Procedure',text:'Generated with ProceduresApp — Magnetic Solution'});else toast(t('toast_share_na'));}
 
 // ═══════════════════════════════════════════════════════
 // UI UTILS
@@ -2687,6 +3132,8 @@ function toast(msg){const el=document.getElementById('toast');el.textContent=msg
 // INIT — token first, then data, then login screen
 // ═══════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded',async function(){
+  // Apply saved language immediately
+  applyI18n();
   showOverlay('Connecting...');
 
   // Always read token from localStorage (never from GitHub — security)
