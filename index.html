@@ -185,7 +185,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.50</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.51</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -1095,7 +1095,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.50 — Architecture séparée
+// GITHUB SYNC v1.51 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -1232,17 +1232,41 @@ async function ghSave(){
       safe.oApiKey=u.apiKey?obfuscate(u.apiKey):'';
       return safe;
     });
-    // data.json only stores users + procIds + token (no proc content = always small)
-    // procIds stored per user: {username: [id1, id2, ...]}
-    var procIdsByUser={};
+
+    // Build local procIds from current localStorage
+    var localProcIds={};
     getProcs().forEach(function(p){
       var uname=(p.userId?(rawUsers.find(function(u){return u.id===p.userId;})||{}).name||'unknown':'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
-      if(!procIdsByUser[uname]) procIdsByUser[uname]=[];
-      if(!procIdsByUser[uname].includes(p.id)) procIdsByUser[uname].push(p.id);
+      if(!localProcIds[uname]) localProcIds[uname]=[];
+      if(!localProcIds[uname].includes(p.id)) localProcIds[uname].push(p.id);
     });
+
+    // ── Defensive merge: read current data.json from GitHub first ──
+    // Never overwrite with a shorter procIds list — merge instead.
+    var mergedProcIds=Object.assign({},localProcIds);
+    try{
+      var r=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
+        headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
+      });
+      if(r.ok){
+        var meta=await r.json();
+        var raw=atob(meta.content.replace(/\s/g,''));
+        var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
+        var ghData=JSON.parse(decoded);
+        var ghIds=ghData.procIds||{};
+        // Merge: for each user, keep union of GitHub IDs and local IDs
+        Object.keys(ghIds).forEach(function(uname){
+          if(!mergedProcIds[uname]) mergedProcIds[uname]=[];
+          (ghIds[uname]||[]).forEach(function(id){
+            if(!mergedProcIds[uname].includes(id)) mergedProcIds[uname].push(id);
+          });
+        });
+      }
+    }catch(e){console.warn('ghSave: could not read GitHub for merge, using local only');}
+
     var data={
       users:safeUsers,
-      procIds:procIdsByUser,
+      procIds:mergedProcIds,
       st:obfuscate(tok),
       updated:new Date().toISOString()
     };
