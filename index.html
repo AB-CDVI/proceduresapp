@@ -185,7 +185,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.48</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.49</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -271,9 +271,9 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
       <div id="hdr-avatar" onclick="go('settings')" title="Profil & Réglages" style="cursor:pointer;width:40px;height:40px;border-radius:13px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;letter-spacing:-.5px;flex-shrink:0;position:relative;z-index:1"></div>
     </div>
     <div class="home-stats">
-      <div class="home-stat"><div class="home-stat-n" id="stat-total">0</div><div class="home-stat-l">Procédures</div></div>
-      <div class="home-stat"><div class="home-stat-n" id="stat-generated">0</div><div class="home-stat-l">Générées</div></div>
-      <div class="home-stat hi"><div class="home-stat-n" id="stat-exported">0</div><div class="home-stat-l">Exportées</div></div>
+      <div class="home-stat"><div class="home-stat-n" id="stat-total">0</div><div class="home-stat-l" data-i18n="procedures">Procedures</div></div>
+      <div class="home-stat"><div class="home-stat-n" id="stat-generated">0</div><div class="home-stat-l" data-i18n="generated">Generated</div></div>
+      <div class="home-stat hi"><div class="home-stat-n" id="stat-exported">0</div><div class="home-stat-l" data-i18n="exported">Exported</div></div>
     </div>
   </div>
   <div class="content">
@@ -885,9 +885,9 @@ var _i18n={
     create:'Créer →',
     // Home
     hello:'Bonjour',
-    procedures:'Procédures',
-    generated:'Générées',
-    exported:'Exportées',
+    procedures:'Procedures',
+    generated:'Generated',
+    exported:'Exported',
     me:'Moi',
     team:'Équipe',
     all:'Tout',
@@ -1076,7 +1076,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.48 — Architecture séparée
+// GITHUB SYNC v1.49 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
