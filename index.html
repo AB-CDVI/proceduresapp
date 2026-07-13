@@ -157,6 +157,24 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .fab{position:fixed;bottom:82px;right:16px;width:54px;height:54px;background:var(--blue-mid);color:#fff;border:none;border-radius:50%;font-size:28px;cursor:pointer;box-shadow:0 4px 16px rgba(46,117,182,.45);display:flex;align-items:center;justify-content:center;z-index:50;transition:transform .15s;font-family:inherit}
 .fab:active{transform:scale(.9)}
 
+/* FOLDER CARDS */
+.folder-card{background:#fff;border-radius:16px;margin-bottom:8px;box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:transform .1s}
+.folder-card:active{transform:scale(.99)}
+.folder-card-inner{padding:14px 16px;display:flex;align-items:center;gap:13px}
+.folder-icon{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;color:#fff}
+.folder-info{flex:1;min-width:0}
+.folder-name{font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.2px}
+.folder-desc{font-size:11px;color:var(--muted);margin-top:2px}
+.folder-meta{font-size:10px;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:6px}
+.folder-count{background:var(--bg);border-radius:20px;padding:2px 9px;font-size:10px;font-weight:700;color:var(--muted)}
+.folder-chevron{color:var(--muted)}
+
+/* FOLDER PROC CARDS (inside folder view) */
+.fp-card{background:#fff;border-radius:14px;margin-bottom:8px;box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden}
+.fp-card-accent{height:3px}
+.fp-card-row{padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.fp-updater{font-size:9px;color:var(--muted);margin-top:3px;font-weight:500}
+
 /* OVERLAY */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px;color:#fff;font-size:15px;font-weight:500}
 .spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
@@ -185,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.51</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.54</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -281,6 +299,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
       <button id="filter-mine" onclick="setHomeFilter('mine')" class="filter-btn filter-active" data-i18n="me">Me</button>
       <button id="filter-others" onclick="setHomeFilter('others')" class="filter-btn" data-i18n="team">Team</button>
       <button id="filter-all" onclick="setHomeFilter('all')" class="filter-btn" data-i18n="all">All</button>
+      <button id="filter-folders" onclick="setHomeFilter('folders')" class="filter-btn" data-i18n="folders">📁 Folders</button>
     </div>
     <div id="home-list"></div>
   </div>
@@ -365,6 +384,41 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     <div class="card" id="admin-panel" style="display:none">
       <div class="card-title" data-i18n="manage_users">👑 Manage users (admin)</div>
       <div id="admin-user-list"></div>
+    </div>
+    <div class="card" id="admin-folders-panel" style="display:none">
+      <div class="card-title" data-i18n="folder_manage">📁 Shared folders (admin)</div>
+      <div id="admin-folders-list"></div>
+      <button class="btn btn-s btn-sm btn-full" style="margin-top:10px" onclick="showCreateFolder()" data-i18n="folder_new_btn">＋ New folder</button>
+    </div>
+    <div id="folder-edit-box" class="card" style="display:none;border:2px solid var(--blue-mid)">
+      <div class="card-title" id="folder-edit-title" data-i18n="folder_new">New folder</div>
+      <div class="fg">
+        <label class="fl" data-i18n="folder_name">Folder name</label>
+        <input type="text" id="folder-edit-name" class="fi" data-i18n="folder_name_ph" data-i18n-attr="placeholder" />
+      </div>
+      <div class="fg">
+        <label class="fl" data-i18n="folder_desc">Description</label>
+        <input type="text" id="folder-edit-desc" class="fi" data-i18n="folder_desc_ph" data-i18n-attr="placeholder" />
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="fl" data-i18n="folder_color">Color</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="folder-color-picker">
+          <button onclick="selectFolderColor('#1B3A6B')" style="width:28px;height:28px;border-radius:8px;background:#1B3A6B;border:2px solid #1B3A6B;cursor:pointer"></button>
+          <button onclick="selectFolderColor('#2E75B6')" style="width:28px;height:28px;border-radius:8px;background:#2E75B6;border:2px solid transparent;cursor:pointer"></button>
+          <button onclick="selectFolderColor('#16A34A')" style="width:28px;height:28px;border-radius:8px;background:#16A34A;border:2px solid transparent;cursor:pointer"></button>
+          <button onclick="selectFolderColor('#7C3AED')" style="width:28px;height:28px;border-radius:8px;background:#7C3AED;border:2px solid transparent;cursor:pointer"></button>
+          <button onclick="selectFolderColor('#DC2626')" style="width:28px;height:28px;border-radius:8px;background:#DC2626;border:2px solid transparent;cursor:pointer"></button>
+          <button onclick="selectFolderColor('#0891B2')" style="width:28px;height:28px;border-radius:8px;background:#0891B2;border:2px solid transparent;cursor:pointer"></button>
+        </div>
+      </div>
+      <div class="fg" style="margin-top:12px;margin-bottom:0">
+        <label class="fl" data-i18n="folder_members">Authorised members</label>
+        <div id="folder-members-list" style="display:flex;flex-direction:column;gap:6px;margin-top:4px"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn btn-s btn-sm" style="flex:1" onclick="cancelFolderEdit()" data-i18n="folder_cancel">Cancel</button>
+        <button class="btn btn-p btn-sm" style="flex:1" onclick="saveFolderEdit()" data-i18n="folder_save">Save ✓</button>
+      </div>
     </div>
     <!-- Danger zone -->
     <div class="card">
@@ -578,6 +632,73 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 </div>
 
 <!-- ══════════════════════════════════════════
+     FOLDER VIEW — list of procs in a folder
+══════════════════════════════════════════ -->
+<div id="s-folder" class="screen">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('home')">←</button>
+    <div style="flex:1;min-width:0">
+      <div class="hdr-title" id="folder-title">Folder</div>
+      <div class="hdr-sub" id="folder-sub"></div>
+    </div>
+    <button onclick="initFolderForm()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#fff;font-size:20px;cursor:pointer;padding:5px 11px;font-weight:300;line-height:1">+</button>
+  </header>
+  <div class="content">
+    <div id="folder-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     FOLDER PROC FORM — create proc in folder
+══════════════════════════════════════════ -->
+<div id="s-folder-form" class="screen">
+  <header class="hdr">
+    <button class="btn-back" onclick="go('folder')">←</button>
+    <div class="hdr-title" data-i18n="new_procedure_title">New procedure</div>
+  </header>
+  <div class="content">
+    <div class="card" style="background:var(--blue-soft);border:1px solid var(--blue-pale);margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-size:22px">📁</div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px" data-i18n="folder_shared">Shared folder</div>
+          <div style="font-size:14px;font-weight:800;color:var(--blue)" id="folder-form-name"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="fg">
+        <label class="fl" data-i18n="title_label">Title *</label>
+        <input type="text" id="ff-title" class="fi" data-i18n="title_ph" data-i18n-attr="placeholder" />
+      </div>
+      <div class="fg">
+        <label class="fl" data-i18n="ref_label">Reference *</label>
+        <input type="text" id="ff-ref" class="fi" data-i18n="ref_ph" data-i18n-attr="placeholder" />
+      </div>
+      <div class="fg">
+        <label class="fl" data-i18n="operator_label">Operator</label>
+        <input type="text" id="ff-op" class="fi" data-i18n="operator_ph" data-i18n-attr="placeholder" />
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="fl" data-i18n="category_label">Category</label>
+        <select id="ff-cat" class="fs">
+          <option>Assembly</option>
+          <option>Electronics</option>
+          <option>Cabling</option>
+          <option>Packaging</option>
+          <option>Testing</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="ftr">
+    <button class="btn btn-s" onclick="go('folder')" data-i18n="cancel_btn">Cancel</button>
+    <button class="btn btn-p" onclick="createFolderProc()" data-i18n="create_btn">Create →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
      STEP DETAIL
 ══════════════════════════════════════════ -->
 <div id="s-step" class="screen">
@@ -736,6 +857,36 @@ var _i18n={
     me:'Me',
     team:'Team',
     all:'All',
+    folders:'📁 Folders',
+    // Folders
+    folder_shared:'Shared folder',
+    folder_none_admin:'No folders — create one in Settings.',
+    folder_none_member:'No shared folder accessible.',
+    folder_loading:'Loading...',
+    folder_empty:'No procedures in this folder.',
+    folder_modified_by:'Modified by',
+    folder_created_on:'Created on',
+    folder_procedures:'procedure',
+    folder_procedures_pl:'procedures',
+    folder_all_members:'All',
+    folder_new:'New folder',
+    folder_edit:'Edit folder',
+    folder_name:'Folder name',
+    folder_name_ph:'e.g. MS5',
+    folder_desc:'Description',
+    folder_desc_ph:'e.g. MS5 line — Magnetics',
+    folder_color:'Color',
+    folder_members:'Authorised members',
+    folder_save:'Save ✓',
+    folder_cancel:'Cancel',
+    folder_create_ok:'✓ Folder created',
+    folder_update_ok:'✓ Folder updated',
+    folder_delete_confirm:'Delete folder "{name}"? Procedures on GitHub will NOT be deleted.',
+    folder_delete_ok:'Folder deleted',
+    folder_name_required:'Please enter a folder name',
+    folder_manage:'📁 Shared folders (admin)',
+    folder_new_btn:'＋ New folder',
+    folder_new_proc:'New procedure in folder',
     new_procedure:'＋ New procedure',
     no_procs:'No procedures yet',
     no_procs_sub:'Tap + to create the first manufacturing procedure.',
@@ -892,6 +1043,36 @@ var _i18n={
     me:'Moi',
     team:'Équipe',
     all:'Tout',
+    folders:'📁 Dossiers',
+    // Folders
+    folder_shared:'Dossier partagé',
+    folder_none_admin:t('folder_none_admin'),
+    folder_none_member:t('folder_none_member'),
+    folder_loading:t('folder_loading'),
+    folder_empty:t('folder_empty'),
+    folder_modified_by:'Modifié par',
+    folder_created_on:'Créé le',
+    folder_procedures:'procédure',
+    folder_procedures_pl:'procédures',
+    folder_all_members:t('folder_all_members'),
+    folder_new:t('folder_new'),
+    folder_edit:t('folder_edit'),
+    folder_name:'Nom du dossier',
+    folder_name_ph:'ex. MS5',
+    folder_desc:'Description',
+    folder_desc_ph:'ex. Ligne MS5 — Magnétiques',
+    folder_color:'Couleur',
+    folder_members:'Membres autorisés',
+    folder_save:'Enregistrer ✓',
+    folder_cancel:'Annuler',
+    folder_create_ok:'✓ Dossier créé',
+    folder_update_ok:'✓ Dossier modifié',
+    folder_delete_confirm:'Supprimer le dossier "{name}" ? Les procédures sur GitHub ne seront pas supprimées.',
+    folder_delete_ok:'Dossier supprimé',
+    folder_name_required:'Entrez un nom de dossier',
+    folder_manage:'📁 Dossiers partagés (admin)',
+    folder_new_btn:'＋ Nouveau dossier',
+    folder_new_proc:'Nouvelle procédure dans le dossier',
     new_procedure:'＋ Nouvelle procédure',
     no_procs:'Aucune procédure',
     no_procs_sub:'Appuyez sur + pour créer la première procédure de fabrication.',
@@ -1095,7 +1276,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.51 — Architecture séparée
+// GITHUB SYNC v1.54 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -1267,6 +1448,7 @@ async function ghSave(){
     var data={
       users:safeUsers,
       procIds:mergedProcIds,
+      folders:getFolders(),
       st:obfuscate(tok),
       updated:new Date().toISOString()
     };
@@ -1516,6 +1698,15 @@ async function ghLoad(){
     }
 
     localStorage.setItem('last_save_time',String(Date.now()));
+
+    // Load folders metadata
+    if(data.folders){
+      // Merge with local — admin edits are source of truth from GitHub
+      var localFolders=getFolders();
+      var mergedFolders=Object.assign({},localFolders,data.folders);
+      saveFolders(mergedFolders);
+    }
+
     setSyncStatus('ok');
     return{ok:true};
   }catch(e){console.warn('ghLoad error:',e);return{ok:false,reason:'parse_error',detail:e.message};}
@@ -1532,6 +1723,105 @@ function saveProcs(p){
   ghSave(); // update procIds list in data.json
 }
 
+// ─── Folders (shared workspaces) ────────────────────────────────────────────
+function getFolders(){return JSON.parse(localStorage.getItem('ms_folders')||'{}');}
+function saveFolders(f){localStorage.setItem('ms_folders',JSON.stringify(f));}
+function getFolderProcs(folderId){return JSON.parse(localStorage.getItem('ms_fprocs_'+folderId)||'[]');}
+function saveFolderProcs(folderId,procs){localStorage.setItem('ms_fprocs_'+folderId,JSON.stringify(procs));}
+
+// Save folder metadata to data.json (via ghSave which merges)
+// Folder proc: save to folders/[folderId]/procs/[id].json
+async function ghSaveFolderProc(folderId, proc){
+  var tok=getBestToken();
+  if(!tok||!proc) return false;
+  try{
+    var uname=(S.user&&S.user.name?S.user.name:'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
+    // Deep clone — strip photo data
+    var procNoPhotos=JSON.parse(JSON.stringify(proc));
+    var photoJobs=[];
+    (procNoPhotos.sections||[]).forEach(function(sec){
+      (sec.steps||[]).forEach(function(st){
+        if(st.photos&&st.photos.length){
+          st.photos.forEach(function(ph){
+            if(ph.data&&ph.data.length>0){
+              photoJobs.push({id:ph.id,data:ph.data});
+              ph.data='';
+            }
+          });
+        }
+      });
+    });
+    // Track who last updated
+    procNoPhotos.updatedBy=S.user?S.user.name:'unknown';
+    procNoPhotos.updatedAt=new Date().toISOString();
+    var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(procNoPhotos))));
+    var ok=await ghPutFileLocked('folders/'+folderId+'/procs/'+proc.id+'.json',encoded,tok);
+    if(!ok) return false;
+    // Upload photos
+    if(photoJobs.length>0){
+      await Promise.all(photoJobs.map(function(job){
+        var enc=btoa(unescape(encodeURIComponent(job.data)));
+        return ghPutFileLocked('folders/'+folderId+'/photos/'+proc.id+'/'+job.id+'.b64',enc,tok);
+      }));
+    }
+    return true;
+  }catch(e){console.warn('ghSaveFolderProc:',e);return false;}
+}
+
+// Fetch all procedures for a folder from GitHub
+async function ghFetchFolderProcs(folderId){
+  var tok=getBestToken();
+  if(!tok) return [];
+  try{
+    // List files in folders/[folderId]/procs/
+    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/folders/'+folderId+'/procs',{
+      headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(!resp.ok) return [];
+    var files=await resp.json();
+    if(!Array.isArray(files)) return [];
+    var jsonFiles=files.filter(function(f){return f.name.endsWith('.json');});
+    // Fetch each proc file
+    var procs=await Promise.all(jsonFiles.map(async function(f){
+      try{
+        var r=await fetch(f.url,{
+          headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
+        });
+        if(!r.ok) return null;
+        var meta=await r.json();
+        var raw=atob(meta.content.replace(/\s/g,''));
+        var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
+        var proc=JSON.parse(decoded);
+        // Fetch photos
+        var photoFetches=[];
+        (proc.sections||[]).forEach(function(sec){
+          (sec.steps||[]).forEach(function(st){
+            (st.photos||[]).forEach(function(ph){
+              if(!ph.data||ph.data===''){
+                photoFetches.push({ph:ph,path:'folders/'+folderId+'/photos/'+proc.id+'/'+ph.id+'.b64'});
+              }
+            });
+          });
+        });
+        if(photoFetches.length>0){
+          await Promise.all(photoFetches.map(async function(job){
+            try{
+              var pr=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+job.path,{
+                headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
+              });
+              if(!pr.ok) return;
+              var pm=await pr.json();
+              job.ph.data=atob(pm.content.replace(/\s/g,''));
+            }catch(e){}
+          }));
+        }
+        return proc;
+      }catch(e){return null;}
+    }));
+    return procs.filter(Boolean);
+  }catch(e){console.warn('ghFetchFolderProcs:',e);return[];}
+}
+
 
 
 
@@ -1540,10 +1830,11 @@ function saveProcs(p){
 // SESSION STATE
 // ═══════════════════════════════════════════════════════
 const S={
-  user:null,      // current logged-in user
-  cur:null,       // current procedure
+  user:null,
+  cur:null,
   curSecId:null,
   curStep:null,
+  curFolderContext:null, // set when editing a proc from a folder
   recog:null,
   recording:false
 };
@@ -1554,7 +1845,7 @@ const S={
 function go(screen){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('s-'+screen).classList.add('active');
-  if(screen==='home')renderHome();
+  if(screen==='home'){renderHome();S.curFolderContext=null;}
   if(screen==='capture')renderCapture();
   if(screen==='settings'){
     // Sync pending lang to current on open (in case cancelled previously)
@@ -1593,6 +1884,7 @@ function go(screen){
     document.getElementById('pwd-new1').value='';
     document.getElementById('pwd-new2').value='';
     renderAdminPanel();
+    renderAdminFolders();
   }
   window.scrollTo(0,0);
   // Re-apply translations after screen switch (catches static elements)
@@ -2214,7 +2506,10 @@ function renderHome(){
   }
 
   var html='';
-  if(_homeFilter==='mine'){
+  if(_homeFilter==='folders'){
+    renderFolderList(el);
+    return;
+  } else if(_homeFilter==='mine'){
     // Mes procédures uniquement — créées par moi
     var mine=allSorted.filter(function(p){ return p.userId===S.user?.id; });
     if(mine.length) html=mine.map(function(p){return procCard(p,false);}).join('');
@@ -2330,7 +2625,7 @@ var _homeFilter='mine'; // current filter: 'mine' | 'others' | 'all'
 
 function setHomeFilter(f){
   _homeFilter=f;
-  ['mine','others','all'].forEach(function(k){
+  ['mine','others','all','folders'].forEach(function(k){
     var btn=document.getElementById('filter-'+k);
     if(btn) btn.className='filter-btn'+(f===k?' filter-active':'');
   });
@@ -2373,12 +2668,16 @@ function createProc(){
 
 function syncCur(){
   if(!S.cur)return;
+  // If editing a folder procedure, sync to folder storage
+  if(S.curFolderContext){
+    syncFolderProc();
+    return;
+  }
   const procs=getProcs();
   const idx=procs.findIndex(p=>p.id===S.cur.id);
   if(idx>=0){procs[idx]=S.cur;}
   else{procs.push(S.cur);}
   localStorage.setItem('ms_procs',JSON.stringify(procs));
-  // Push proc then data.json sequentially to avoid SHA conflicts
   ghSaveProc(S.cur).then(function(){ ghSave(); });
 }
 
@@ -3151,9 +3450,208 @@ function buildWordHTML(p,txt){
   return H;
 }
 
+
+// ═══════════════════════════════════════════════════════
+// FOLDERS
+// ═══════════════════════════════════════════════════════
+var _curFolderId=null;
+var _folderEditId=null;
+var _folderEditColor='#1B3A6B';
+
+function openFolder(id){
+  _curFolderId=id;
+  go('folder');
+  renderFolderView();
+}
+
+function renderFolderList(el){
+  var folders=getFolders();
+  var keys=Object.keys(folders);
+  var accessible=keys.filter(function(id){
+    var f=folders[id];
+    if(S.user&&S.user.isAdmin) return true;
+    return !f.members||f.members.length===0||f.members.includes(S.user&&S.user.name);
+  });
+  if(!accessible.length){
+    el.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">'+(S.user&&S.user.isAdmin?t('folder_none_admin'):t('folder_none_member'))+'</div>';
+    return;
+  }
+  el.innerHTML=accessible.map(function(id){
+    var f=folders[id];
+    var procs=getFolderProcs(id);
+    var color=f.color||'#1B3A6B';
+    var members=f.members&&f.members.length?f.members.join(', '):t('folder_all_members');
+    return '<div class="folder-card" onclick="openFolder(\''+id+'\')"><div class="folder-card-inner"><div class="folder-icon" style="background:'+color+'">📁</div><div class="folder-info"><div class="folder-name">'+esc(f.name||id)+'</div><div class="folder-desc">'+esc(f.description||'')+'</div><div class="folder-meta"><span class="folder-count">'+procs.length++' '+(count!==1?t('folder_procedures_pl'):t('folder_procedures'))+'</span><span>· '+esc(members)+'</span></div></div><div class="folder-chevron"><svg viewBox="0 0 24 24" width="14" height="14"><polyline points="9 18 15 12 9 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div></div>';
+  }).join('');
+}
+
+async function renderFolderView(){
+  var id=_curFolderId;
+  if(!id) return;
+  var folders=getFolders();
+  var f=folders[id]||{name:id};
+  document.getElementById('folder-title').textContent=f.name||id;
+  document.getElementById('folder-sub').textContent=f.description||'';
+  var el=document.getElementById('folder-list');
+  el.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">Chargement...</div>';
+  showOverlay(t('folder_loading'));
+  var procs=await ghFetchFolderProcs(id);
+  saveFolderProcs(id,procs);
+  hideOverlay();
+  if(!procs.length){
+    el.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">'+t('folder_empty')+'</div>';
+    return;
+  }
+  var icons={Assembly:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',Electronics:'<polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',Cabling:'<path d="M21 6a3 3 0 1 0-5.83 1H8.83A3 3 0 1 0 3 8a3 3 0 0 0 4.17 2.77v2.46A3 3 0 1 0 8 19a3 3 0 0 0 .83-5.77v-2.46A3 3 0 0 0 8.83 9h6.34A3 3 0 1 0 21 6z"/>',Packaging:'<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>',Testing:'<path d="M9 11l3 3L22 4"/>',Other:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>'};
+  var sorted=[...procs].sort(function(a,b){return new Date(b.updatedAt||b.created)-new Date(a.updatedAt||a.created);});
+  el.innerHTML=sorted.map(function(p){
+    var iconColor=p.status==='exported'?'var(--blue)':p.status==='generated'?'#16A34A':'var(--muted)';
+    var updater=p.updatedBy?(t('folder_modified_by')+' '+esc(p.updatedBy)+' · '+new Date(p.updatedAt).toLocaleDateString()):(t('folder_created_on')+' '+new Date(p.created).toLocaleDateString());
+    return '<div class="fp-card"><div class="fp-card-accent proc-card-accent-'+p.status+'"></div><div class="fp-card-row" onclick="openFolderProc(\''+p.id+'\')"><div class="proc-card-icon proc-card-icon-'+p.status+'"><svg viewBox="0 0 24 24" stroke="'+iconColor+'">'+( icons[p.cat]||icons.Other)+'</svg></div><div class="proc-info"><div class="proc-title">'+esc(p.title)+'</div><div class="proc-meta">'+esc(p.ref)+'</div><div class="fp-updater">'+updater+'</div></div><span class="badge badge-'+p.status+'">'+p.status+'</span></div></div>';
+  }).join('');
+}
+
+function openFolderProc(procId){
+  var procs=getFolderProcs(_curFolderId);
+  S.cur=procs.find(function(p){return p.id===procId;});
+  if(!S.cur) return;
+  S.curFolderContext=_curFolderId;
+  if(S.cur.status==='generated'||S.cur.status==='exported'){
+    go('review');
+    document.getElementById('review-display').textContent=S.cur.genText||'';
+    document.getElementById('review-edit').value=S.cur.genText||'';
+    renderReviewPhotos();
+  } else {
+    go('capture');
+  }
+}
+
+function initFolderForm(){
+  var folders=getFolders();
+  var f=folders[_curFolderId]||{};
+  document.getElementById('folder-form-name').textContent=f.name||_curFolderId;
+  document.getElementById('ff-title').value='';
+  document.getElementById('ff-ref').value='';
+  document.getElementById('ff-op').value=S.user?S.user.name:'';
+  go('folder-form');
+}
+
+function createFolderProc(){
+  var title=document.getElementById('ff-title').value.trim();
+  var ref=document.getElementById('ff-ref').value.trim();
+  if(!title||!ref){toast('Please fill in title and reference');return;}
+  var p={id:uid(),title:title,ref:ref,op:document.getElementById('ff-op').value.trim(),cat:document.getElementById('ff-cat').value,status:'draft',userId:S.user?S.user.id:'',createdBy:S.user?S.user.name:'',updatedBy:S.user?S.user.name:'',created:new Date().toISOString(),updatedAt:new Date().toISOString(),folderId:_curFolderId,sections:[],genText:''};
+  var procs=getFolderProcs(_curFolderId);
+  procs.push(p);
+  saveFolderProcs(_curFolderId,procs);
+  S.cur=p;
+  S.curFolderContext=_curFolderId;
+  go('capture');
+}
+
+async function syncFolderProc(){
+  if(!S.cur||!S.curFolderContext) return;
+  S.cur.updatedBy=S.user?S.user.name:'unknown';
+  S.cur.updatedAt=new Date().toISOString();
+  var procs=getFolderProcs(S.curFolderContext);
+  var idx=procs.findIndex(function(p){return p.id===S.cur.id;});
+  if(idx>=0) procs[idx]=S.cur; else procs.push(S.cur);
+  saveFolderProcs(S.curFolderContext,procs);
+  await ghSaveFolderProc(S.curFolderContext,S.cur);
+}
+
+function renderAdminFolders(){
+  var panel=document.getElementById('admin-folders-panel');
+  if(!panel) return;
+  if(!S.user||!S.user.isAdmin){panel.style.display='none';return;}
+  panel.style.display='block';
+  var folders=getFolders();
+  var keys=Object.keys(folders);
+  var list=document.getElementById('admin-folders-list');
+  if(!keys.length){list.innerHTML=t('folder_none_admin');return;}
+  list.innerHTML=keys.map(function(id){
+    var f=folders[id];
+    var color=f.color||'#1B3A6B';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)"><div style="width:32px;height:32px;border-radius:10px;background:'+color+';display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📁</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700;color:var(--text)">'+esc(f.name||id)+'</div><div style="font-size:11px;color:var(--muted)">'+(f.members&&f.members.length?f.members.join(', '):'Tous')+'</div></div><button class="btn btn-sm btn-s" style="flex-shrink:0" onclick="editFolder(\''+id+'\')">✏️</button><button class="btn btn-sm btn-danger" style="flex-shrink:0" onclick="deleteFolder(\''+id+'\')">🗑️</button></div>';
+  }).join('');
+}
+
+function showCreateFolder(){
+  _folderEditId=null;
+  _folderEditColor='#1B3A6B';
+  document.getElementById('folder-edit-title').textContent=t('folder_new');
+  document.getElementById('folder-edit-name').value='';
+  document.getElementById('folder-edit-desc').value='';
+  selectFolderColor('#1B3A6B');
+  renderFolderMembersList({});
+  document.getElementById('folder-edit-box').style.display='block';
+}
+
+function editFolder(id){
+  var folders=getFolders();
+  var f=folders[id]||{};
+  _folderEditId=id;
+  _folderEditColor=f.color||'#1B3A6B';
+  document.getElementById('folder-edit-title').textContent=t('folder_edit');
+  document.getElementById('folder-edit-name').value=f.name||id;
+  document.getElementById('folder-edit-desc').value=f.description||'';
+  selectFolderColor(_folderEditColor);
+  renderFolderMembersList(f);
+  document.getElementById('folder-edit-box').style.display='block';
+}
+
+function renderFolderMembersList(f){
+  var users=getUsers();
+  var members=f.members||[];
+  document.getElementById('folder-members-list').innerHTML=users.map(function(u){
+    var checked=members.length===0||members.includes(u.name);
+    return '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 0"><input type="checkbox" id="member-'+u.id+'" '+(checked?'checked':'')+' style="width:16px;height:16px;accent-color:var(--blue)"><span style="font-size:13px;font-weight:500">'+esc(u.name)+(u.isAdmin?' 👑':'')+'</span></label>';
+  }).join('');
+}
+
+function selectFolderColor(color){
+  _folderEditColor=color;
+  document.querySelectorAll('#folder-color-picker button').forEach(function(btn){
+    btn.style.border=btn.style.background===color?'2px solid var(--text)':'2px solid transparent';
+  });
+}
+
+function cancelFolderEdit(){
+  document.getElementById('folder-edit-box').style.display='none';
+  _folderEditId=null;
+}
+
+function saveFolderEdit(){
+  var name=document.getElementById('folder-edit-name').value.trim();
+  if(!name){toast(t('folder_name_required'));return;}
+  var desc=document.getElementById('folder-edit-desc').value.trim();
+  var users=getUsers();
+  var members=users.filter(function(u){var cb=document.getElementById('member-'+u.id);return cb&&cb.checked;}).map(function(u){return u.name;});
+  var allSelected=members.length===users.length;
+  var folders=getFolders();
+  var id=_folderEditId||name.replace(/[^a-zA-Z0-9_-]/g,'_');
+  folders[id]={name:name,description:desc,color:_folderEditColor,members:allSelected?[]:members,createdBy:S.user?S.user.name:'admin',updatedAt:new Date().toISOString()};
+  saveFolders(folders);
+  ghSave();
+  cancelFolderEdit();
+  renderAdminFolders();
+  toast(_folderEditId?t('folder_update_ok'):t('folder_create_ok'));
+}
+
+function deleteFolder(id){
+  var folders=getFolders();
+  var f=folders[id]||{};
+  if(!confirm(t('folder_delete_confirm').replace('{name}',f.name||id))) return;
+  delete folders[id];
+  saveFolders(folders);
+  localStorage.removeItem('ms_fprocs_'+id);
+  ghSave();
+  renderAdminFolders();
+  toast(t('folder_delete_ok'));
+}
+
 // ═══════════════════════════════════════════════════════
 // SHARE
-// ═══════════════════════════════════════════════════════
 function shareEmail(){const p=S.cur;window.location.href=`mailto:?subject=Procedure: ${encodeURIComponent(p.title)}&body=Please find the manufacturing procedure for ${encodeURIComponent(p.title)} (${encodeURIComponent(p.ref)}) attached.`;}
 function shareTeams(){toast(t('toast_teams'));}
 function shareNative(){if(navigator.share)navigator.share({title:'Manufacturing Procedure',text:'Generated with ProceduresApp — Magnetic Solution'});else toast(t('toast_share_na'));}
