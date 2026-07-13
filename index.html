@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.54</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.56</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -698,123 +698,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
-     STEP DETAIL
-══════════════════════════════════════════ -->
-<div id="s-step" class="screen">
-  <header class="hdr">
-    <button class="btn-back" onclick="go('capture')">←</button>
-    <div class="hdr-title" id="step-hdr">Step</div>
-  </header>
-  <div class="content">
-    <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div class="card-title" style="margin-bottom:0">🎙️ Voice dictation</div>
-        <button id="voice-btn" class="btn btn-s btn-sm" onclick="toggleVoice()">▶ Start</button>
-      </div>
-      <div id="rec-bar" class="rec-bar" style="display:none">
-        <div class="rec-dot"></div>
-        <span style="font-size:13px;font-weight:500">Recording — speak now</span>
-      </div>
-      <div id="voice-box" class="voice-box" style="color:var(--muted);font-style:italic">Tap "Start" to begin...</div>
-      <div style="display:flex;gap:6px;margin-top:8px">
-        <button class="btn btn-s btn-sm btn-full" onclick="clearVoice()">Clear</button>
-        <button class="btn btn-s btn-sm btn-full" onclick="appendVoiceToText()">→ Copy to notes</button>
-      </div>
-    </div>
-    <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div class="card-title" style="margin-bottom:0">📷 Photos</div>
-        <label class="btn btn-s btn-sm" style="cursor:pointer">
-          Add photo
-          <input type="file" accept="image/*" capture="environment" id="photo-inp" style="display:none" onchange="addPhoto(event)" multiple />
-        </label>
-      </div>
-      <div id="photo-grid" class="photo-grid"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">✍️ Notes</div>
-      <textarea id="step-txt" class="fta" rows="6" placeholder="French or English — AI will translate..."></textarea>
-    </div>
-  </div>
-  <div class="ftr">
-    <button class="btn btn-s" onclick="cancelStep()">Cancel</button>
-    <button class="btn btn-p" onclick="saveStep()">Save step ✓</button>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════
-     REVIEW
-══════════════════════════════════════════ -->
-<div id="s-review" class="screen">
-  <header class="hdr">
-    <button class="btn-back" onclick="go('capture')">←</button>
-    <div class="hdr-title">AI Review</div>
-    <button onclick="generateAI()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:4px">🔄</button>
-  </header>
-  <div class="content">
-    <div class="review-box">
-      <div class="review-label">Generated procedure — English</div>
-      <div id="review-display" class="review-text"></div>
-    </div>
-    <!-- Photos preview -->
-    <div id="review-photos" class="card" style="display:none">
-      <div class="card-title">📷 Photos by step</div>
-      <div id="review-photos-content"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Edit before export</div>
-      <textarea id="review-edit" class="fta" rows="14" style="font-size:13px;line-height:1.6"></textarea>
-    </div>
-  </div>
-  <div class="ftr">
-    <button class="btn btn-s" onclick="go('capture')">✏️ Edit steps</button>
-    <button class="btn btn-s" onclick="openPreview()" style="background:var(--blue-pale);color:var(--blue);border-color:var(--blue-mid)">👁️ Aperçu</button>
-    <button class="btn btn-p" onclick="exportWord()">📄 Export Word</button>
-  </div>
-
-</div><!-- /#s-review -->
-
-<!-- ══════════════════════════════════════════
-     PREVIEW SCREEN
-════════════════════════════════════════════ -->
-<div id="s-preview" class="screen">
-  <header class="hdr">
-    <button class="btn-back" onclick="go('review')">←</button>
-    <div>
-      <div class="hdr-title">Aperçu</div>
-      <div class="hdr-sub" id="preview-ref"></div>
-    </div>
-  </header>
-  <div class="content" id="preview-content" style="padding:16px;background:#fff"></div>
-</div>
-
-<!-- ══════════════════════════════════════════
-     EXPORT
-══════════════════════════════════════════ -->
-<div id="s-export" class="screen">
-  <header class="hdr">
-    <button class="btn-back" onclick="go('review')">←</button>
-    <div class="hdr-title">Export</div>
-  </header>
-  <div class="content">
-    <div class="success-box">
-      <div class="success-icon">✅</div>
-      <div class="success-title">Document ready!</div>
-      <div class="success-sub">Your procedure has been downloaded.<br>Open it with Word or any Office app.</div>
-    </div>
-    <div class="card">
-      <div class="card-title">Share</div>
-      <div class="share-grid">
-        <button class="btn btn-s" onclick="shareEmail()">✉️ Email</button>
-        <button class="btn btn-s" onclick="shareTeams()">💬 Teams</button>
-        <button class="btn btn-s" onclick="shareNative()">📤 Share</button>
-        <button class="btn btn-s" onclick="go('capture')">✏️ Edit more</button>
-      </div>
-    </div>
-    <button class="btn btn-p btn-full" onclick="go('home')" style="margin-top:8px">🏠 Back to home</button>
-  </div>
-</div>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1276,7 +1159,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.54 — Architecture séparée
+// GITHUB SYNC v1.56 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -3481,7 +3364,8 @@ function renderFolderList(el){
     var procs=getFolderProcs(id);
     var color=f.color||'#1B3A6B';
     var members=f.members&&f.members.length?f.members.join(', '):t('folder_all_members');
-    return '<div class="folder-card" onclick="openFolder(\''+id+'\')"><div class="folder-card-inner"><div class="folder-icon" style="background:'+color+'">📁</div><div class="folder-info"><div class="folder-name">'+esc(f.name||id)+'</div><div class="folder-desc">'+esc(f.description||'')+'</div><div class="folder-meta"><span class="folder-count">'+procs.length++' '+(count!==1?t('folder_procedures_pl'):t('folder_procedures'))+'</span><span>· '+esc(members)+'</span></div></div><div class="folder-chevron"><svg viewBox="0 0 24 24" width="14" height="14"><polyline points="9 18 15 12 9 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div></div>';
+    var count=procs.length;
+    return '<div class="folder-card" onclick="openFolder(\''+id+'\')"><div class="folder-card-inner"><div class="folder-icon" style="background:'+color+'">📁</div><div class="folder-info"><div class="folder-name">'+esc(f.name||id)+'</div><div class="folder-desc">'+esc(f.description||'')+'</div><div class="folder-meta"><span class="folder-count">'+count+' '+(count!==1?t('folder_procedures_pl'):t('folder_procedures'))+'</span><span>· '+esc(members)+'</span></div></div><div class="folder-chevron"><svg viewBox="0 0 24 24" width="14" height="14"><polyline points="9 18 15 12 9 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div></div>';
   }).join('');
 }
 
