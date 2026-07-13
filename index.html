@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.58</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.59</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -509,10 +509,11 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 <div id="s-capture" class="screen">
   <header class="hdr">
     <button class="btn-back" onclick="go('home')">←</button>
-    <div style="flex:1;min-width:0">
+    <div style="flex:1;min-width:0;cursor:pointer" onclick="renameProc()">
       <div class="hdr-title" id="cap-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Procedure</div>
       <div class="hdr-sub" id="cap-ref"></div>
     </div>
+    <button onclick="renameProc()" style="background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.8);font-size:14px;cursor:pointer;padding:6px 10px;border-radius:9px;flex-shrink:0">✏️</button>
   </header>
   <div class="content">
     <div id="cap-content"></div>
@@ -641,10 +642,12 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
       <div class="hdr-title" id="folder-title">Folder</div>
       <div class="hdr-sub" id="folder-sub"></div>
     </div>
-    <button onclick="initFolderForm()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#fff;font-size:20px;cursor:pointer;padding:5px 11px;font-weight:300;line-height:1">+</button>
   </header>
   <div class="content">
     <div id="folder-list"></div>
+  </div>
+  <div class="ftr">
+    <button class="btn btn-p" onclick="initFolderForm()" data-i18n="new_procedure">＋ New procedure</button>
   </div>
 </div>
 
@@ -770,6 +773,10 @@ var _i18n={
     folder_manage:'📁 Shared folders (admin)',
     folder_new_btn:'＋ New folder',
     folder_new_proc:'New procedure in folder',
+    rename_title_label:'New title:',
+    rename_ref_label:'New reference:',
+    copy_to_folder:'Copy to folder',
+    copy_to_folder_prompt:'Copy to folder',
     new_procedure:'＋ New procedure',
     no_procs:'No procedures yet',
     no_procs_sub:'Tap + to create the first manufacturing procedure.',
@@ -956,6 +963,10 @@ var _i18n={
     folder_manage:'📁 Dossiers partagés (admin)',
     folder_new_btn:'＋ Nouveau dossier',
     folder_new_proc:'Nouvelle procédure dans le dossier',
+    rename_title_label:'Nouveau titre :',
+    rename_ref_label:'Nouvelle référence :',
+    copy_to_folder:'Copier vers un dossier',
+    copy_to_folder_prompt:'Copier vers le dossier',
     new_procedure:'＋ Nouvelle procédure',
     no_procs:'Aucune procédure',
     no_procs_sub:'Appuyez sur + pour créer la première procédure de fabrication.',
@@ -1159,7 +1170,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.58 — Architecture séparée
+// GITHUB SYNC v1.59 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -2379,6 +2390,7 @@ function renderHome(){
         <button class="proc-action-btn" onclick="event.stopPropagation();openProc('${p.id}','edit')">${t('edit')}</button>
         ${isDone?`<button class="proc-action-btn proc-action-btn-review" onclick="event.stopPropagation();openProc('${p.id}','review')">${t('review')}</button>
         <button class="proc-action-btn proc-action-btn-apercu" onclick="event.stopPropagation();openProc('${p.id}','review');setTimeout(openPreview,50)">${t('preview')}</button>`:''}
+        <button class="proc-action-btn" onclick="event.stopPropagation();copyProcToFolder('${p.id}')" title="${t('copy_to_folder')||'Copy to folder'}">📁</button>
         ${canToggleVis?`<button class="proc-action-btn" onclick="event.stopPropagation();toggleVisibility('${p.id}')">${isPrivate?'🔒':'👥'}</button>`:''}
       </div>`:''}
     </div>`;
@@ -2478,6 +2490,74 @@ function deleteProc(id){
   if(S.cur&&S.cur.id===id)S.cur=null;
   renderHome();
   toast('Procedure deleted ✓');
+}
+
+// ─── Rename current procedure (title + ref) ──────────────
+function renameProc(){
+  if(!S.cur) return;
+  var newTitle=prompt(t('rename_title_label')||'New title:', S.cur.title||'');
+  if(newTitle===null) return; // cancelled
+  newTitle=newTitle.trim();
+  if(!newTitle){toast('Title cannot be empty');return;}
+  var newRef=prompt(t('rename_ref_label')||'New reference:', S.cur.ref||'');
+  if(newRef===null) return;
+  newRef=newRef.trim();
+  S.cur.title=newTitle||S.cur.title;
+  S.cur.ref=newRef||S.cur.ref;
+  document.getElementById('cap-title').textContent=S.cur.title;
+  document.getElementById('cap-ref').textContent=S.cur.ref;
+  syncCur();
+  toast('✓ Renamed');
+}
+
+// ─── Copy a procedure to a folder ────────────────────────
+function copyProcToFolder(procId){
+  var folders=getFolders();
+  var keys=Object.keys(folders);
+  // Filter folders accessible to current user
+  var accessible=keys.filter(function(id){
+    var f=folders[id];
+    if(S.user&&S.user.isAdmin) return true;
+    return !f.members||f.members.length===0||f.members.includes(S.user&&S.user.name);
+  });
+  if(!accessible.length){toast('No accessible folders');return;}
+
+  // Build choice list
+  var options=accessible.map(function(id,i){return (i+1)+'. '+(folders[id].name||id);}).join('\n');
+  var choice=prompt((t('copy_to_folder_prompt')||'Copy to folder:')+'\n\n'+options+'\n\nEnter number:');
+  if(!choice) return;
+  var idx=parseInt(choice.trim())-1;
+  if(isNaN(idx)||idx<0||idx>=accessible.length){toast('Invalid choice');return;}
+  var folderId=accessible[idx];
+
+  // Get the procedure
+  var procs=getProcs();
+  var original=procs.find(function(p){return p.id===procId;});
+  if(!original){toast('Procedure not found');return;}
+
+  // Deep clone with new ID
+  var copy=JSON.parse(JSON.stringify(original));
+  copy.id=uid();
+  copy.folderId=folderId;
+  copy.createdBy=S.user?S.user.name:'';
+  copy.updatedBy=S.user?S.user.name:'';
+  copy.created=new Date().toISOString();
+  copy.updatedAt=new Date().toISOString();
+  // Remove personal space fields
+  delete copy.visibility;
+  delete copy.userId;
+
+  // Save to folder
+  var folderProcs=getFolderProcs(folderId);
+  folderProcs.push(copy);
+  saveFolderProcs(folderId,folderProcs);
+
+  // Push to GitHub
+  showOverlay('Copying to '+( folders[folderId].name||folderId)+'...');
+  ghSaveFolderProc(folderId,copy).then(function(){
+    hideOverlay();
+    toast('✓ Copied to '+( folders[folderId].name||folderId));
+  });
 }
 
 function openProc(id,mode){
