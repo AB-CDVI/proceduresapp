@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.59</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.60</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -633,7 +633,59 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 </div>
 
 <!-- ══════════════════════════════════════════
-     FOLDER VIEW — list of procs in a folder
+     COPY TO FOLDER — folder selection screen
+══════════════════════════════════════════ -->
+<div id="s-copy-folder" class="screen">
+  <header class="hdr">
+    <button class="btn-back" id="copy-folder-back">←</button>
+    <div class="hdr-title" data-i18n="copy_to_folder">Copy to folder</div>
+  </header>
+  <div class="content">
+    <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5" data-i18n="copy_to_folder_desc">Select the destination folder for this procedure.</div>
+    <div id="copy-folder-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     EDIT PROC INFO — rename title/ref/op/cat
+══════════════════════════════════════════ -->
+<div id="s-edit-proc" class="screen">
+  <header class="hdr">
+    <button class="btn-back" id="edit-proc-back">←</button>
+    <div class="hdr-title" data-i18n="edit_proc_info">Edit procedure</div>
+  </header>
+  <div class="content">
+    <div class="card">
+      <div class="fg">
+        <label class="fl" data-i18n="title_label">Title *</label>
+        <input type="text" id="ep-title" class="fi" data-i18n="title_ph" data-i18n-attr="placeholder" />
+      </div>
+      <div class="fg">
+        <label class="fl" data-i18n="ref_label">Reference *</label>
+        <input type="text" id="ep-ref" class="fi" data-i18n="ref_ph" data-i18n-attr="placeholder" />
+      </div>
+      <div class="fg">
+        <label class="fl" data-i18n="operator_label">Operator</label>
+        <input type="text" id="ep-op" class="fi" data-i18n="operator_ph" data-i18n-attr="placeholder" />
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="fl" data-i18n="category_label">Category</label>
+        <select id="ep-cat" class="fs">
+          <option>Assembly</option>
+          <option>Electronics</option>
+          <option>Cabling</option>
+          <option>Packaging</option>
+          <option>Testing</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="ftr">
+    <button class="btn btn-s" id="edit-proc-cancel" data-i18n="cancel_btn">Cancel</button>
+    <button class="btn btn-p" onclick="saveEditProc()" data-i18n="save">Save ✓</button>
+  </div>
+</div>
 ══════════════════════════════════════════ -->
 <div id="s-folder" class="screen">
   <header class="hdr">
@@ -777,6 +829,10 @@ var _i18n={
     rename_ref_label:'New reference:',
     copy_to_folder:'Copy to folder',
     copy_to_folder_prompt:'Copy to folder',
+    copy_to_folder_desc:'Select the destination folder for this procedure.',
+    copy_to_folder_ok:'Copied to {name}',
+    edit_proc_info:'Edit procedure',
+    toast_fill_required:'Please fill in title and reference',
     new_procedure:'＋ New procedure',
     no_procs:'No procedures yet',
     no_procs_sub:'Tap + to create the first manufacturing procedure.',
@@ -967,6 +1023,10 @@ var _i18n={
     rename_ref_label:'Nouvelle référence :',
     copy_to_folder:'Copier vers un dossier',
     copy_to_folder_prompt:'Copier vers le dossier',
+    copy_to_folder_desc:'Sélectionnez le dossier de destination pour cette procédure.',
+    copy_to_folder_ok:'Copié dans {name}',
+    edit_proc_info:'Modifier la procédure',
+    toast_fill_required:'Veuillez remplir le titre et la référence',
     new_procedure:'＋ Nouvelle procédure',
     no_procs:'Aucune procédure',
     no_procs_sub:'Appuyez sur + pour créer la première procédure de fabrication.',
@@ -1170,7 +1230,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.59 — Architecture séparée
+// GITHUB SYNC v1.60 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -2390,7 +2450,8 @@ function renderHome(){
         <button class="proc-action-btn" onclick="event.stopPropagation();openProc('${p.id}','edit')">${t('edit')}</button>
         ${isDone?`<button class="proc-action-btn proc-action-btn-review" onclick="event.stopPropagation();openProc('${p.id}','review')">${t('review')}</button>
         <button class="proc-action-btn proc-action-btn-apercu" onclick="event.stopPropagation();openProc('${p.id}','review');setTimeout(openPreview,50)">${t('preview')}</button>`:''}
-        <button class="proc-action-btn" onclick="event.stopPropagation();copyProcToFolder('${p.id}')" title="${t('copy_to_folder')||'Copy to folder'}">📁</button>
+        <button class="proc-action-btn" onclick="event.stopPropagation();openProc('${p.id}','edit');setTimeout(()=>openEditProc('capture'),50)" title="${t('edit_proc_info')||'Edit info'}">✏️</button>
+        <button class="proc-action-btn" onclick="event.stopPropagation();copyProcToFolder('${p.id}',true)" title="${t('copy_to_folder')||'Copy to folder'}">📁</button>
         ${canToggleVis?`<button class="proc-action-btn" onclick="event.stopPropagation();toggleVisibility('${p.id}')">${isPrivate?'🔒':'👥'}</button>`:''}
       </div>`:''}
     </div>`;
@@ -2492,50 +2553,92 @@ function deleteProc(id){
   toast('Procedure deleted ✓');
 }
 
-// ─── Rename current procedure (title + ref) ──────────────
-function renameProc(){
+// ─── Edit proc info (title, ref, op, cat) ────────────────
+var _editProcFrom=null; // screen to go back to
+
+function openEditProc(fromScreen){
   if(!S.cur) return;
-  var newTitle=prompt(t('rename_title_label')||'New title:', S.cur.title||'');
-  if(newTitle===null) return; // cancelled
-  newTitle=newTitle.trim();
-  if(!newTitle){toast('Title cannot be empty');return;}
-  var newRef=prompt(t('rename_ref_label')||'New reference:', S.cur.ref||'');
-  if(newRef===null) return;
-  newRef=newRef.trim();
-  S.cur.title=newTitle||S.cur.title;
-  S.cur.ref=newRef||S.cur.ref;
-  document.getElementById('cap-title').textContent=S.cur.title;
-  document.getElementById('cap-ref').textContent=S.cur.ref;
-  syncCur();
-  toast('✓ Renamed');
+  _editProcFrom=fromScreen||'capture';
+  document.getElementById('ep-title').value=S.cur.title||'';
+  document.getElementById('ep-ref').value=S.cur.ref||'';
+  document.getElementById('ep-op').value=S.cur.op||'';
+  var catSel=document.getElementById('ep-cat');
+  for(var i=0;i<catSel.options.length;i++){
+    if(catSel.options[i].value===S.cur.cat){catSel.selectedIndex=i;break;}
+  }
+  document.getElementById('edit-proc-back').onclick=function(){go(_editProcFrom);};
+  document.getElementById('edit-proc-cancel').onclick=function(){go(_editProcFrom);};
+  go('edit-proc');
 }
 
-// ─── Copy a procedure to a folder ────────────────────────
-function copyProcToFolder(procId){
+function saveEditProc(){
+  if(!S.cur) return;
+  var title=document.getElementById('ep-title').value.trim();
+  var ref=document.getElementById('ep-ref').value.trim();
+  if(!title||!ref){toast(t('toast_fill_required')||'Please fill in title and reference');return;}
+  S.cur.title=title;
+  S.cur.ref=ref;
+  S.cur.op=document.getElementById('ep-op').value.trim();
+  S.cur.cat=document.getElementById('ep-cat').value;
+  syncCur();
+  toast('✓ '+t('save'));
+  go(_editProcFrom);
+  // Update capture header if we came from there
+  var capTitle=document.getElementById('cap-title');
+  var capRef=document.getElementById('cap-ref');
+  if(capTitle) capTitle.textContent=S.cur.title;
+  if(capRef) capRef.textContent=S.cur.ref;
+}
+
+function renameProc(){
+  if(!S.cur) return;
+  openEditProc('capture');
+}
+
+// ─── Copy procedure to folder ─────────────────────────────
+var _copyProcId=null;
+var _copyProcFromHome=false;
+
+function copyProcToFolder(procId,fromHome){
+  _copyProcId=procId;
+  _copyProcFromHome=!!fromHome;
   var folders=getFolders();
   var keys=Object.keys(folders);
-  // Filter folders accessible to current user
   var accessible=keys.filter(function(id){
     var f=folders[id];
     if(S.user&&S.user.isAdmin) return true;
     return !f.members||f.members.length===0||f.members.includes(S.user&&S.user.name);
   });
-  if(!accessible.length){toast('No accessible folders');return;}
+  var el=document.getElementById('copy-folder-list');
+  if(!accessible.length){
+    el.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">'+t('folder_none_member')+'</div>';
+  } else {
+    el.innerHTML=accessible.map(function(id){
+      var f=folders[id];
+      var color=f.color||'#1B3A6B';
+      var procs=getFolderProcs(id);
+      return '<div class="folder-card" onclick="confirmCopyToFolder(\''+id+'\')">'
+        +'<div class="folder-card-inner">'
+        +'<div class="folder-icon" style="background:'+color+'">📁</div>'
+        +'<div class="folder-info">'
+        +'<div class="folder-name">'+esc(f.name||id)+'</div>'
+        +'<div class="folder-desc">'+esc(f.description||'')+'</div>'
+        +'<div class="folder-meta"><span class="folder-count">'+procs.length+' '+(procs.length!==1?t('folder_procedures_pl'):t('folder_procedures'))+'</span></div>'
+        +'</div>'
+        +'<div class="folder-chevron"><svg viewBox="0 0 24 24" width="14" height="14"><polyline points="9 18 15 12 9 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+        +'</div></div>';
+    }).join('');
+  }
+  var backScreen=_copyProcFromHome?'home':'capture';
+  document.getElementById('copy-folder-back').onclick=function(){go(backScreen);};
+  go('copy-folder');
+}
 
-  // Build choice list
-  var options=accessible.map(function(id,i){return (i+1)+'. '+(folders[id].name||id);}).join('\n');
-  var choice=prompt((t('copy_to_folder_prompt')||'Copy to folder:')+'\n\n'+options+'\n\nEnter number:');
-  if(!choice) return;
-  var idx=parseInt(choice.trim())-1;
-  if(isNaN(idx)||idx<0||idx>=accessible.length){toast('Invalid choice');return;}
-  var folderId=accessible[idx];
-
-  // Get the procedure
+function confirmCopyToFolder(folderId){
+  var folders=getFolders();
   var procs=getProcs();
-  var original=procs.find(function(p){return p.id===procId;});
+  var original=procs.find(function(p){return p.id===_copyProcId;});
   if(!original){toast('Procedure not found');return;}
-
-  // Deep clone with new ID
   var copy=JSON.parse(JSON.stringify(original));
   copy.id=uid();
   copy.folderId=folderId;
@@ -2543,20 +2646,17 @@ function copyProcToFolder(procId){
   copy.updatedBy=S.user?S.user.name:'';
   copy.created=new Date().toISOString();
   copy.updatedAt=new Date().toISOString();
-  // Remove personal space fields
   delete copy.visibility;
-  delete copy.userId;
-
-  // Save to folder
   var folderProcs=getFolderProcs(folderId);
   folderProcs.push(copy);
   saveFolderProcs(folderId,folderProcs);
-
-  // Push to GitHub
-  showOverlay('Copying to '+( folders[folderId].name||folderId)+'...');
+  var fname=folders[folderId]?folders[folderId].name:folderId;
+  showOverlay(t('folder_loading'));
   ghSaveFolderProc(folderId,copy).then(function(){
     hideOverlay();
-    toast('✓ Copied to '+( folders[folderId].name||folderId));
+    toast('✓ '+t('copy_to_folder_ok').replace('{name}',fname)||(copy.title+' → '+fname));
+    var backScreen=_copyProcFromHome?'home':'capture';
+    go(backScreen);
   });
 }
 
