@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.69</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.70</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -1196,7 +1196,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.69 — Architecture séparée
+// GITHUB SYNC v1.70 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -1365,10 +1365,30 @@ async function ghSave(){
       }
     }catch(e){console.warn('ghSave: could not read GitHub for merge, using local only');}
 
+    // Only write folders to GitHub if we have local folders
+    // Never let an empty local ms_folders overwrite real folders on GitHub
+    var localFoldersForSave=getFolders();
+    var foldersToWrite=localFoldersForSave;
+    if(Object.keys(localFoldersForSave).length===0){
+      // Read current folders from GitHub to preserve them
+      try{
+        var fResp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
+          headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
+        });
+        if(fResp.ok){
+          var fMeta=await fResp.json();
+          var fRaw=atob(fMeta.content.replace(/\s/g,''));
+          var fDecoded;try{fDecoded=decodeURIComponent(escape(fRaw));}catch(e){fDecoded=fRaw;}
+          var fData=JSON.parse(fDecoded);
+          if(fData.folders&&Object.keys(fData.folders).length>0) foldersToWrite=fData.folders;
+        }
+      }catch(e){}
+    }
+
     var data={
       users:safeUsers,
       procIds:mergedProcIds,
-      folders:getFolders(),
+      folders:foldersToWrite,
       st:obfuscate(tok),
       updated:new Date().toISOString()
     };
@@ -1619,13 +1639,14 @@ async function ghLoad(){
 
     localStorage.setItem('last_save_time',String(Date.now()));
 
-    // Load folders metadata
-    if(data.folders){
-      // Merge with local — admin edits are source of truth from GitHub
+    // Load folders metadata — merge GitHub into local, never overwrite with empty
+    if(data.folders&&Object.keys(data.folders).length>0){
       var localFolders=getFolders();
+      // GitHub folders take precedence (admin source of truth), but keep local-only ones
       var mergedFolders=Object.assign({},localFolders,data.folders);
       saveFolders(mergedFolders);
     }
+    // If data.folders is empty or absent, keep local ms_folders as-is
 
     setSyncStatus('ok');
     return{ok:true};
@@ -3536,6 +3557,7 @@ function buildWordHTML(p,txt){
 var _curFolderId=null;
 var _folderEditId=null;
 var _loadedFolders=new Set(); // tracks folders fetched at least once this session
+var _deletedFolderProcs=new Set(); // IDs deleted this session — never reintroduce from GitHub
 var _folderEditColor='#1B3A6B';
 
 function openFolder(id){
@@ -3582,16 +3604,19 @@ async function renderFolderView(){
   document.getElementById('folder-sub').textContent=f.description||'';
 
   if(!_loadedFolders.has(id)){
-    // First open this session: fetch from GitHub
+    // First open this session: fetch from GitHub, filter blacklisted
     showOverlay(t('folder_loading'));
     var ghProcs=await ghFetchFolderProcs(id);
     hideOverlay();
+    // Filter out any procs deleted this session
+    ghProcs=ghProcs.filter(function(p){return !_deletedFolderProcs.has(p.id);});
     saveFolderProcs(id,ghProcs);
     _loadedFolders.add(id);
     renderFolderProcList(ghProcs);
   } else {
-    // Already loaded: show local state only — no refetch
-    renderFolderProcList(getFolderProcs(id));
+    // Already loaded this session: use local state only — no refetch
+    var local=getFolderProcs(id).filter(function(p){return !_deletedFolderProcs.has(p.id);});
+    renderFolderProcList(local);
   }
 }
 
@@ -3712,15 +3737,18 @@ async function ghDeleteFile(path, tok){
 
 async function deleteFolderProc(procId){
   if(!confirm(t('delete_folder_proc_confirm'))) return;
-  // Update local immediately
+  // 1. Add to blacklist immediately — survives any subsequent GitHub fetch
+  _deletedFolderProcs.add(procId);
+  // 2. Remove from local storage
   var procs=getFolderProcs(_curFolderId).filter(function(p){return p.id!==procId;});
   saveFolderProcs(_curFolderId,procs);
   _expandedFolderProcId=null;
+  // 3. Update display immediately
   renderFolderProcList(procs);
-  // Delete from GitHub synchronously so next fetch won't restore it
+  // 4. Delete from GitHub synchronously — overlay so user sees progress
   var tok=getBestToken();
   if(tok){
-    showOverlay('Suppression en cours...');
+    showOverlay(t('folder_loading'));
     await ghDeleteFile('folders/'+_curFolderId+'/procs/'+procId+'.json', tok);
     hideOverlay();
   }
