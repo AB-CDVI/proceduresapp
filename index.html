@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.67</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.68</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -1195,7 +1195,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.67 — Architecture séparée
+// GITHUB SYNC v1.68 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -3525,6 +3525,7 @@ function buildWordHTML(p,txt){
 // ═══════════════════════════════════════════════════════
 var _curFolderId=null;
 var _folderEditId=null;
+var _loadedFolders=new Set(); // tracks folders fetched at least once this session
 var _folderEditColor='#1B3A6B';
 
 function openFolder(id){
@@ -3570,33 +3571,33 @@ async function renderFolderView(){
   document.getElementById('folder-title').textContent=f.name||id;
   document.getElementById('folder-sub').textContent=f.description||'';
 
-  // 1. Show localStorage immediately (no loading flash)
   var localProcs=getFolderProcs(id);
-  renderFolderProcList(localProcs);
+  var alreadyLoaded=_loadedFolders.has(id);
 
-  // 2. Fetch from GitHub in background
-  var ghProcs=await ghFetchFolderProcs(id);
-
-  // 3. Merge: keep local state as source of truth for deletions
-  // Only add procs from GitHub that exist locally (i.e. not deleted)
-  var localIds=new Set(localProcs.map(function(p){return p.id;}));
-  // If local is empty and GitHub has procs → first load, trust GitHub
-  // If local has procs → only keep GitHub procs that are still in local
-  var merged;
-  if(localProcs.length===0){
-    merged=ghProcs;
-  } else {
-    // Keep only GH procs that haven't been deleted locally
-    merged=ghProcs.filter(function(p){return localIds.has(p.id);});
-    // Also keep local procs not yet on GH (just created)
-    var ghIds=new Set(ghProcs.map(function(p){return p.id;}));
-    localProcs.forEach(function(p){
-      if(!ghIds.has(p.id)) merged.push(p);
-    });
+  // First load: fetch from GitHub and trust it
+  if(!alreadyLoaded){
+    showOverlay(t('folder_loading'));
+    var ghProcs=await ghFetchFolderProcs(id);
+    hideOverlay();
+    saveFolderProcs(id,ghProcs);
+    _loadedFolders.add(id);
+    renderFolderProcList(ghProcs);
+    return;
   }
 
-  saveFolderProcs(id,merged);
-  renderFolderProcList(merged);
+  // Subsequent loads: show local immediately, then sync in background
+  // but NEVER let GitHub reintroduce locally-deleted procs
+  renderFolderProcList(localProcs);
+  var ghProcs=await ghFetchFolderProcs(id);
+  var localIds=new Set(localProcs.map(function(p){return p.id;}));
+  var ghIds=new Set(ghProcs.map(function(p){return p.id;}));
+  // Keep only GH procs still present locally + local procs not yet on GH
+  var merged=ghProcs.filter(function(p){return localIds.has(p.id);});
+  localProcs.forEach(function(p){if(!ghIds.has(p.id)) merged.push(p);});
+  if(merged.length!==localProcs.length){
+    saveFolderProcs(id,merged);
+    renderFolderProcList(merged);
+  }
 }
 
 function renderFolderProcList(procs){
@@ -3714,18 +3715,21 @@ async function ghDeleteFile(path, tok){
   }catch(e){console.warn('ghDeleteFile error:',e);return false;}
 }
 
-function deleteFolderProc(procId){
+async function deleteFolderProc(procId){
   if(!confirm(t('delete_folder_proc_confirm'))) return;
+  // Update local immediately
   var procs=getFolderProcs(_curFolderId).filter(function(p){return p.id!==procId;});
   saveFolderProcs(_curFolderId,procs);
   _expandedFolderProcId=null;
-  toast(t('delete_folder_proc_ok'));
   renderFolderProcList(procs);
-  // Delete from GitHub asynchronously
+  // Delete from GitHub synchronously so next fetch won't restore it
   var tok=getBestToken();
   if(tok){
-    ghDeleteFile('folders/'+_curFolderId+'/procs/'+procId+'.json', tok);
+    showOverlay('Suppression en cours...');
+    await ghDeleteFile('folders/'+_curFolderId+'/procs/'+procId+'.json', tok);
+    hideOverlay();
   }
+  toast(t('delete_folder_proc_ok'));
 }
 
 function initFolderForm(){
