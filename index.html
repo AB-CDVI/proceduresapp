@@ -21,7 +21,6 @@
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;overflow-x:hidden}
 .screen{display:none;flex-direction:column;min-height:100vh}
 .screen.active{display:flex}
-.screen:not(.active) .ftr{display:none}
 .hdr{background:var(--blue);color:#fff;padding:0 18px;height:58px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(27,58,107,.18)}
 .hdr-title{font-size:17px;font-weight:800;flex:1;line-height:1.2;letter-spacing:-.4px}
 .hdr-sub{font-size:10px;opacity:.5;font-weight:500;letter-spacing:.3px}
@@ -204,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.62</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.63</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -834,6 +833,7 @@ var _i18n={
     copy_to_folder_ok:'Copied to {name}',
     move_to_folder_ok:'Moved to {name}',
     delete_folder_proc_confirm:'Remove this procedure from the folder?',
+    delete_folder_proc_ok:'Procedure removed from folder',
     edit_proc_info:'Edit procedure',
     toast_fill_required:'Please fill in title and reference',
     new_procedure:'＋ New procedure',
@@ -1030,6 +1030,7 @@ var _i18n={
     copy_to_folder_ok:'Copié dans {name}',
     move_to_folder_ok:'Déplacé dans {name}',
     delete_folder_proc_confirm:'Retirer cette procédure du dossier ?',
+    delete_folder_proc_ok:'Procédure retirée du dossier',
     edit_proc_info:'Modifier la procédure',
     toast_fill_required:'Veuillez remplir le titre et la référence',
     new_procedure:'＋ Nouvelle procédure',
@@ -1235,7 +1236,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.62 — Architecture séparée
+// GITHUB SYNC v1.63 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -1803,7 +1804,12 @@ const S={
 // ═══════════════════════════════════════════════════════
 function go(screen){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('s-'+screen).classList.add('active');
+  var target=document.getElementById('s-'+screen);
+  target.classList.add('active');
+  // Hide all fixed footers, then show only the active screen's ftr
+  document.querySelectorAll('.ftr').forEach(function(f){f.style.display='none';});
+  var activeFtr=target.querySelector('.ftr');
+  if(activeFtr) activeFtr.style.display='flex';
   if(screen==='home'){renderHome();S.curFolderContext=null;}
   if(screen==='capture')renderCapture();
   if(screen==='settings'){
@@ -3685,12 +3691,10 @@ function moveFolderProc(procId){
 }
 
 function deleteFolderProc(procId){
-  if(!confirm(t('delete_folder_proc_confirm')||'Remove this procedure from the folder?')) return;
+  if(!confirm(t('delete_folder_proc_confirm'))) return;
   var procs=getFolderProcs(_curFolderId).filter(function(p){return p.id!==procId;});
   saveFolderProcs(_curFolderId,procs);
-  // Note: file stays on GitHub — only removed from local list and data.json index
-  // A full delete would require GitHub API DELETE call
-  toast(t('folder_delete_ok'));
+  toast(t('delete_folder_proc_ok'));
   renderFolderView();
 }
 
