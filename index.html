@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.75</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.76</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -1199,7 +1199,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.75 — Architecture séparée
+// GITHUB SYNC v1.76 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -1446,7 +1446,14 @@ async function ghFetchProcByUser(procId, uname){
     var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+path,{
       headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
     });
-    if(!resp.ok)return null;
+    if(!resp.ok){
+      // 404 confirmé = le fichier n'existe plus sur GitHub (ID orphelin dans procIds,
+      // probablement resté coincé avant l'introduction de la blacklist). On le
+      // blackliste définitivement pour ne plus jamais le retenter, et pour que
+      // ghSave() le retire de procIds au prochain enregistrement.
+      if(resp.status===404) _addDeletedProc(procId);
+      return null;
+    }
     var meta=await resp.json();
     var raw=atob(meta.content.replace(/\s/g,''));
     var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
@@ -1691,7 +1698,13 @@ async function ghLoadFolders(){
     var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_FOLDERS,{
       headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
     });
-    if(!resp.ok) return; // file doesn't exist yet — no folders created
+    if(!resp.ok){
+      // Le fichier n'existe pas encore sur GitHub. S'il y a des dossiers en local
+      // (ex: créés avant que folders.json n'ait jamais été poussé avec succès),
+      // on les envoie maintenant — auto-guérison, pour ne plus jamais retomber sur ce 404.
+      if(resp.status===404 && Object.keys(getFolders()).length>0) ghSaveFolders();
+      return;
+    }
     var meta=await resp.json();
     var raw=atob(meta.content.replace(/\s/g,''));
     var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
@@ -2381,7 +2394,7 @@ async function backgroundSync(){
         });
       }
       localStorage.setItem('ms_procs',JSON.stringify(localProcs));
-      if(document.getElementById('home').style.display!=='none') renderHome();
+      if(document.getElementById('s-home').style.display!=='none') renderHome();
     }
     setSyncStatus('ok');
   }catch(e){
