@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.63</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.64</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -303,11 +303,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     </div>
     <div id="home-list"></div>
   </div>
-  <button class="fab" onclick="initForm();go('form')">+</button>
-  <div class="ftr">
-    <button class="btn btn-p" onclick="initForm();go('form')" data-i18n="new_procedure">＋ New procedure</button>
-  </div>
-</div>
+  <button class="fab" onclick="initForm();go('form')">+</button></div>
 
 <div id="s-settings" class="screen">
   <header class="hdr">
@@ -447,12 +443,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
         <button class="btn btn-sm btn-s" onclick="logout()" data-i18n="logout">Logout</button>
       </div>
     </div>
-  </div>
-  <div class="ftr">
-    <button class="btn btn-s" onclick="_pendingLang=_lang;_updateLangButtons(_lang);go('home')" data-i18n="cancel_btn">Cancel</button>
-    <button class="btn btn-p" onclick="saveSettings()" data-i18n="save">Save ✓</button>
-  </div>
-</div>
+  </div></div>
 
 <!-- ══════════════════════════════════════════
      FORM
@@ -496,12 +487,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5" id="vis-desc" data-i18n="private_desc"></div>
     </div>
-  </div>
-  <div class="ftr">
-    <button class="btn btn-s" onclick="go('home')" data-i18n="cancel_btn">Cancel</button>
-    <button class="btn btn-p" onclick="createProc()" data-i18n="create_btn">Create →</button>
-  </div>
-</div>
+  </div></div>
 
 <!-- ══════════════════════════════════════════
      CAPTURE
@@ -521,12 +507,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
       <button class="btn btn-s btn-sm" style="flex:1" onclick="addSection()" data-i18n="add_section">＋ Section</button>
       <button class="btn btn-s btn-sm" style="flex:1" onclick="addStepLast()" data-i18n="add_substep">＋ Sub-step</button>
     </div>
-  </div>
-  <div class="ftr">
-    <button class="btn btn-s" onclick="S.curFolderContext?go('folder'):go('home')" data-i18n="save_draft">🏠 Home</button>
-    <button class="btn btn-o" onclick="generateAI()" data-i18n="generate_ai">🤖 Generate AI</button>
-  </div>
-</div>
+  </div></div>
 
 <div id="s-step" class="screen">
   <header class="hdr">
@@ -563,12 +544,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
       <div class="card-title" data-i18n="notes">✍️ Notes</div>
       <textarea id="step-txt" class="fta" rows="6" data-i18n="notes_ph" data-i18n-attr="placeholder"></textarea>
     </div>
-  </div>
-  <div class="ftr">
-    <button class="btn btn-s" onclick="cancelStep()" data-i18n="cancel_step">Cancel</button>
-    <button class="btn btn-p" onclick="saveStep()" data-i18n="save_step">Save step ✓</button>
-  </div>
-</div>
+  </div></div>
 
 <div id="s-review" class="screen">
   <header class="hdr">
@@ -589,13 +565,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
       <div class="card-title" data-i18n="edit_before_export">Edit before export</div>
       <textarea id="review-edit" class="fta" rows="14" style="font-size:13px;line-height:1.6"></textarea>
     </div>
-  </div>
-  <div class="ftr">
-    <button class="btn btn-s" onclick="go('capture')" data-i18n="edit_steps">✏️ Edit steps</button>
-    <button class="btn btn-s" onclick="openPreview()" style="background:var(--blue-pale);color:var(--blue);border-color:var(--blue-mid)" data-i18n="apercu">👁️ Preview</button>
-    <button class="btn btn-p" onclick="exportWord()" data-i18n="export_word">📄 Export Word</button>
-  </div>
-</div><!-- /#s-review -->
+  </div></div><!-- /#s-review -->
 
 <div id="s-preview" class="screen">
   <header class="hdr">
@@ -680,12 +650,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
         </select>
       </div>
     </div>
-  </div>
-  <div class="ftr">
-    <button class="btn btn-s" id="edit-proc-cancel" data-i18n="cancel_btn">Cancel</button>
-    <button class="btn btn-p" onclick="saveEditProc()" data-i18n="save">Save ✓</button>
-  </div>
-</div>
+  </div></div>
 ══════════════════════════════════════════ -->
 <div id="s-folder" class="screen">
   <header class="hdr">
@@ -697,11 +662,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   </header>
   <div class="content">
     <div id="folder-list"></div>
-  </div>
-  <div class="ftr">
-    <button class="btn btn-p" onclick="initFolderForm()" data-i18n="new_procedure">＋ New procedure</button>
-  </div>
-</div>
+  </div></div>
 
 <!-- ══════════════════════════════════════════
      FOLDER PROC FORM — create proc in folder
@@ -746,13 +707,11 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
         </select>
       </div>
     </div>
-  </div>
-  <div class="ftr">
-    <button class="btn btn-s" onclick="go('folder')" data-i18n="cancel_btn">Cancel</button>
-    <button class="btn btn-p" onclick="createFolderProc()" data-i18n="create_btn">Create →</button>
-  </div>
-</div>
+  </div></div>
 
+
+<!-- GLOBAL FOOTER — managed by go() -->
+<div id="global-ftr" class="ftr" style="display:none"></div>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1236,7 +1195,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.63 — Architecture séparée
+// GITHUB SYNC v1.64 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -1802,14 +1761,33 @@ const S={
 // ═══════════════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════════════
+// Footer definitions per screen
+var _ftrs={
+  'home':     '<button class="btn btn-p" onclick="initForm();go(\'form\')" data-i18n="new_procedure">＋ New procedure</button>',
+  'settings': '<button class="btn btn-s" onclick="_pendingLang=_lang;_updateLangButtons(_lang);go(\'home\')" data-i18n="cancel_btn">Cancel</button><button class="btn btn-p" onclick="saveSettings()" data-i18n="save">Save ✓</button>',
+  'form':     '<button class="btn btn-s" onclick="go(\'home\')" data-i18n="cancel_btn">Cancel</button><button class="btn btn-p" onclick="createProc()" data-i18n="create_btn">Create →</button>',
+  'capture':  '<button class="btn btn-s" onclick="S.curFolderContext?go(\'folder\'):go(\'home\')" data-i18n="save_draft">🏠 Home</button><button class="btn btn-o" onclick="generateAI()" data-i18n="generate_ai">🤖 Generate AI</button>',
+  'step':     '<button class="btn btn-s" onclick="cancelStep()" data-i18n="cancel_step">Cancel</button><button class="btn btn-p" onclick="saveStep()" data-i18n="save_step">Save step ✓</button>',
+  'review':   '<button class="btn btn-s" onclick="go(\'capture\')" data-i18n="edit_steps">✏️ Edit steps</button><button class="btn btn-s" onclick="openPreview()" style="background:var(--blue-pale);color:var(--blue);border-color:var(--blue-mid)" data-i18n="apercu">👁️ Preview</button><button class="btn btn-p" onclick="exportWord()" data-i18n="export_word">📄 Export Word</button>',
+  'edit-proc':'<button class="btn btn-s" id="edit-proc-cancel" data-i18n="cancel_btn">Cancel</button><button class="btn btn-p" onclick="saveEditProc()" data-i18n="save">Save ✓</button>',
+  'folder':   '<button class="btn btn-p" onclick="initFolderForm()" data-i18n="new_procedure">＋ New procedure</button>',
+  'folder-form':'<button class="btn btn-s" onclick="go(\'folder\')" data-i18n="cancel_btn">Cancel</button><button class="btn btn-p" onclick="createFolderProc()" data-i18n="create_btn">Create →</button>',
+};
+
 function go(screen){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   var target=document.getElementById('s-'+screen);
   target.classList.add('active');
-  // Hide all fixed footers, then show only the active screen's ftr
-  document.querySelectorAll('.ftr').forEach(function(f){f.style.display='none';});
-  var activeFtr=target.querySelector('.ftr');
-  if(activeFtr) activeFtr.style.display='flex';
+  // Update global footer
+  var gf=document.getElementById('global-ftr');
+  if(_ftrs[screen]){
+    gf.innerHTML=_ftrs[screen];
+    gf.style.display='flex';
+    applyI18n(); // translate new buttons
+  } else {
+    gf.innerHTML='';
+    gf.style.display='none';
+  }
   if(screen==='home'){renderHome();S.curFolderContext=null;}
   if(screen==='capture')renderCapture();
   if(screen==='settings'){
@@ -2675,9 +2653,10 @@ function confirmCopyToFolder(folderId){
       var srcProcs=getFolderProcs(_curFolderId).filter(function(p){return p.id!==_copyProcId;});
       saveFolderProcs(_curFolderId,srcProcs);
       _moveFolderProcMode=false;
+      _expandedFolderProcId=null;
       toast('✓ Déplacé vers '+fname);
       go('folder');
-      renderFolderView();
+      renderFolderList(srcProcs);
     } else {
       toast('✓ Copié vers '+fname);
       var backScreen=_copyProcFromHome?'home':'capture';
@@ -3596,6 +3575,12 @@ async function renderFolderView(){
   var procs=await ghFetchFolderProcs(id);
   saveFolderProcs(id,procs);
   hideOverlay();
+  renderFolderList(procs);
+}
+
+function renderFolderList(procs){
+  var el=document.getElementById('folder-list');
+  if(!procs) procs=getFolderProcs(_curFolderId);
   if(!procs.length){
     el.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px">'+t('folder_empty')+'</div>';
     return;
@@ -3694,8 +3679,9 @@ function deleteFolderProc(procId){
   if(!confirm(t('delete_folder_proc_confirm'))) return;
   var procs=getFolderProcs(_curFolderId).filter(function(p){return p.id!==procId;});
   saveFolderProcs(_curFolderId,procs);
+  _expandedFolderProcId=null;
   toast(t('delete_folder_proc_ok'));
-  renderFolderView();
+  renderFolderList(procs);
 }
 
 function initFolderForm(){
