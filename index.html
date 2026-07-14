@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.68</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.69</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -659,6 +659,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
       <div class="hdr-title" id="folder-title">Folder</div>
       <div class="hdr-sub" id="folder-sub"></div>
     </div>
+    <button onclick="_loadedFolders.delete(_curFolderId);renderFolderView()" style="background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.8);font-size:16px;cursor:pointer;padding:6px 10px;border-radius:9px">🔄</button>
   </header>
   <div class="content">
     <div id="folder-list"></div>
@@ -1195,7 +1196,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.68 — Architecture séparée
+// GITHUB SYNC v1.69 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -2646,14 +2647,23 @@ function confirmCopyToFolder(folderId){
   saveFolderProcs(folderId,folderProcs);
   var fname=folders[folderId]?folders[folderId].name:folderId;
   showOverlay(t('folder_loading'));
-  ghSaveFolderProc(folderId,copy).then(function(){
+  ghSaveFolderProc(folderId,copy).then(async function(){
     hideOverlay();
     if(_moveFolderProcMode&&_curFolderId){
-      // Remove from source folder
-      var srcProcs=getFolderProcs(_curFolderId).filter(function(p){return p.id!==_copyProcId;});
-      saveFolderProcs(_curFolderId,srcProcs);
+      var srcFolderId=_curFolderId;
+      var srcProcId=_copyProcId;
+      // Remove from source folder locally
+      var srcProcs=getFolderProcs(srcFolderId).filter(function(p){return p.id!==srcProcId;});
+      saveFolderProcs(srcFolderId,srcProcs);
       _moveFolderProcMode=false;
       _expandedFolderProcId=null;
+      // Delete from GitHub source folder
+      var tok=getBestToken();
+      if(tok){
+        showOverlay('Suppression de la source...');
+        await ghDeleteFile('folders/'+srcFolderId+'/procs/'+srcProcId+'.json',tok);
+        hideOverlay();
+      }
       toast('✓ Déplacé vers '+fname);
       go('folder');
       renderFolderProcList(srcProcs);
@@ -3560,7 +3570,7 @@ var _expandedFolderProcId=null;
 
 function toggleFolderProcExpand(id){
   _expandedFolderProcId=(_expandedFolderProcId===id)?null:id;
-  renderFolderView();
+  renderFolderProcList(getFolderProcs(_curFolderId));
 }
 
 async function renderFolderView(){
@@ -3571,32 +3581,17 @@ async function renderFolderView(){
   document.getElementById('folder-title').textContent=f.name||id;
   document.getElementById('folder-sub').textContent=f.description||'';
 
-  var localProcs=getFolderProcs(id);
-  var alreadyLoaded=_loadedFolders.has(id);
-
-  // First load: fetch from GitHub and trust it
-  if(!alreadyLoaded){
+  if(!_loadedFolders.has(id)){
+    // First open this session: fetch from GitHub
     showOverlay(t('folder_loading'));
     var ghProcs=await ghFetchFolderProcs(id);
     hideOverlay();
     saveFolderProcs(id,ghProcs);
     _loadedFolders.add(id);
     renderFolderProcList(ghProcs);
-    return;
-  }
-
-  // Subsequent loads: show local immediately, then sync in background
-  // but NEVER let GitHub reintroduce locally-deleted procs
-  renderFolderProcList(localProcs);
-  var ghProcs=await ghFetchFolderProcs(id);
-  var localIds=new Set(localProcs.map(function(p){return p.id;}));
-  var ghIds=new Set(ghProcs.map(function(p){return p.id;}));
-  // Keep only GH procs still present locally + local procs not yet on GH
-  var merged=ghProcs.filter(function(p){return localIds.has(p.id);});
-  localProcs.forEach(function(p){if(!ghIds.has(p.id)) merged.push(p);});
-  if(merged.length!==localProcs.length){
-    saveFolderProcs(id,merged);
-    renderFolderProcList(merged);
+  } else {
+    // Already loaded: show local state only — no refetch
+    renderFolderProcList(getFolderProcs(id));
   }
 }
 
