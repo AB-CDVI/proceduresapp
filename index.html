@@ -21,6 +21,7 @@
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;overflow-x:hidden}
 .screen{display:none;flex-direction:column;min-height:100vh}
 .screen.active{display:flex}
+.screen:not(.active) .ftr{display:none}
 .hdr{background:var(--blue);color:#fff;padding:0 18px;height:58px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(27,58,107,.18)}
 .hdr-title{font-size:17px;font-weight:800;flex:1;line-height:1.2;letter-spacing:-.4px}
 .hdr-sub{font-size:10px;opacity:.5;font-weight:500;letter-spacing:.3px}
@@ -203,7 +204,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.61</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.62</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -508,7 +509,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 ══════════════════════════════════════════ -->
 <div id="s-capture" class="screen">
   <header class="hdr">
-    <button class="btn-back" onclick="go('home')">←</button>
+    <button class="btn-back" onclick="S.curFolderContext?go('folder'):go('home')">←</button>
     <div style="flex:1;min-width:0;cursor:pointer" onclick="renameProc()">
       <div class="hdr-title" id="cap-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Procedure</div>
       <div class="hdr-sub" id="cap-ref"></div>
@@ -523,7 +524,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     </div>
   </div>
   <div class="ftr">
-    <button class="btn btn-s" onclick="go('home')" data-i18n="save_draft">🏠 Home</button>
+    <button class="btn btn-s" onclick="S.curFolderContext?go('folder'):go('home')" data-i18n="save_draft">🏠 Home</button>
     <button class="btn btn-o" onclick="generateAI()" data-i18n="generate_ai">🤖 Generate AI</button>
   </div>
 </div>
@@ -1234,7 +1235,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.61 — Architecture séparée
+// GITHUB SYNC v1.62 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -2454,8 +2455,9 @@ function renderHome(){
         <button class="proc-action-btn" onclick="event.stopPropagation();openProc('${p.id}','edit')">${t('edit')}</button>
         ${isDone?`<button class="proc-action-btn proc-action-btn-review" onclick="event.stopPropagation();openProc('${p.id}','review')">${t('review')}</button>
         <button class="proc-action-btn proc-action-btn-apercu" onclick="event.stopPropagation();openProc('${p.id}','review');setTimeout(openPreview,50)">${t('preview')}</button>`:''}
-        <button class="proc-action-btn" onclick="event.stopPropagation();copyProcToFolder('${p.id}',true)">📁 ${t('copy_to_folder')}</button>
+        <button class="proc-action-btn" onclick="event.stopPropagation();copyProcToFolder('${p.id}',true)">📁</button>
         ${canToggleVis?`<button class="proc-action-btn" onclick="event.stopPropagation();toggleVisibility('${p.id}')">${isPrivate?'🔒':'👥'}</button>`:''}
+        ${canDelete?`<button class="proc-action-btn" onclick="event.stopPropagation();deleteProc('${p.id}')" style="color:var(--red)">🗑️</button>`:''}
       </div>`:''}
     </div>`;
   }
@@ -2641,8 +2643,11 @@ var _moveFolderProcMode=false;
 
 function confirmCopyToFolder(folderId){
   var folders=getFolders();
-  var procs=getProcs();
-  var original=procs.find(function(p){return p.id===_copyProcId;});
+  // Find original proc — check personal procs first, then source folder
+  var original=getProcs().find(function(p){return p.id===_copyProcId;});
+  if(!original&&_curFolderId){
+    original=getFolderProcs(_curFolderId).find(function(p){return p.id===_copyProcId;});
+  }
   if(!original){toast('Procedure not found');return;}
   var copy=JSON.parse(JSON.stringify(original));
   copy.id=uid();
@@ -2659,18 +2664,19 @@ function confirmCopyToFolder(folderId){
   showOverlay(t('folder_loading'));
   ghSaveFolderProc(folderId,copy).then(function(){
     hideOverlay();
-    // If move mode: remove from source folder
     if(_moveFolderProcMode&&_curFolderId){
+      // Remove from source folder
       var srcProcs=getFolderProcs(_curFolderId).filter(function(p){return p.id!==_copyProcId;});
       saveFolderProcs(_curFolderId,srcProcs);
       _moveFolderProcMode=false;
-      toast('✓ '+t('move_to_folder_ok'||'Moved to').replace('{name}',fname));
+      toast('✓ Déplacé vers '+fname);
       go('folder');
       renderFolderView();
     } else {
-      toast('✓ '+(t('copy_to_folder_ok')||'Copied').replace('{name}',fname));
+      toast('✓ Copié vers '+fname);
       var backScreen=_copyProcFromHome?'home':'capture';
       go(backScreen);
+      if(backScreen==='home') renderHome();
     }
   });
 }
