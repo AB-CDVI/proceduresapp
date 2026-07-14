@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.66</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.67</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -1195,7 +1195,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.66 — Architecture séparée
+// GITHUB SYNC v1.67 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -3569,13 +3569,34 @@ async function renderFolderView(){
   var f=folders[id]||{name:id};
   document.getElementById('folder-title').textContent=f.name||id;
   document.getElementById('folder-sub').textContent=f.description||'';
-  var el=document.getElementById('folder-list');
-  el.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">'+t('folder_loading')+'</div>';
-  showOverlay(t('folder_loading'));
-  var procs=await ghFetchFolderProcs(id);
-  saveFolderProcs(id,procs);
-  hideOverlay();
-  renderFolderProcList(procs);
+
+  // 1. Show localStorage immediately (no loading flash)
+  var localProcs=getFolderProcs(id);
+  renderFolderProcList(localProcs);
+
+  // 2. Fetch from GitHub in background
+  var ghProcs=await ghFetchFolderProcs(id);
+
+  // 3. Merge: keep local state as source of truth for deletions
+  // Only add procs from GitHub that exist locally (i.e. not deleted)
+  var localIds=new Set(localProcs.map(function(p){return p.id;}));
+  // If local is empty and GitHub has procs → first load, trust GitHub
+  // If local has procs → only keep GitHub procs that are still in local
+  var merged;
+  if(localProcs.length===0){
+    merged=ghProcs;
+  } else {
+    // Keep only GH procs that haven't been deleted locally
+    merged=ghProcs.filter(function(p){return localIds.has(p.id);});
+    // Also keep local procs not yet on GH (just created)
+    var ghIds=new Set(ghProcs.map(function(p){return p.id;}));
+    localProcs.forEach(function(p){
+      if(!ghIds.has(p.id)) merged.push(p);
+    });
+  }
+
+  saveFolderProcs(id,merged);
+  renderFolderProcList(merged);
 }
 
 function renderFolderProcList(procs){
