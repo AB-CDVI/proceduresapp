@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.71</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.72</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -1196,7 +1196,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.71 — Architecture séparée
+// GITHUB SYNC v1.72 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -2421,6 +2421,11 @@ function renderHome(){
   document.getElementById('stat-generated').textContent=mineProcs.filter(p=>p.status==='generated'||p.status==='exported').length;
   document.getElementById('stat-exported').textContent=mineProcs.filter(p=>p.status==='exported').length;
 
+  if(_homeFilter==='folders'){
+    renderFolderList(el);
+    return;
+  }
+
   if(!procs.length){
     el.innerHTML=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-t">${t('no_procs')}</div><div class="empty-s">${t('no_procs_sub')}</div></div>`;
     return;
@@ -2480,10 +2485,7 @@ function renderHome(){
   }
 
   var html='';
-  if(_homeFilter==='folders'){
-    renderFolderList(el);
-    return;
-  } else if(_homeFilter==='mine'){
+  if(_homeFilter==='mine'){
     // Mes procédures uniquement — créées par moi
     var mine=allSorted.filter(function(p){ return p.userId===S.user?.id; });
     if(mine.length) html=mine.map(function(p){return procCard(p,false);}).join('');
@@ -3564,18 +3566,38 @@ function buildWordHTML(p,txt){
 var _curFolderId=null;
 var _folderEditId=null;
 var _loadedFolders=new Set();
-// Blacklist persisted in localStorage — survives page reloads until GitHub DELETE confirmed
-var _deletedFolderProcs=new Set(JSON.parse(localStorage.getItem('ms_deleted_fprocs')||'[]'));
+// Blacklist persistée en localStorage — id -> timestamp de suppression.
+// IMPORTANT: on NE supprime PAS une entrée dès que ghDeleteFile() répond 200 OK.
+// L'API GitHub Contents (utilisée par ghFetchFolderProcs pour lister le dossier)
+// peut rester quelques secondes en retard par rapport à un DELETE qui vient d'être
+// confirmé. Si on recharge / rouvre le dossier dans cette fenêtre, un fetch relancé
+// verrait encore l'ancien fichier — d'où la réapparition. On garde donc l'ID en
+// blacklist pendant une période de grâce, purgée seulement au chargement suivant.
+var FOLDER_DELETE_GRACE_MS=2*60*1000; // 2 minutes — largement suffisant pour la propagation GitHub
+var _deletedFolderProcsRaw=JSON.parse(localStorage.getItem('ms_deleted_fprocs')||'{}');
+// Migration depuis l'ancien format (Array d'ids) vers {id:timestamp}
+if(Array.isArray(_deletedFolderProcsRaw)){
+  var migrated={};
+  _deletedFolderProcsRaw.forEach(function(id){migrated[id]=Date.now();});
+  _deletedFolderProcsRaw=migrated;
+}
+// Purge des entrées expirées au chargement (pas à la confirmation du DELETE)
+Object.keys(_deletedFolderProcsRaw).forEach(function(id){
+  if(Date.now()-_deletedFolderProcsRaw[id]>FOLDER_DELETE_GRACE_MS) delete _deletedFolderProcsRaw[id];
+});
+localStorage.setItem('ms_deleted_fprocs',JSON.stringify(_deletedFolderProcsRaw));
+var _deletedFolderProcs={
+  has:function(id){return Object.prototype.hasOwnProperty.call(_deletedFolderProcsRaw,id);}
+};
 var _folderEditColor='#1B3A6B';
 
 function _addDeletedFolderProc(id){
-  _deletedFolderProcs.add(id);
-  localStorage.setItem('ms_deleted_fprocs',JSON.stringify([..._deletedFolderProcs]));
+  _deletedFolderProcsRaw[id]=Date.now();
+  localStorage.setItem('ms_deleted_fprocs',JSON.stringify(_deletedFolderProcsRaw));
 }
-function _clearDeletedFolderProc(id){
-  _deletedFolderProcs.delete(id);
-  localStorage.setItem('ms_deleted_fprocs',JSON.stringify([..._deletedFolderProcs]));
-}
+// Volontairement PAS de _clearDeletedFolderProc: on laisse la période de grâce
+// expirer naturellement (purge au prochain chargement de page) plutôt que de lever
+// le blacklist dès la réponse 200 du DELETE.
 
 function openFolder(id){
   _curFolderId=id;
@@ -3767,7 +3789,11 @@ async function deleteFolderProc(procId){
     showOverlay(t('folder_loading'));
     var ok=await ghDeleteFile('folders/'+_curFolderId+'/procs/'+procId+'.json',tok);
     hideOverlay();
-    if(ok) _clearDeletedFolderProc(procId); // safe to remove from blacklist — file gone on GH
+    // On ne vide plus la blacklist ici même si ok===true: l'API GitHub Contents
+    // (lue par ghFetchFolderProcs) peut rester en retard de quelques secondes par
+    // rapport au DELETE. L'entrée reste blacklistée pendant FOLDER_DELETE_GRACE_MS
+    // et sera purgée automatiquement au prochain chargement de page.
+    if(!ok) console.warn('deleteFolderProc: ghDeleteFile a échoué pour',procId,'— entrée conservée en blacklist');
   }
   toast(t('delete_folder_proc_ok'));
 }
