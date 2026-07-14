@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.70</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.71</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -1196,7 +1196,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.70 — Architecture séparée
+// GITHUB SYNC v1.71 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -1365,30 +1365,9 @@ async function ghSave(){
       }
     }catch(e){console.warn('ghSave: could not read GitHub for merge, using local only');}
 
-    // Only write folders to GitHub if we have local folders
-    // Never let an empty local ms_folders overwrite real folders on GitHub
-    var localFoldersForSave=getFolders();
-    var foldersToWrite=localFoldersForSave;
-    if(Object.keys(localFoldersForSave).length===0){
-      // Read current folders from GitHub to preserve them
-      try{
-        var fResp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_DATA,{
-          headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
-        });
-        if(fResp.ok){
-          var fMeta=await fResp.json();
-          var fRaw=atob(fMeta.content.replace(/\s/g,''));
-          var fDecoded;try{fDecoded=decodeURIComponent(escape(fRaw));}catch(e){fDecoded=fRaw;}
-          var fData=JSON.parse(fDecoded);
-          if(fData.folders&&Object.keys(fData.folders).length>0) foldersToWrite=fData.folders;
-        }
-      }catch(e){}
-    }
-
     var data={
       users:safeUsers,
       procIds:mergedProcIds,
-      folders:foldersToWrite,
       st:obfuscate(tok),
       updated:new Date().toISOString()
     };
@@ -1638,16 +1617,6 @@ async function ghLoad(){
     }
 
     localStorage.setItem('last_save_time',String(Date.now()));
-
-    // Load folders metadata — merge GitHub into local, never overwrite with empty
-    if(data.folders&&Object.keys(data.folders).length>0){
-      var localFolders=getFolders();
-      // GitHub folders take precedence (admin source of truth), but keep local-only ones
-      var mergedFolders=Object.assign({},localFolders,data.folders);
-      saveFolders(mergedFolders);
-    }
-    // If data.folders is empty or absent, keep local ms_folders as-is
-
     setSyncStatus('ok');
     return{ok:true};
   }catch(e){console.warn('ghLoad error:',e);return{ok:false,reason:'parse_error',detail:e.message};}
@@ -1669,6 +1638,42 @@ function getFolders(){return JSON.parse(localStorage.getItem('ms_folders')||'{}'
 function saveFolders(f){localStorage.setItem('ms_folders',JSON.stringify(f));}
 function getFolderProcs(folderId){return JSON.parse(localStorage.getItem('ms_fprocs_'+folderId)||'[]');}
 function saveFolderProcs(folderId,procs){localStorage.setItem('ms_fprocs_'+folderId,JSON.stringify(procs));}
+
+// Folders have their own dedicated file on GitHub: folders.json
+// This is completely separate from data.json so proc operations never affect folders
+var GH_FOLDERS='folders.json';
+
+async function ghSaveFolders(){
+  var tok=getBestToken();
+  if(!tok) return false;
+  var folders=getFolders();
+  if(Object.keys(folders).length===0) return true; // nothing to write
+  try{
+    var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(folders))));
+    return await ghPutFileLocked(GH_FOLDERS,encoded,tok);
+  }catch(e){console.warn('ghSaveFolders:',e);return false;}
+}
+
+async function ghLoadFolders(){
+  var tok=getBestToken()||getBootstrapToken();
+  if(!tok) return;
+  try{
+    var resp=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_FOLDERS,{
+      headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(!resp.ok) return; // file doesn't exist yet — no folders created
+    var meta=await resp.json();
+    var raw=atob(meta.content.replace(/\s/g,''));
+    var decoded;try{decoded=decodeURIComponent(escape(raw));}catch(e){decoded=raw;}
+    var ghFolders=JSON.parse(decoded);
+    if(ghFolders&&Object.keys(ghFolders).length>0){
+      // Merge: GitHub is source of truth for folder definitions (admin manages them)
+      // Keep any local-only folders too
+      var local=getFolders();
+      saveFolders(Object.assign({},local,ghFolders));
+    }
+  }catch(e){console.warn('ghLoadFolders:',e);}
+}
 
 // Save folder metadata to data.json (via ghSave which merges)
 // Folder proc: save to folders/[folderId]/procs/[id].json
@@ -1978,6 +1983,8 @@ async function checkPwd(){
   SYNC_INTERVAL_MS=savedMins*60*1000;
   // Start background auto-sync (runs immediately + every saved interval)
   startAutoSync();
+  // Load folders from their dedicated file
+  ghLoadFolders();
   // Push local data to GitHub after login
   var _tok=S.user.apiKey||sharedToken||localStorage.getItem('shared_token')||'';
   if(_tok){
@@ -3556,9 +3563,19 @@ function buildWordHTML(p,txt){
 // ═══════════════════════════════════════════════════════
 var _curFolderId=null;
 var _folderEditId=null;
-var _loadedFolders=new Set(); // tracks folders fetched at least once this session
-var _deletedFolderProcs=new Set(); // IDs deleted this session — never reintroduce from GitHub
+var _loadedFolders=new Set();
+// Blacklist persisted in localStorage — survives page reloads until GitHub DELETE confirmed
+var _deletedFolderProcs=new Set(JSON.parse(localStorage.getItem('ms_deleted_fprocs')||'[]'));
 var _folderEditColor='#1B3A6B';
+
+function _addDeletedFolderProc(id){
+  _deletedFolderProcs.add(id);
+  localStorage.setItem('ms_deleted_fprocs',JSON.stringify([..._deletedFolderProcs]));
+}
+function _clearDeletedFolderProc(id){
+  _deletedFolderProcs.delete(id);
+  localStorage.setItem('ms_deleted_fprocs',JSON.stringify([..._deletedFolderProcs]));
+}
 
 function openFolder(id){
   _curFolderId=id;
@@ -3737,20 +3754,20 @@ async function ghDeleteFile(path, tok){
 
 async function deleteFolderProc(procId){
   if(!confirm(t('delete_folder_proc_confirm'))) return;
-  // 1. Add to blacklist immediately — survives any subsequent GitHub fetch
-  _deletedFolderProcs.add(procId);
+  // 1. Add to persistent blacklist immediately
+  _addDeletedFolderProc(procId);
   // 2. Remove from local storage
   var procs=getFolderProcs(_curFolderId).filter(function(p){return p.id!==procId;});
   saveFolderProcs(_curFolderId,procs);
   _expandedFolderProcId=null;
-  // 3. Update display immediately
   renderFolderProcList(procs);
-  // 4. Delete from GitHub synchronously — overlay so user sees progress
+  // 3. Delete from GitHub synchronously
   var tok=getBestToken();
   if(tok){
     showOverlay(t('folder_loading'));
-    await ghDeleteFile('folders/'+_curFolderId+'/procs/'+procId+'.json', tok);
+    var ok=await ghDeleteFile('folders/'+_curFolderId+'/procs/'+procId+'.json',tok);
     hideOverlay();
+    if(ok) _clearDeletedFolderProc(procId); // safe to remove from blacklist — file gone on GH
   }
   toast(t('delete_folder_proc_ok'));
 }
@@ -3861,7 +3878,7 @@ function saveFolderEdit(){
   var id=_folderEditId||name.replace(/[^a-zA-Z0-9_-]/g,'_');
   folders[id]={name:name,description:desc,color:_folderEditColor,members:allSelected?[]:members,createdBy:S.user?S.user.name:'admin',updatedAt:new Date().toISOString()};
   saveFolders(folders);
-  ghSave();
+  ghSaveFolders();
   cancelFolderEdit();
   renderAdminFolders();
   toast(_folderEditId?t('folder_update_ok'):t('folder_create_ok'));
@@ -3874,7 +3891,7 @@ function deleteFolder(id){
   delete folders[id];
   saveFolders(folders);
   localStorage.removeItem('ms_fprocs_'+id);
-  ghSave();
+  ghSaveFolders();
   renderAdminFolders();
   toast(t('folder_delete_ok'));
 }
