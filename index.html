@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.73</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.74</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -1196,7 +1196,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.73 — Architecture séparée
+// GITHUB SYNC v1.74 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -1367,9 +1367,12 @@ async function ghSave(){
         var ghData=JSON.parse(decoded);
         var ghIds=ghData.procIds||{};
         // Merge: for each user, keep union of GitHub IDs and local IDs
+        // ...sauf les IDs explicitement supprimés (voir _deletedProcs) : ceux-là
+        // ne doivent jamais être réintégrés, même s'ils traînent encore côté GitHub.
         Object.keys(ghIds).forEach(function(uname){
           if(!mergedProcIds[uname]) mergedProcIds[uname]=[];
           (ghIds[uname]||[]).forEach(function(id){
+            if(_deletedProcs.has(id)) return;
             if(!mergedProcIds[uname].includes(id)) mergedProcIds[uname].push(id);
           });
         });
@@ -1588,6 +1591,7 @@ async function ghLoad(){
       // New per-user format
       Object.keys(procIdsByUser).forEach(function(uname){
         procIdsByUser[uname].forEach(function(id){
+          if(_deletedProcs.has(id)) return; // ne jamais re-télécharger un ID supprimé volontairement
           toFetch.push({id:id,uname:uname});
         });
       });
@@ -1642,6 +1646,18 @@ function getProcs(){return JSON.parse(localStorage.getItem('ms_procs')||'[]');}
 function saveProcs(p){
   localStorage.setItem('ms_procs',JSON.stringify(p));
   ghSave(); // update procIds list in data.json
+}
+
+// Liste noire des procédures personnelles supprimées volontairement.
+// Sans ça, la fusion "union" défensive de ghSave() (voir plus bas) réintègre
+// systématiquement tout ID déjà vu sur GitHub — donc un deleteProc() local ne
+// tenait jamais: au ghSave() suivant, ou au ghLoad() du rechargement de page,
+// l'ID revenait. Cette blacklist permet à la fusion de faire la différence entre
+// "ID jamais vu localement" (à garder) et "ID supprimé volontairement" (à exclure).
+var _deletedProcs=new Set(JSON.parse(localStorage.getItem('ms_deleted_procs')||'[]'));
+function _addDeletedProc(id){
+  _deletedProcs.add(id);
+  localStorage.setItem('ms_deleted_procs',JSON.stringify([..._deletedProcs]));
 }
 
 // ─── Folders (shared workspaces) ────────────────────────────────────────────
@@ -2324,10 +2340,11 @@ async function backgroundSync(){
     // Build list of {id, uname} to fetch
     var toFetch=[];
     if(Array.isArray(procIdsByUser)){
-      procIdsByUser.forEach(function(id){toFetch.push({id:id,uname:myUname});});
+      procIdsByUser.forEach(function(id){if(_deletedProcs.has(id))return;toFetch.push({id:id,uname:myUname});});
     } else {
       Object.keys(procIdsByUser).forEach(function(uname){
         (procIdsByUser[uname]||[]).forEach(function(id){
+          if(_deletedProcs.has(id))return; // ne jamais re-télécharger un ID supprimé volontairement
           toFetch.push({id:id,uname:uname});
         });
       });
@@ -2577,11 +2594,21 @@ function toggleVisibility(id){
 
 function deleteProc(id){
   if(!confirm('Delete this procedure? This cannot be undone.'))return;
+  _addDeletedProc(id); // blacklist en premier — empêche ghSave()/ghLoad() de le réintégrer
+  var target=getProcs().find(function(p){return p.id===id;});
   const procs=getProcs().filter(p=>p.id!==id);
   saveProcs(procs);
   if(S.cur&&S.cur.id===id)S.cur=null;
   renderHome();
   toast('Procedure deleted ✓');
+  // Nettoyage best-effort du fichier réel sur GitHub — passe par la file FIFO
+  // (ghDeleteFileLocked) pour ne jamais courir contre une sauvegarde en attente.
+  var tok=getBestToken();
+  if(tok&&target){
+    var users=getUsers();
+    var uname=(target.userId?(users.find(function(u){return u.id===target.userId;})||{}).name||'unknown':'unknown').replace(/[^a-zA-Z0-9_-]/g,'_');
+    ghDeleteFileLocked('procs/'+uname+'/'+id+'.json',tok);
+  }
 }
 
 // ─── Edit proc info (title, ref, op, cat) ────────────────
