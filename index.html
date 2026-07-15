@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.78</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.79</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -1199,7 +1199,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.78 — Architecture séparée
+// GITHUB SYNC v1.79 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -3802,30 +3802,87 @@ function renderFolderProcList(procs){
   }).join('');
 }
 
-function openFolderProc(procId){
+// Retélécharge les photos manquantes (ph.data vide) d'une procédure de dossier.
+// Utilisé quand on ouvre une procédure dont le cache local a été allégé (quota).
+async function fetchMissingFolderPhotos(folderId,proc){
+  if(!proc) return;
+  var tok=getBestToken();
+  if(!tok) return;
+  var photoFetches=[];
+  (proc.sections||[]).forEach(function(sec){
+    (sec.steps||[]).forEach(function(st){
+      (st.photos||[]).forEach(function(ph){
+        if(!ph.data||ph.data===''){
+          photoFetches.push({ph:ph,path:'folders/'+folderId+'/photos/'+proc.id+'/'+ph.id+'.b64'});
+        }
+      });
+    });
+  });
+  if(photoFetches.length===0) return;
+  await Promise.all(photoFetches.map(async function(job){
+    try{
+      var pr=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+job.path,{
+        headers:{'Authorization':'Bearer '+tok,'Accept':'application/vnd.github.v3+json'}
+      });
+      if(!pr.ok) return;
+      var pm=await pr.json();
+      job.ph.data=atob(pm.content.replace(/\s/g,''));
+    }catch(e){}
+  }));
+}
+function _folderProcNeedsPhotos(proc){
+  return (proc.sections||[]).some(function(sec){
+    return (sec.steps||[]).some(function(st){
+      return (st.photos||[]).some(function(ph){return !ph.data;});
+    });
+  });
+}
+
+async function openFolderProc(procId){
   var procs=getFolderProcs(_curFolderId);
   S.cur=procs.find(function(p){return p.id===procId;});
   if(!S.cur) return;
   S.curFolderContext=_curFolderId;
+  if(_folderProcNeedsPhotos(S.cur)){
+    showOverlay(t('folder_loading'));
+    await fetchMissingFolderPhotos(_curFolderId,S.cur);
+    var idx=procs.findIndex(function(p){return p.id===procId;});
+    if(idx>=0){procs[idx]=S.cur;saveFolderProcs(_curFolderId,procs);}
+    hideOverlay();
+  }
   go('capture');
 }
 
-function openFolderProcReview(procId){
+async function openFolderProcReview(procId){
   var procs=getFolderProcs(_curFolderId);
   S.cur=procs.find(function(p){return p.id===procId;});
   if(!S.cur) return;
   S.curFolderContext=_curFolderId;
+  if(_folderProcNeedsPhotos(S.cur)){
+    showOverlay(t('folder_loading'));
+    await fetchMissingFolderPhotos(_curFolderId,S.cur);
+    var idx=procs.findIndex(function(p){return p.id===procId;});
+    if(idx>=0){procs[idx]=S.cur;saveFolderProcs(_curFolderId,procs);}
+    hideOverlay();
+  }
   go('review');
   document.getElementById('review-display').textContent=S.cur.genText||'';
   document.getElementById('review-edit').value=S.cur.genText||'';
   renderReviewPhotos();
 }
 
-function openFolderProcEdit(procId){
+async function openFolderProcEdit(procId){
   var procs=getFolderProcs(_curFolderId);
   S.cur=procs.find(function(p){return p.id===procId;});
   if(!S.cur) return;
   S.curFolderContext=_curFolderId;
+  if(_folderProcNeedsPhotos(S.cur)){
+    showOverlay(t('folder_loading'));
+    await fetchMissingFolderPhotos(_curFolderId,S.cur);
+    var idx=procs.findIndex(function(p){return p.id===procId;});
+    if(idx>=0){procs[idx]=S.cur;saveFolderProcs(_curFolderId,procs);}
+    hideOverlay();
+  }
   openEditProc('folder');
 }
 
