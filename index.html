@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.77</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.78</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -1199,7 +1199,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.77 — Architecture séparée
+// GITHUB SYNC v1.78 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -1654,7 +1654,26 @@ function getUsers(){return JSON.parse(localStorage.getItem('ms_users')||'[]');}
 function saveUsers(u){localStorage.setItem('ms_users',JSON.stringify(u));ghSave();}
 function getProcs(){return JSON.parse(localStorage.getItem('ms_procs')||'[]');}
 function saveProcs(p){
-  localStorage.setItem('ms_procs',JSON.stringify(p));
+  try{
+    localStorage.setItem('ms_procs',JSON.stringify(p));
+  }catch(e){
+    if(e&&e.name==='QuotaExceededError'){
+      // Même logique que saveFolderProcs: on allège le cache local des photos
+      // (déjà sauvegardées sur GitHub) plutôt que de planter.
+      var slim=JSON.parse(JSON.stringify(p));
+      slim.forEach(function(proc){
+        (proc.sections||[]).forEach(function(sec){
+          (sec.steps||[]).forEach(function(st){
+            (st.photos||[]).forEach(function(ph){ph.data='';});
+          });
+        });
+      });
+      try{localStorage.setItem('ms_procs',JSON.stringify(slim));}
+      catch(e2){console.warn('saveProcs: échec même après allègement des photos',e2);}
+    } else {
+      console.warn('saveProcs error:',e);
+    }
+  }
   ghSave(); // update procIds list in data.json
 }
 
@@ -1674,7 +1693,33 @@ function _addDeletedProc(id){
 function getFolders(){return JSON.parse(localStorage.getItem('ms_folders')||'{}');}
 function saveFolders(f){localStorage.setItem('ms_folders',JSON.stringify(f));}
 function getFolderProcs(folderId){return JSON.parse(localStorage.getItem('ms_fprocs_'+folderId)||'[]');}
-function saveFolderProcs(folderId,procs){localStorage.setItem('ms_fprocs_'+folderId,JSON.stringify(procs));}
+function saveFolderProcs(folderId,procs){
+  try{
+    localStorage.setItem('ms_fprocs_'+folderId,JSON.stringify(procs));
+  }catch(e){
+    if(e&&e.name==='QuotaExceededError'){
+      // Le cache local n'a pas la place pour toutes les photos en base64 (elles sont
+      // déjà sauvegardées séparément sur GitHub). On les retire du cache local —
+      // ghFetchFolderProcs sait déjà les retélécharger à la demande quand ph.data
+      // est vide, exactement comme pour les procédures personnelles.
+      var slim=JSON.parse(JSON.stringify(procs));
+      slim.forEach(function(p){
+        (p.sections||[]).forEach(function(sec){
+          (sec.steps||[]).forEach(function(st){
+            (st.photos||[]).forEach(function(ph){ph.data='';});
+          });
+        });
+      });
+      try{
+        localStorage.setItem('ms_fprocs_'+folderId,JSON.stringify(slim));
+      }catch(e2){
+        console.warn('saveFolderProcs: échec même après allègement des photos',e2);
+      }
+    } else {
+      console.warn('saveFolderProcs error:',e);
+    }
+  }
+}
 
 // Folders have their own dedicated file on GitHub: folders.json
 // This is completely separate from data.json so proc operations never affect folders
@@ -1839,7 +1884,7 @@ var _ftrs={
   'capture':  '<button class="btn btn-s" onclick="S.curFolderContext?go(\'folder\'):go(\'home\')" data-i18n="save_draft">🏠 Home</button><button class="btn btn-o" onclick="generateAI()" data-i18n="generate_ai">🤖 Generate AI</button>',
   'step':     '<button class="btn btn-s" onclick="cancelStep()" data-i18n="cancel_step">Cancel</button><button class="btn btn-p" onclick="saveStep()" data-i18n="save_step">Save step ✓</button>',
   'review':   '<button class="btn btn-s" onclick="go(\'capture\')" data-i18n="edit_steps">✏️ Edit steps</button><button class="btn btn-s" onclick="openPreview()" style="background:var(--blue-pale);color:var(--blue);border-color:var(--blue-mid)" data-i18n="apercu">👁️ Preview</button><button class="btn btn-p" onclick="exportWord()" data-i18n="export_word">📄 Export Word</button>',
-  'edit-proc':'<button class="btn btn-s" id="edit-proc-cancel" data-i18n="cancel_btn">Cancel</button><button class="btn btn-p" onclick="saveEditProc()" data-i18n="save">Save ✓</button>',
+  'edit-proc':'<button class="btn btn-s" onclick="go(_editProcFrom)" data-i18n="cancel_btn">Cancel</button><button class="btn btn-p" onclick="saveEditProc()" data-i18n="save">Save ✓</button>',
   'folder':   '<button class="btn btn-p" onclick="initFolderForm()" data-i18n="new_procedure">＋ New procedure</button>',
   'folder-form':'<button class="btn btn-s" onclick="go(\'folder\')" data-i18n="cancel_btn">Cancel</button><button class="btn btn-p" onclick="createFolderProc()" data-i18n="create_btn">Create →</button>',
 };
@@ -2641,7 +2686,6 @@ function openEditProc(fromScreen){
     if(catSel.options[i].value===S.cur.cat){catSel.selectedIndex=i;break;}
   }
   document.getElementById('edit-proc-back').onclick=function(){go(_editProcFrom);};
-  document.getElementById('edit-proc-cancel').onclick=function(){go(_editProcFrom);};
   go('edit-proc');
 }
 
