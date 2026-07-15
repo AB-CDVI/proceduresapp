@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.76</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.77</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -1199,7 +1199,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.76 — Architecture séparée
+// GITHUB SYNC v1.77 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -2826,6 +2826,8 @@ function createProc(){
   };
   _newProcVisibility='private'; // reset for next time
   const procs=getProcs();procs.push(p);saveProcs(procs);
+  ghSaveProc(p); // écrit le fichier de contenu tout de suite — évite qu'une synchro
+                 // concurrente ne le blackliste par erreur en le trouvant absent (404)
   S.cur=p;go('capture');
 }
 
