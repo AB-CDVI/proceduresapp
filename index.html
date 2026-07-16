@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.82</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.83</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -1199,7 +1199,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.82 — Architecture séparée
+// GITHUB SYNC v1.83 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -1665,6 +1665,7 @@ function saveProcs(p){
         (proc.sections||[]).forEach(function(sec){
           (sec.steps||[]).forEach(function(st){
             (st.photos||[]).forEach(function(ph){ph.data='';});
+            (st.subs||[]).forEach(function(sub){(sub.photos||[]).forEach(function(ph){ph.data='';});});
           });
         });
       });
@@ -1707,6 +1708,7 @@ function saveFolderProcs(folderId,procs){
         (p.sections||[]).forEach(function(sec){
           (sec.steps||[]).forEach(function(st){
             (st.photos||[]).forEach(function(ph){ph.data='';});
+            (st.subs||[]).forEach(function(sub){(sub.photos||[]).forEach(function(ph){ph.data='';});});
           });
         });
       });
@@ -1868,6 +1870,8 @@ const S={
   cur:null,
   curSecId:null,
   curStep:null,
+  curStepId:null, // id de l'étape parente (niveau 2), toujours renseigné
+  curSubId:null,  // id du sous-élément (niveau 3) en cours d'édition, null si on édite l'étape elle-même
   curFolderContext:null, // set when editing a proc from a folder
   recog:null,
   recording:false
@@ -2812,8 +2816,8 @@ function openProc(id,mode){
     go('capture');
   }else{
     go('review');
-    document.getElementById('review-display').textContent=S.cur.genText||'';
-    document.getElementById('review-edit').value=S.cur.genText||'';
+    document.getElementById('review-display').textContent=S.cur.genText||_buildPreviewText(S.cur);
+    document.getElementById('review-edit').value=S.cur.genText||_buildPreviewText(S.cur);
     renderReviewPhotos();
   }
 }
@@ -2933,6 +2937,30 @@ function renderCapture(){
           <button class="cap-btn" onclick="editStep('${sec.id}','${st.id}')"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>${t('edit_step')}</span></button>
           <button class="cap-btn" onclick="deleteStep('${sec.id}','${st.id}')"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg><span>${t('delete')}</span></button>
         </div>
+        ${(st.subs&&st.subs.length)?st.subs.map((sub,sidx)=>`
+        <div class="step-card" style="margin-left:22px;border-left:3px solid var(--blue-pale)">
+          <div class="step-top" onclick="editSub('${sec.id}','${st.id}','${sub.id}')">
+            <div class="step-n" style="background:var(--blue-pale);color:var(--blue)">${idx+1}.${String.fromCharCode(65+sidx)}</div>
+            <div style="flex:1">
+              <div class="step-txt ${!sub.text?'empty':''}">${sub.text?esc(sub.text.slice(0,90))+(sub.text.length>90?'…':''):'Tap to add content...'}</div>
+              <div class="step-tags">
+                ${sub.photos&&sub.photos.length?`<span class="step-tag tag-photo">${sub.photos.length} photo${sub.photos.length>1?'s':''}</span>`:''}
+                ${sub.voice?`<span class="step-tag tag-voice">voix</span>`:''}
+              </div>
+            </div>
+          </div>
+          <div class="step-btns">
+            <button class="cap-btn" onclick="moveSubUp('${sec.id}','${st.id}','${sub.id}')" style="flex:0 0 30px${sidx===0?';opacity:.3;cursor:default':''}" ${sidx===0?'disabled':''}><span>↑</span></button>
+            <button class="cap-btn" onclick="moveSubDown('${sec.id}','${st.id}','${sub.id}')" style="flex:0 0 30px${sidx===st.subs.length-1?';opacity:.3;cursor:default':''}" ${sidx===st.subs.length-1?'disabled':''}><span>↓</span></button>
+            <button class="cap-btn" onclick="quickVoice('${sec.id}','${st.id}','${sub.id}')"><svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>${t('voice')}</span></button>
+            <button class="cap-btn" onclick="quickPhoto('${sec.id}','${st.id}','${sub.id}')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>${t('photo')}</span></button>
+            <button class="cap-btn" onclick="editSub('${sec.id}','${st.id}','${sub.id}')"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>${t('edit_step')}</span></button>
+            <button class="cap-btn" onclick="deleteSub('${sec.id}','${st.id}','${sub.id}')"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg><span>${t('delete')}</span></button>
+          </div>
+        </div>`).join(''):''}
+        <div class="add-row" style="margin-left:22px;padding:6px 0 10px">
+          <button class="btn btn-s btn-sm" onclick="addSubItem('${sec.id}','${st.id}')">＋ ${idx+1}.${String.fromCharCode(65+((st.subs&&st.subs.length)||0))} — sous-élément</button>
+        </div>
       </div>`).join('')}
     <div class="add-row">
       <button class="btn btn-s btn-sm" onclick="addStepTo('${sec.id}')">＋ Add sub-step</button>
@@ -2998,9 +3026,9 @@ function addStepLast(){
 
 function addStepTo(secId){
   const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
-  const st={id:uid(),text:'',voice:'',photos:[]};
+  const st={id:uid(),text:'',voice:'',photos:[],subs:[]};
   sec.steps.push(st);syncCur();
-  openStepEditor(secId,st);
+  openStepEditor(secId,st.id,null);
 }
 
 function deleteStep(secId,stepId){
@@ -3011,29 +3039,72 @@ function deleteStep(secId,stepId){
 }
 
 function editStep(secId,stepId){
-  const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
-  const st=sec.steps.find(s=>s.id===stepId);if(!st)return;
-  openStepEditor(secId,st);
+  openStepEditor(secId,stepId,null);
 }
 
-function openStepEditor(secId,st){
+// ─── Sous-éléments (3e niveau: I.1.A, I.1.B...) ───────────────────────────
+function addSubItem(secId,stepId){
   const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
-  S.curSecId=secId;S.curStep=st;
+  const st=sec.steps.find(s=>s.id===stepId);if(!st)return;
+  if(!st.subs)st.subs=[];
+  const sub={id:uid(),text:'',voice:'',photos:[]};
+  st.subs.push(sub);syncCur();
+  openStepEditor(secId,stepId,sub.id);
+}
+
+function editSub(secId,stepId,subId){
+  openStepEditor(secId,stepId,subId);
+}
+
+function deleteSub(secId,stepId,subId){
+  if(!confirm('Delete this sub-item?'))return;
+  const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
+  const st=sec.steps.find(s=>s.id===stepId);if(!st)return;
+  st.subs=(st.subs||[]).filter(s=>s.id!==subId);
+  syncCur();renderCapture();
+}
+
+// openStepEditor(secId, stepId, subId): subId===null → on édite l'étape (niveau 2)
+// elle-même; subId renseigné → on édite ce sous-élément (niveau 3). Dans les deux
+// cas S.curStep pointe directement sur l'objet édité, donc photo/voix (qui lisent
+// S.curStep) n'ont rien à savoir de plus.
+function openStepEditor(secId,stepId,subId){
+  const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
+  const st=sec.steps.find(s=>s.id===stepId);if(!st)return;
+  var node=st;
+  if(subId){
+    if(!st.subs)st.subs=[];
+    node=st.subs.find(s=>s.id===subId);
+    if(!node)return;
+  }
+  S.curSecId=secId;S.curStepId=stepId;S.curSubId=subId||null;S.curStep=node;
   const si=S.cur.sections.indexOf(sec)+1;
   const idx=sec.steps.indexOf(st)+1;
-  document.getElementById('step-hdr').textContent=`${roman(si)}.${idx} — ${sec.title}`;
-  document.getElementById('step-txt').value=st.text||'';
+  var hdr=`${roman(si)}.${idx}`;
+  if(subId){
+    var subIdx=st.subs.indexOf(node);
+    hdr+='.'+String.fromCharCode(65+subIdx);
+  }
+  document.getElementById('step-hdr').textContent=`${hdr} — ${sec.title}`;
+  document.getElementById('step-txt').value=node.text||'';
   const vb=document.getElementById('voice-box');
-  vb.textContent=st.voice||'Tap "Start" to begin...';
-  vb.style.fontStyle=st.voice?'normal':'italic';
-  vb.style.color=st.voice?'var(--text)':'var(--muted)';
+  vb.textContent=node.voice||'Tap "Start" to begin...';
+  vb.style.fontStyle=node.voice?'normal':'italic';
+  vb.style.color=node.voice?'var(--text)':'var(--muted)';
   stopVoice();renderPhotoGrid();go('step');
 }
 
 function cancelStep(){
   const sec=S.cur.sections.find(s=>s.id===S.curSecId);
-  if(sec&&S.curStep&&!S.curStep.text&&!S.curStep.voice&&(!S.curStep.photos||!S.curStep.photos.length)){
-    sec.steps=sec.steps.filter(s=>s.id!==S.curStep.id);syncCur();
+  const isEmpty=S.curStep&&!S.curStep.text&&!S.curStep.voice&&(!S.curStep.photos||!S.curStep.photos.length);
+  if(sec&&isEmpty){
+    if(S.curSubId){
+      var st=sec.steps.find(s=>s.id===S.curStepId);
+      if(st)st.subs=(st.subs||[]).filter(s=>s.id!==S.curStep.id);
+    } else {
+      sec.steps=sec.steps.filter(s=>s.id!==S.curStep.id);
+    }
+    syncCur();
   }
   go('capture');
 }
@@ -3047,15 +3118,21 @@ function saveStep(){
   stopVoice();syncCur();toast(t('toast_step_saved'));go('capture');
 }
 
-function quickVoice(secId,stepId){editStep(secId,stepId);setTimeout(startVoice,400);}
+function quickVoice(secId,stepId,subId){openStepEditor(secId,stepId,subId||null);setTimeout(startVoice,400);}
 
-function quickPhoto(secId,stepId){
+function quickPhoto(secId,stepId,subId){
   const inp=document.createElement('input');
   inp.type='file';inp.accept='image/*';inp.capture='environment';inp.multiple=true;inp.style.display='none';
   inp.onchange=e=>{
     const sec=S.cur.sections.find(s=>s.id===secId);if(!sec)return;
     const st=sec.steps.find(s=>s.id===stepId);if(!st)return;
-    if(!st.photos)st.photos=[];
+    var node=st;
+    if(subId){
+      if(!st.subs)st.subs=[];
+      node=st.subs.find(s=>s.id===subId);
+      if(!node)return;
+    }
+    if(!node.photos)node.photos=[];
     let done=0;
     Array.from(e.target.files).forEach(f=>{
       const r=new FileReader();
@@ -3068,7 +3145,7 @@ function quickPhoto(secId,stepId){
           if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
           const c=document.createElement('canvas');c.width=w;c.height=h;
           c.getContext('2d').drawImage(img,0,0,w,h);
-          st.photos.push({id:uid(),data:c.toDataURL('image/jpeg',0.88)});
+          node.photos.push({id:uid(),data:c.toDataURL('image/jpeg',0.88)});
           done++;if(done===e.target.files.length){syncCur();renderCapture();toast(t('toast_photo_added'));}
         };
         img.src=ev.target.result;
@@ -3078,6 +3155,24 @@ function quickPhoto(secId,stepId){
     inp.remove();
   };
   document.body.appendChild(inp);inp.click();
+}
+
+// ─── Réorganisation des sous-éléments (3e niveau) ─────────────────────────
+function moveSubUp(secId,stepId,subId){
+  var sec=S.cur.sections.find(function(s){return s.id===secId;});if(!sec)return;
+  var st=sec.steps.find(function(s){return s.id===stepId;});if(!st||!st.subs)return;
+  var idx=st.subs.findIndex(function(s){return s.id===subId;});
+  if(idx<=0)return;
+  var tmp=st.subs[idx-1];st.subs[idx-1]=st.subs[idx];st.subs[idx]=tmp;
+  syncCur();renderCapture();
+}
+function moveSubDown(secId,stepId,subId){
+  var sec=S.cur.sections.find(function(s){return s.id===secId;});if(!sec)return;
+  var st=sec.steps.find(function(s){return s.id===stepId;});if(!st||!st.subs)return;
+  var idx=st.subs.findIndex(function(s){return s.id===subId;});
+  if(idx<0||idx>=st.subs.length-1)return;
+  var tmp=st.subs[idx+1];st.subs[idx+1]=st.subs[idx];st.subs[idx]=tmp;
+  syncCur();renderCapture();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -3221,46 +3316,94 @@ async function generateAI(){
   if(!apiKey){toast('Enter your GitHub token in Settings ⚙️');go('settings');return;}
   const p=S.cur;
   if(!p||!p.sections.length){toast('Add sections and steps first');return;}
+
+  // Rassembler tous les textes "feuilles" (étape sans sous-élément, ou chaque
+  // sous-élément) — c'est CE texte, et lui seul, qui sera corrigé par l'IA.
+  // La structure (sections/étapes/photos) ne passe jamais par l'IA: elle vient
+  // directement des données, donc les photos restent toujours associées à la
+  // bonne étape, quoi qu'il arrive.
+  var leaves=[];
+  p.sections.forEach(function(sec,si){
+    sec.steps.forEach(function(st,idx){
+      if(st.subs&&st.subs.length){
+        st.subs.forEach(function(sub,sidx){
+          var raw=sub.text||sub.voice||'';
+          if(raw.trim()) leaves.push({node:sub,key:'s'+si+'_'+idx+'_'+sidx,text:raw});
+        });
+      } else {
+        var raw=st.text||st.voice||'';
+        if(raw.trim()) leaves.push({node:st,key:'s'+si+'_'+idx,text:raw});
+      }
+    });
+  });
+
+  if(!leaves.length){toast('Add some text to your steps first');return;}
+
   showOverlay('Generating with AI...');
-  const ctx='You are a technical writer for Magnetic Solution, a manufacturing company.\n'
-    +'Write a complete, professional manufacturing procedure in ENGLISH ONLY.\n\n'
-    +'PROCEDURE INFO:\n'
-    +'Title: '+p.title+'\nReference: '+p.ref+'\nOperator: '+p.op+'\nCategory: '+p.cat+'\nDate: '+new Date().toLocaleDateString('en-GB')+'\n\n'
-    +'CAPTURED CONTENT (translate any French to English):\n'
-    +p.sections.map(function(s,si){
-      return '=== SECTION '+roman(si+1)+': '+s.title+' ===\n'
-        +s.steps.map(function(st,idx){
-          return 'Step '+(idx+1)+':\n'
-            +'  Notes: '+(st.text||st.voice||'(empty)')+'\n'
-            +'  Photos: '+(st.photos?st.photos.length:0)+' photo(s)';
-        }).join('\n');
-    }).join('\n\n')+'\n\n'
-    +'STRICT OUTPUT FORMAT — follow exactly:\n'
-    +'- Start directly with the first section, no title header, no preamble\n'
-    +'- Sections: EXACTLY "I. Title" "II. Title" "III. Title" (Roman numeral + dot + space + title)\n'
-    +'- Steps: EXACTLY "1. instruction" "2. instruction" (number + dot + space + text)\n'
-    +'- Sub-items: "- item" (dash + space)\n'
-    +'- NO markdown: no ##, no **, no ---, no _\n'
-    +'- Add "(see photo)" at end of steps that have photos\n'
-    +'- Translate any French content to English\n\n'
-    +'Output the procedure now:';
+
+  const payload=leaves.map(function(l){return {id:l.key,text:l.text};});
+  const ctx='You are a technical writer correcting manufacturing procedure notes for Magnetic Solution.\n'
+    +'For EACH item in the JSON array below, correct spelling, grammar and vocabulary only. '
+    +'Keep the SAME language as the original text for that item — never translate. '
+    +'Keep the exact same meaning and level of detail: do not add or remove information, '
+    +'do not add labels like "Notes:" or "(see photo)", do not add numbering. '
+    +'Just return a clear, concise, professional version of the same instruction.\n\n'
+    +'ITEMS:\n'+JSON.stringify(payload)+'\n\n'
+    +'Respond with ONLY a raw JSON object mapping each id to its corrected text, e.g. '
+    +'{"'+payload[0].id+'":"corrected text"}. No markdown, no code fences, no explanation.';
 
   try{
     const res=await fetch('https://models.inference.ai.azure.com/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({model:'gpt-4o-mini',max_tokens:2048,messages:[{role:'user',content:ctx}]})
+      body:JSON.stringify({model:'gpt-4o-mini',max_tokens:4096,messages:[{role:'user',content:ctx}]})
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'API error '+res.status);}
     const data=await res.json();
-    const txt=data.choices[0].message.content;
-    p.genText=txt;p.status='generated';syncCur();
+    var corrections={};
+    try{
+      var raw=data.choices[0].message.content.trim();
+      raw=raw.replace(/^```(?:json)?\s*/,'').replace(/```\s*$/,'');
+      corrections=JSON.parse(raw);
+    }catch(e){
+      console.warn('generateAI: réponse IA non parseable, textes originaux conservés',e);
+      toast('IA: réponse inattendue, texte original conservé');
+    }
+    leaves.forEach(function(l){
+      if(corrections[l.key]) l.node.aiText=corrections[l.key];
+    });
+    p.status='generated';
+    p.genText=_buildPreviewText(p); // assemblage lisible pour l'écran de révision uniquement
+    syncCur();
     hideOverlay();
-    document.getElementById('review-display').textContent=txt;
-    document.getElementById('review-edit').value=txt;
+    document.getElementById('review-display').textContent=p.genText;
+    document.getElementById('review-edit').value=p.genText;
     renderReviewPhotos();
     go('review');
   }catch(err){hideOverlay();toast('Error: '+err.message);console.error(err);}
+}
+
+// Assemble un texte lisible depuis la structure réelle, pour l'écran de révision
+// uniquement. Ce texte n'est PAS reparsé — il ne sert qu'à donner une vue
+// d'ensemble rapide avant export. L'export Word utilise toujours directement
+// sections/étapes/sous-éléments (aiText||text), jamais ce texte assemblé.
+function _buildPreviewText(p){
+  var lines=[];
+  p.sections.forEach(function(sec,si){
+    lines.push(roman(si+1)+'. '+(sec.title||''));
+    sec.steps.forEach(function(st,idx){
+      if(st.subs&&st.subs.length){
+        if(st.aiText||st.text) lines.push((idx+1)+'. '+(st.aiText||st.text||''));
+        st.subs.forEach(function(sub,sidx){
+          lines.push((idx+1)+'.'+String.fromCharCode(65+sidx)+'. '+(sub.aiText||sub.text||''));
+        });
+      } else {
+        lines.push((idx+1)+'. '+(st.aiText||st.text||''));
+      }
+    });
+    lines.push('');
+  });
+  return lines.join('\n').trim();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -3287,6 +3430,18 @@ function renderReviewPhotos(){
           ${st.text?`<div style="font-size:12px;color:var(--muted);margin-top:4px">${esc(st.text.slice(0,80))}${st.text.length>80?'…':''}</div>`:''}
         </div>`;
       }
+      (st.subs||[]).forEach((sub,sidx)=>{
+        if(sub.photos&&sub.photos.length){
+          hasPhotos=true;
+          html+=`<div style="margin-bottom:12px">
+            <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">${roman(si+1)}.${idx+1}.${String.fromCharCode(65+sidx)} — ${esc(sec.title)}</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+              ${sub.photos.map(ph=>`<img src="${ph.data}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--border)">`).join('')}
+            </div>
+            ${sub.text?`<div style="font-size:12px;color:var(--muted);margin-top:4px">${esc(sub.text.slice(0,80))}${sub.text.length>80?'…':''}</div>`:''}
+          </div>`;
+        }
+      });
     });
   });
 
@@ -3304,7 +3459,6 @@ function openPreview(){
   var ref=document.getElementById('preview-ref');
   if(ref) ref.textContent=p.ref||'';
 
-  var txt=p.genText||'';
   var sections=p.sections||[];
   var html='';
 
@@ -3315,82 +3469,39 @@ function openPreview(){
     +'<div style="font-size:13px;color:var(--muted);margin-top:4px">'+esc(p.ref||'')+(p.op?' · '+esc(p.op):'')+'</div>'
     +'</div>';
 
-  if(txt){
-    // ── Mode genText : parser le texte généré par IA ──────────────
-    var cleanTxt=txt.replace(/[*]{2}(.*?)[*]{2}/g,'$1').replace(/[*](.*?)[*]/g,'$1');
-    var secIdx=-1;
-    var stepIdx=0;
-
-    // TOC
-    var secTitles=[];
-    cleanTxt.split('\n').forEach(function(line){
-      var c=line.trim().replace(/^#{1,3}\s*/,'');
-      if(/^(I{1,3}|IV|V|VI{1,3}|IX|X)\. /i.test(c)) secTitles.push(c);
-    });
-    if(secTitles.length>0){
-      html+='<div style="background:#F8FAFF;border-radius:10px;padding:14px 16px;margin-bottom:20px;border-left:4px solid var(--blue)">'
-        +'<div style="font-size:12px;font-weight:800;color:var(--blue);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Sommaire</div>';
-      secTitles.forEach(function(t){
-        html+='<div style="font-size:13px;padding:3px 0;border-bottom:1px dotted var(--border)">'+esc(t)+'</div>';
+  function renderLeaf(label,node){
+    var txt=node.aiText||node.text||'';
+    var photos=node.photos||[];
+    var out='<div style="background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:6px;border:1px solid var(--border)">'
+      +'<div style="font-size:13px;font-weight:600">'+esc(label)+' '+esc(txt)+'</div>';
+    if(photos.length){
+      out+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">';
+      photos.forEach(function(ph){
+        if(ph.data) out+='<img src="'+ph.data+'" style="max-width:120px;max-height:90px;border-radius:6px;object-fit:cover;border:1px solid var(--border)">';
       });
-      html+='</div>';
+      out+='</div>';
     }
+    out+='</div>';
+    return out;
+  }
 
-    // Content
-    cleanTxt.split('\n').forEach(function(line){
-      var t=line.trim();
-      if(!t) return;
-      var clean=t.replace(/^#{1,3}\s*/,'');
-      if(/^(I{1,3}|IV|V|VI{1,3}|IX|X)\. /i.test(clean)){
-        secIdx++; stepIdx=0;
-        html+='<div style="margin-top:20px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--blue)">'
-          +'<span style="font-size:15px;font-weight:800;color:var(--blue)">'+esc(clean)+'</span></div>';
-      } else if(/^\d+[.)]\s/.test(t)){
-        var sec=sections[secIdx];
-        var st=sec?sec.steps[stepIdx]:null;
-        stepIdx++;
-        var photos=(st&&st.photos&&st.photos.length)?st.photos:[];
-        html+='<div style="background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:8px;border:1px solid var(--border);border-left:3px solid var(--blue-pale)">'
-          +'<div style="font-size:13px;font-weight:600;margin-bottom:'+(photos.length?'8':'0')+'px">'+esc(t)+'</div>';
-        if(photos.length){
-          html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">';
-          photos.forEach(function(ph){
-            if(ph.data) html+='<img src="'+ph.data+'" style="max-width:120px;max-height:90px;border-radius:6px;border:1px solid var(--border);object-fit:cover">';
-          });
-          html+='</div>';
-        }
-        html+='</div>';
-      } else if(/^[-•]\s/.test(t)){
-        html+='<div style="padding:3px 12px;font-size:13px;color:var(--muted)">• '+esc(t.slice(2))+'</div>';
-      } else {
-        html+='<div style="font-size:12px;color:var(--muted);padding:4px 0">'+esc(clean)+'</div>';
-      }
-    });
-
-  } else if(sections.length>0){
-    // ── Mode sections brutes : pas encore de genText ──────────────
-    html+='<div style="background:#FFF8E1;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#856404">'
-      +'Document non encore généré par IA — affichage des étapes brutes.</div>';
+  if(sections.length>0){
     sections.forEach(function(sec,si){
       html+='<div style="margin-top:16px;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid var(--blue)">'
-        +'<span style="font-size:14px;font-weight:800;color:var(--blue)">'+(si+1)+'. '+esc(sec.title||'Section')+'</span></div>';
-      (sec.steps||[]).forEach(function(st,sti){
-        var photos=st.photos||[];
-        html+='<div style="background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:6px;border:1px solid var(--border)">'
-          +'<div style="font-size:13px;font-weight:600">'+(sti+1)+'. '+esc(st.text||'')+'</div>';
-        if(photos.length){
-          html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">';
-          photos.forEach(function(ph){
-            if(ph.data) html+='<img src="'+ph.data+'" style="max-width:120px;max-height:90px;border-radius:6px;object-fit:cover">';
+        +'<span style="font-size:14px;font-weight:800;color:var(--blue)">'+roman(si+1)+'. '+esc(sec.title||'Section')+'</span></div>';
+      (sec.steps||[]).forEach(function(st,idx){
+        if(st.subs&&st.subs.length){
+          if(st.text||st.aiText) html+=renderLeaf((idx+1)+'.',st);
+          st.subs.forEach(function(sub,sidx){
+            html+=renderLeaf((idx+1)+'.'+String.fromCharCode(65+sidx)+'.',sub);
           });
-          html+='</div>';
+        } else {
+          html+=renderLeaf((idx+1)+'.',st);
         }
-        html+='</div>';
       });
     });
-
   } else {
-    html+='<div style="text-align:center;color:var(--muted);padding:40px">Aucun contenu — ajoutez des étapes ou générez via AI Review.</div>';
+    html+='<div style="text-align:center;color:var(--muted);padding:40px">Aucun contenu — ajoutez des étapes.</div>';
   }
 
   var el=document.getElementById('preview-content');
@@ -3400,8 +3511,7 @@ function openPreview(){
 
 async function exportWord(){
   const p=S.cur;
-  const txt=document.getElementById('review-edit').value;
-  p.genText=txt;p.status='generating';
+  p.status='generating';
   // Save locally only — exportWord handles GitHub push explicitly below
   if(S.curFolderContext){
     var _fprocs=getFolderProcs(S.curFolderContext);
@@ -3417,7 +3527,7 @@ async function exportWord(){
       if(e&&e.name==='QuotaExceededError'){
         // Même allègement photo que saveProcs(), pour ne pas planter ici aussi
         var slim=JSON.parse(JSON.stringify(_procs));
-        slim.forEach(function(proc){(proc.sections||[]).forEach(function(sec){(sec.steps||[]).forEach(function(st){(st.photos||[]).forEach(function(ph){ph.data='';});});});});
+        slim.forEach(function(proc){(proc.sections||[]).forEach(function(sec){(sec.steps||[]).forEach(function(st){(st.photos||[]).forEach(function(ph){ph.data='';});(st.subs||[]).forEach(function(sub){(sub.photos||[]).forEach(function(ph){ph.data='';});});});});});
         try{localStorage.setItem('ms_procs',JSON.stringify(slim));}catch(e2){console.warn('exportWord: échec cache local même allégé',e2);}
       } else console.warn('exportWord cache error:',e);
     }
@@ -3929,8 +4039,8 @@ async function openFolderProcReview(procId){
     hideOverlay();
   }
   go('review');
-  document.getElementById('review-display').textContent=S.cur.genText||'';
-  document.getElementById('review-edit').value=S.cur.genText||'';
+  document.getElementById('review-display').textContent=S.cur.genText||_buildPreviewText(S.cur);
+  document.getElementById('review-edit').value=S.cur.genText||_buildPreviewText(S.cur);
   renderReviewPhotos();
 }
 
