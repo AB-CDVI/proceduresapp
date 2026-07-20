@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.85</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.87</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -1199,7 +1199,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.85 — Architecture séparée
+// GITHUB SYNC v1.87 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -2898,26 +2898,13 @@ function syncCur(){
 // CAPTURE
 // ═══════════════════════════════════════════════════════
 function roman(n){const v=[10,'X',9,'IX',5,'V',4,'IV',1,'I'];let r='';for(let i=0;i<v.length;i+=2)while(n>=v[i]){r+=v[i+1];n-=v[i];}return r;}
-// letterFor(1)='A', letterFor(2)='B'... Le contenu propre d'une étape compte
-// désormais comme la lettre A ; ses sous-éléments continuent B, C, D...
+// letterFor(1)='A', letterFor(2)='B'... Une étape = section.lettre (sa position
+// parmi les étapes de la section). Un sous-élément = étape.numéro (sa position
+// parmi les sous-éléments de CETTE étape) — ex: 2.A puis ses sous-éléments
+// 2.A.1, 2.A.2 ; l'étape suivante repart à 2.B (pas de compteur continu).
 function letterFor(n){return String.fromCharCode(64+n);}
-// Position (1-based) d'une feuille (étape elle-même, ou l'un de ses sous-éléments)
-// dans TOUTE la section — la lettre est continue sur la section entière, elle ne
-// redémarre jamais à zéro à chaque étape (ex: section avec 2 étapes ayant chacune
-// 1 sous-élément donne A, B puis C, D — pas A, B puis A, B).
-function leafPosition(sec,stepId,subId){
-  var pos=0;
-  for(var i=0;i<sec.steps.length;i++){
-    var st=sec.steps[i];
-    pos++;
-    if(st.id===stepId&&!subId)return pos;
-    for(var j=0;j<(st.subs||[]).length;j++){
-      pos++;
-      if(st.id===stepId&&st.subs[j].id===subId)return pos;
-    }
-  }
-  return pos;
-}
+function stepLabel(si,idx){return (si+1)+'.'+letterFor(idx+1);}
+function subLabel(si,idx,subIdx){return stepLabel(si,idx)+'.'+(subIdx+1);}
 
 function renderCapture(){
   const p=S.cur;if(!p)return;
@@ -2940,7 +2927,7 @@ function renderCapture(){
     ${sec.steps.map((st,idx)=>`
       <div class="step-card">
         <div class="step-top" onclick="editStep('${sec.id}','${st.id}')">
-          <div class="step-n">${si+1}.${letterFor(leafPosition(sec,st.id,null))}</div>
+          <div class="step-n">${stepLabel(si,idx)}</div>
           <div style="flex:1">
             <div class="step-txt ${!st.text?'empty':''}">${st.text?esc(st.text.slice(0,90))+(st.text.length>90?'…':''):'Tap to add content...'}</div>
             <div class="step-tags">
@@ -2960,7 +2947,7 @@ function renderCapture(){
         ${(st.subs&&st.subs.length)?st.subs.map((sub,sidx)=>`
         <div class="step-card" style="margin-left:22px;border-left:3px solid var(--blue-pale)">
           <div class="step-top" onclick="editSub('${sec.id}','${st.id}','${sub.id}')">
-            <div class="step-n" style="background:var(--blue-pale);color:var(--blue)">${si+1}.${letterFor(leafPosition(sec,st.id,sub.id))}</div>
+            <div class="step-n" style="background:var(--blue-pale);color:var(--blue)">${subLabel(si,idx,sidx)}</div>
             <div style="flex:1">
               <div class="step-txt ${!sub.text?'empty':''}">${sub.text?esc(sub.text.slice(0,90))+(sub.text.length>90?'…':''):'Tap to add content...'}</div>
               <div class="step-tags">
@@ -2979,7 +2966,7 @@ function renderCapture(){
           </div>
         </div>`).join(''):''}
         <div class="add-row" style="margin-left:22px;padding:6px 0 10px">
-          <button class="btn btn-s btn-sm" onclick="addSubItem('${sec.id}','${st.id}')">＋ ${si+1}.${letterFor(leafPosition(sec,st.id,null)+((st.subs&&st.subs.length)||0)+1)} — sous-élément</button>
+          <button class="btn btn-s btn-sm" onclick="addSubItem('${sec.id}','${st.id}')">＋ ${subLabel(si,idx,(st.subs&&st.subs.length)||0)} — sous-élément</button>
         </div>
       </div>`).join('')}
     <div class="add-row">
@@ -2988,7 +2975,7 @@ function renderCapture(){
 }
 
 // ─── Réorganisation des sections et sous-sections ─────────
-// La numérotation (chiffre de section + lettre continue via leafPosition) est
+// La numérotation (stepLabel: section.lettre, subLabel: étape.numéro) est
 // calculée à partir de la position dans le tableau — donc échanger deux éléments
 // suffit à mettre à jour tous les numéros automatiquement au rendu suivant.
 function moveSectionUp(secId){
@@ -3098,8 +3085,9 @@ function openStepEditor(secId,stepId,subId){
     if(!node)return;
   }
   S.curSecId=secId;S.curStepId=stepId;S.curSubId=subId||null;S.curStep=node;
-  const si=S.cur.sections.indexOf(sec)+1;
-  var hdr=`${si}.${letterFor(leafPosition(sec,stepId,subId))}`;
+  const si0=S.cur.sections.indexOf(sec);
+  const idx0=sec.steps.indexOf(st);
+  var hdr=subId?subLabel(si0,idx0,st.subs.indexOf(node)):stepLabel(si0,idx0);
   document.getElementById('step-hdr').textContent=`${hdr} — ${sec.title}`;
   document.getElementById('step-txt').value=node.text||'';
   const vb=document.getElementById('voice-box');
@@ -3406,17 +3394,14 @@ function _buildPreviewText(p){
   var lines=[];
   p.sections.forEach(function(sec,si){
     lines.push((si+1)+'. '+(sec.title||''));
-    var n=0;
-    sec.steps.forEach(function(st){
-      n++;
+    sec.steps.forEach(function(st,idx){
       if(st.subs&&st.subs.length){
-        if(st.aiText||st.text) lines.push((si+1)+'.'+letterFor(n)+' '+(st.aiText||st.text||''));
-        st.subs.forEach(function(sub){
-          n++;
-          lines.push((si+1)+'.'+letterFor(n)+' '+(sub.aiText||sub.text||''));
+        if(st.aiText||st.text) lines.push(stepLabel(si,idx)+' '+(st.aiText||st.text||''));
+        st.subs.forEach(function(sub,sidx){
+          lines.push(subLabel(si,idx,sidx)+' '+(sub.aiText||sub.text||''));
         });
       } else {
-        lines.push((si+1)+'.'+letterFor(n)+' '+(st.aiText||st.text||''));
+        lines.push(stepLabel(si,idx)+' '+(st.aiText||st.text||''));
       }
     });
     lines.push('');
@@ -3441,7 +3426,7 @@ function renderReviewPhotos(){
       if(st.photos&&st.photos.length){
         hasPhotos=true;
         html+=`<div style="margin-bottom:12px">
-          <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">${si+1}.${letterFor(leafPosition(sec,st.id,null))} — ${esc(sec.title)}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">${stepLabel(si,idx)} — ${esc(sec.title)}</div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
             ${st.photos.map(ph=>`<img src="${ph.data}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--border)">`).join('')}
           </div>
@@ -3452,7 +3437,7 @@ function renderReviewPhotos(){
         if(sub.photos&&sub.photos.length){
           hasPhotos=true;
           html+=`<div style="margin-bottom:12px">
-            <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">${si+1}.${letterFor(leafPosition(sec,st.id,sub.id))} — ${esc(sec.title)}</div>
+            <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">${subLabel(si,idx,sidx)} — ${esc(sec.title)}</div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
               ${sub.photos.map(ph=>`<img src="${ph.data}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--border)">`).join('')}
             </div>
@@ -3507,17 +3492,14 @@ function openPreview(){
     sections.forEach(function(sec,si){
       html+='<div style="margin-top:16px;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid var(--blue)">'
         +'<span style="font-size:14px;font-weight:800;color:var(--blue)">'+(si+1)+'. '+esc(sec.title||'Section')+'</span></div>';
-      var n=0;
-      (sec.steps||[]).forEach(function(st){
-        n++;
+      (sec.steps||[]).forEach(function(st,idx){
         if(st.subs&&st.subs.length){
-          if(st.text||st.aiText) html+=renderLeaf((si+1)+'.'+letterFor(n)+'.',st);
-          st.subs.forEach(function(sub){
-            n++;
-            html+=renderLeaf((si+1)+'.'+letterFor(n)+'.',sub);
+          if(st.text||st.aiText) html+=renderLeaf(stepLabel(si,idx)+'.',st);
+          st.subs.forEach(function(sub,sidx){
+            html+=renderLeaf(subLabel(si,idx,sidx)+'.',sub);
           });
         } else {
-          html+=renderLeaf((si+1)+'.'+letterFor(n)+'.',st);
+          html+=renderLeaf(stepLabel(si,idx)+'.',st);
         }
       });
     });
@@ -3660,8 +3642,21 @@ async function downloadDocx(p,token){
     });
     if(!resp.ok)throw new Error('Download failed: '+resp.status);
     var meta=await resp.json();
-    // GitHub returns file content as base64
-    var b64=meta.content.replace(/\s/g,'');
+    // GitHub returns file content as base64 — MAIS l'API Contents ne renvoie ce
+    // champ que pour les fichiers de moins de 1 Mo. Au-delà (facile à dépasser
+    // avec plusieurs photos dans le docx), 'content' est vide et il faut passer
+    // par l'API Git Blobs (jusqu'à 100 Mo) via le sha du fichier.
+    var b64;
+    if(meta.content){
+      b64=meta.content.replace(/\s/g,'');
+    } else {
+      var blobResp=await fetch('https://api.github.com/repos/AB-CDVI/proceduresapp-data/git/blobs/'+meta.sha,{
+        headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github.v3+json'}
+      });
+      if(!blobResp.ok)throw new Error('Download failed (blob): '+blobResp.status);
+      var blobMeta=await blobResp.json();
+      b64=blobMeta.content.replace(/\s/g,'');
+    }
     var binary=atob(b64);
     var bytes=new Uint8Array(binary.length);
     for(var i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
