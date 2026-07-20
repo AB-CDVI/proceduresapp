@@ -203,7 +203,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.83</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.84</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -1199,7 +1199,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.83 — Architecture séparée
+// GITHUB SYNC v1.84 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -2898,6 +2898,9 @@ function syncCur(){
 // CAPTURE
 // ═══════════════════════════════════════════════════════
 function roman(n){const v=[10,'X',9,'IX',5,'V',4,'IV',1,'I'];let r='';for(let i=0;i<v.length;i+=2)while(n>=v[i]){r+=v[i+1];n-=v[i];}return r;}
+// letterFor(1)='A', letterFor(2)='B'... Le contenu propre d'une étape compte
+// désormais comme la lettre A ; ses sous-éléments continuent B, C, D...
+function letterFor(n){return String.fromCharCode(64+n);}
 
 function renderCapture(){
   const p=S.cur;if(!p)return;
@@ -2920,7 +2923,7 @@ function renderCapture(){
     ${sec.steps.map((st,idx)=>`
       <div class="step-card">
         <div class="step-top" onclick="editStep('${sec.id}','${st.id}')">
-          <div class="step-n">${idx+1}</div>
+          <div class="step-n">${idx+1}.A</div>
           <div style="flex:1">
             <div class="step-txt ${!st.text?'empty':''}">${st.text?esc(st.text.slice(0,90))+(st.text.length>90?'…':''):'Tap to add content...'}</div>
             <div class="step-tags">
@@ -2940,7 +2943,7 @@ function renderCapture(){
         ${(st.subs&&st.subs.length)?st.subs.map((sub,sidx)=>`
         <div class="step-card" style="margin-left:22px;border-left:3px solid var(--blue-pale)">
           <div class="step-top" onclick="editSub('${sec.id}','${st.id}','${sub.id}')">
-            <div class="step-n" style="background:var(--blue-pale);color:var(--blue)">${idx+1}.${String.fromCharCode(65+sidx)}</div>
+            <div class="step-n" style="background:var(--blue-pale);color:var(--blue)">${idx+1}.${letterFor(sidx+2)}</div>
             <div style="flex:1">
               <div class="step-txt ${!sub.text?'empty':''}">${sub.text?esc(sub.text.slice(0,90))+(sub.text.length>90?'…':''):'Tap to add content...'}</div>
               <div class="step-tags">
@@ -2959,7 +2962,7 @@ function renderCapture(){
           </div>
         </div>`).join(''):''}
         <div class="add-row" style="margin-left:22px;padding:6px 0 10px">
-          <button class="btn btn-s btn-sm" onclick="addSubItem('${sec.id}','${st.id}')">＋ ${idx+1}.${String.fromCharCode(65+((st.subs&&st.subs.length)||0))} — sous-élément</button>
+          <button class="btn btn-s btn-sm" onclick="addSubItem('${sec.id}','${st.id}')">＋ ${idx+1}.${letterFor(((st.subs&&st.subs.length)||0)+2)} — sous-élément</button>
         </div>
       </div>`).join('')}
     <div class="add-row">
@@ -3080,11 +3083,7 @@ function openStepEditor(secId,stepId,subId){
   S.curSecId=secId;S.curStepId=stepId;S.curSubId=subId||null;S.curStep=node;
   const si=S.cur.sections.indexOf(sec)+1;
   const idx=sec.steps.indexOf(st)+1;
-  var hdr=`${roman(si)}.${idx}`;
-  if(subId){
-    var subIdx=st.subs.indexOf(node);
-    hdr+='.'+String.fromCharCode(65+subIdx);
-  }
+  var hdr=`${roman(si)}.${idx}.${subId?letterFor(st.subs.indexOf(node)+2):'A'}`;
   document.getElementById('step-hdr').textContent=`${hdr} — ${sec.title}`;
   document.getElementById('step-txt').value=node.text||'';
   const vb=document.getElementById('voice-box');
@@ -3393,12 +3392,12 @@ function _buildPreviewText(p){
     lines.push(roman(si+1)+'. '+(sec.title||''));
     sec.steps.forEach(function(st,idx){
       if(st.subs&&st.subs.length){
-        if(st.aiText||st.text) lines.push((idx+1)+'. '+(st.aiText||st.text||''));
+        if(st.aiText||st.text) lines.push((idx+1)+'.A '+(st.aiText||st.text||''));
         st.subs.forEach(function(sub,sidx){
-          lines.push((idx+1)+'.'+String.fromCharCode(65+sidx)+'. '+(sub.aiText||sub.text||''));
+          lines.push((idx+1)+'.'+letterFor(sidx+2)+' '+(sub.aiText||sub.text||''));
         });
       } else {
-        lines.push((idx+1)+'. '+(st.aiText||st.text||''));
+        lines.push((idx+1)+'.A '+(st.aiText||st.text||''));
       }
     });
     lines.push('');
@@ -3423,7 +3422,7 @@ function renderReviewPhotos(){
       if(st.photos&&st.photos.length){
         hasPhotos=true;
         html+=`<div style="margin-bottom:12px">
-          <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">${roman(si+1)}.${idx+1} — ${esc(sec.title)}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">${roman(si+1)}.${idx+1}.A — ${esc(sec.title)}</div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
             ${st.photos.map(ph=>`<img src="${ph.data}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--border)">`).join('')}
           </div>
@@ -3434,7 +3433,7 @@ function renderReviewPhotos(){
         if(sub.photos&&sub.photos.length){
           hasPhotos=true;
           html+=`<div style="margin-bottom:12px">
-            <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">${roman(si+1)}.${idx+1}.${String.fromCharCode(65+sidx)} — ${esc(sec.title)}</div>
+            <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">${roman(si+1)}.${idx+1}.${letterFor(sidx+2)} — ${esc(sec.title)}</div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
               ${sub.photos.map(ph=>`<img src="${ph.data}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--border)">`).join('')}
             </div>
@@ -3491,12 +3490,12 @@ function openPreview(){
         +'<span style="font-size:14px;font-weight:800;color:var(--blue)">'+roman(si+1)+'. '+esc(sec.title||'Section')+'</span></div>';
       (sec.steps||[]).forEach(function(st,idx){
         if(st.subs&&st.subs.length){
-          if(st.text||st.aiText) html+=renderLeaf((idx+1)+'.',st);
+          if(st.text||st.aiText) html+=renderLeaf((idx+1)+'.A.',st);
           st.subs.forEach(function(sub,sidx){
-            html+=renderLeaf((idx+1)+'.'+String.fromCharCode(65+sidx)+'.',sub);
+            html+=renderLeaf((idx+1)+'.'+letterFor(sidx+2)+'.',sub);
           });
         } else {
-          html+=renderLeaf((idx+1)+'.',st);
+          html+=renderLeaf((idx+1)+'.A.',st);
         }
       });
     });
