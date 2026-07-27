@@ -211,7 +211,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.90</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.91</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -551,9 +551,9 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     <div class="card">
       <div class="card-title" data-i18n="notes">✍️ Notes</div>
       <div class="fmt-toolbar">
-        <button type="button" class="fmt-btn" onclick="applyBold()" title="Gras"><b>B</b></button>
-        <button type="button" class="fmt-btn" onclick="applyBulletToggle()" title="Puces">≡•</button>
-        <button type="button" class="fmt-btn" onclick="applyHighlight()" title="Important (surligné)">🖍</button>
+        <button type="button" class="fmt-btn" onmousedown="event.preventDefault()" onclick="applyBold()" title="Gras"><b>B</b></button>
+        <button type="button" class="fmt-btn" onmousedown="event.preventDefault()" onclick="applyBulletToggle()" title="Puces">≡•</button>
+        <button type="button" class="fmt-btn" onmousedown="event.preventDefault()" onclick="applyHighlight()" title="Important (surligné)">🖍</button>
         <select id="fmt-size-sel" class="fmt-btn fmt-size-sel" onchange="applyFontSize(this.value);this.value='';" title="Taille du texte">
           <option value="" selected disabled>Taille…</option>
           <option value="sm">Petit</option>
@@ -562,10 +562,10 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
           <option value="xl">Très grand</option>
         </select>
         <span class="fmt-sep"></span>
-        <button type="button" class="fmt-btn fmt-color" style="color:#CC0000" onclick="applyColor('red')" title="Rouge">●</button>
-        <button type="button" class="fmt-btn fmt-color" style="color:#1B3A6B" onclick="applyColor('blue')" title="Bleu">●</button>
-        <button type="button" class="fmt-btn fmt-color" style="color:#1F7A3D" onclick="applyColor('green')" title="Vert">●</button>
-        <button type="button" class="fmt-btn fmt-color" style="color:#000000" onclick="applyColor('black')" title="Noir (annuler la couleur)">●</button>
+        <button type="button" class="fmt-btn fmt-color" style="color:#CC0000" onmousedown="event.preventDefault()" onclick="applyColor('red')" title="Rouge">●</button>
+        <button type="button" class="fmt-btn fmt-color" style="color:#1B3A6B" onmousedown="event.preventDefault()" onclick="applyColor('blue')" title="Bleu">●</button>
+        <button type="button" class="fmt-btn fmt-color" style="color:#1F7A3D" onmousedown="event.preventDefault()" onclick="applyColor('green')" title="Vert">●</button>
+        <button type="button" class="fmt-btn fmt-color" style="color:#000000" onmousedown="event.preventDefault()" onclick="applyColor('black')" title="Noir (annuler la couleur)">●</button>
       </div>
       <div id="step-txt" class="fta rich-editor" contenteditable="true" data-i18n="notes_ph" data-i18n-attr="data-placeholder"></div>
     </div>
@@ -1224,7 +1224,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.90 — Architecture séparée
+// GITHUB SYNC v1.91 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -3158,6 +3158,31 @@ function _setupRichEditor(el){
   });
 }
 
+// Sur mobile, toucher un bouton de la barre d'outils (ou ouvrir le menu de
+// taille) referme la sélection de texte AVANT que le clic ne soit traité —
+// c'est le navigateur qui fait ça, pas un bug de l'app. On mémorise donc en
+// continu la dernière sélection valide dans l'éditeur, et on la restaure au
+// début de chaque action de mise en forme si elle a été perdue.
+var _savedStepRange=null;
+document.addEventListener('selectionchange',function(){
+  var ta=document.getElementById('step-txt');
+  if(!ta)return;
+  var sel=window.getSelection();
+  if(sel.rangeCount&&!sel.getRangeAt(0).collapsed&&ta.contains(sel.anchorNode)){
+    _savedStepRange=sel.getRangeAt(0).cloneRange();
+  }
+});
+function _restoreStepSelection(){
+  var ta=document.getElementById('step-txt');
+  if(!ta)return;
+  var sel=window.getSelection();
+  if(sel.rangeCount&&!sel.getRangeAt(0).collapsed&&ta.contains(sel.anchorNode))return; // déjà valide
+  if(_savedStepRange){
+    sel.removeAllRanges();
+    sel.addRange(_savedStepRange.cloneRange());
+  }
+}
+
 // Enveloppe (ou remplace, si déjà mis en forme) la sélection courante dans un
 // <span> avec le style donné. On extrait d'abord le texte brut de la sélection
 // (perdant toute mise en forme précédente sur CETTE portion précise) avant de
@@ -3165,6 +3190,7 @@ function _setupRichEditor(el){
 // simplement en choisissant une nouvelle valeur (ex: cliquer sur noir après rouge).
 function applyInlineStyle(styleProps,isToggle){
   var ta=document.getElementById('step-txt');
+  _restoreStepSelection();
   var sel=window.getSelection();
   if(!sel.rangeCount||!ta.contains(sel.anchorNode)){ta.focus();return;}
   var range=sel.getRangeAt(0);
@@ -3233,6 +3259,7 @@ function applyFontSize(key){
 // une liste de pièces). Sur un simple curseur, insère juste "- " à cet endroit.
 function applyBulletToggle(){
   var ta=document.getElementById('step-txt');
+  _restoreStepSelection();
   var sel=window.getSelection();
   if(!sel.rangeCount||!ta.contains(sel.anchorNode)){ta.focus();return;}
   var range=sel.getRangeAt(0);
