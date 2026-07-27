@@ -48,6 +48,9 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .fmt-btn:active{background:var(--blue-pale)}
 .fmt-color{font-size:16px;padding:4px 7px}
 .fmt-sep{width:1px;height:18px;background:var(--border);margin:0 2px}
+.rich-editor{min-height:130px;max-height:320px;overflow-y:auto;outline:none;padding:10px 12px;border:1px solid var(--border);border-radius:10px}
+.rich-editor:empty:before{content:attr(data-placeholder);color:var(--muted);font-style:italic}
+.fmt-size-sel{font-family:inherit;color:var(--text)}
 
 /* LOGIN */
 .login-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:var(--blue)}
@@ -208,7 +211,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.88</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.89</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -548,16 +551,23 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     <div class="card">
       <div class="card-title" data-i18n="notes">✍️ Notes</div>
       <div class="fmt-toolbar">
-        <button type="button" class="fmt-btn" onclick="wrapSelection('**','**')" title="Gras"><b>B</b></button>
-        <button type="button" class="fmt-btn" onclick="toggleBulletLines()" title="Puces">≡•</button>
-        <button type="button" class="fmt-btn" onclick="wrapSelection('[[hl]]','[[/hl]]')" title="Important (surligné)">🖍</button>
-        <button type="button" class="fmt-btn" onclick="wrapSelection('[[size:lg]]','[[/size]]')" title="Texte plus grand">A+</button>
+        <button type="button" class="fmt-btn" onclick="applyBold()" title="Gras"><b>B</b></button>
+        <button type="button" class="fmt-btn" onclick="applyBulletToggle()" title="Puces">≡•</button>
+        <button type="button" class="fmt-btn" onclick="applyHighlight()" title="Important (surligné)">🖍</button>
+        <select id="fmt-size-sel" class="fmt-btn fmt-size-sel" onchange="applyFontSize(this.value);this.value='';" title="Taille du texte">
+          <option value="" selected disabled>Taille…</option>
+          <option value="sm">Petit</option>
+          <option value="normal">Normal</option>
+          <option value="lg">Grand</option>
+          <option value="xl">Très grand</option>
+        </select>
         <span class="fmt-sep"></span>
-        <button type="button" class="fmt-btn fmt-color" style="color:#CC0000" onclick="wrapSelection('[[color:red]]','[[/color]]')" title="Rouge">●</button>
-        <button type="button" class="fmt-btn fmt-color" style="color:#1B3A6B" onclick="wrapSelection('[[color:blue]]','[[/color]]')" title="Bleu">●</button>
-        <button type="button" class="fmt-btn fmt-color" style="color:#1F7A3D" onclick="wrapSelection('[[color:green]]','[[/color]]')" title="Vert">●</button>
+        <button type="button" class="fmt-btn fmt-color" style="color:#CC0000" onclick="applyColor('red')" title="Rouge">●</button>
+        <button type="button" class="fmt-btn fmt-color" style="color:#1B3A6B" onclick="applyColor('blue')" title="Bleu">●</button>
+        <button type="button" class="fmt-btn fmt-color" style="color:#1F7A3D" onclick="applyColor('green')" title="Vert">●</button>
+        <button type="button" class="fmt-btn fmt-color" style="color:#000000" onclick="applyColor('black')" title="Noir (annuler la couleur)">●</button>
       </div>
-      <textarea id="step-txt" class="fta" rows="6" data-i18n="notes_ph" data-i18n-attr="placeholder"></textarea>
+      <div id="step-txt" class="fta rich-editor" contenteditable="true" data-i18n="notes_ph" data-i18n-attr="data-placeholder"></div>
     </div>
   </div></div>
 
@@ -1214,7 +1224,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.88 — Architecture séparée
+// GITHUB SYNC v1.89 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -2920,6 +2930,14 @@ function roman(n){const v=[10,'X',9,'IX',5,'V',4,'IV',1,'I'];let r='';for(let i=
 function letterFor(n){return String.fromCharCode(64+n);}
 function stepLabel(si,idx){return (si+1)+'.'+letterFor(idx+1);}
 function subLabel(si,idx,subIdx){return stepLabel(si,idx)+'.'+(subIdx+1);}
+// Retire la syntaxe de mise en forme pour les aperçus courts (liste de capture...)
+function stripMarkup(text){
+  return (text||'')
+    .replace(/\*\*([\s\S]+?)\*\*/g,'$1')
+    .replace(/\[\[color:\w+\]\]([\s\S]+?)\[\[\/color\]\]/g,'$1')
+    .replace(/\[\[size:\w+\]\]([\s\S]+?)\[\[\/size\]\]/g,'$1')
+    .replace(/\[\[hl\]\]([\s\S]+?)\[\[\/hl\]\]/g,'$1');
+}
 
 function renderCapture(){
   const p=S.cur;if(!p)return;
@@ -2944,7 +2962,7 @@ function renderCapture(){
         <div class="step-top" onclick="editStep('${sec.id}','${st.id}')">
           <div class="step-n">${stepLabel(si,idx)}</div>
           <div style="flex:1">
-            <div class="step-txt ${!st.text?'empty':''}">${st.text?esc(st.text.slice(0,90))+(st.text.length>90?'…':''):'Tap to add content...'}</div>
+            <div class="step-txt ${!st.text?'empty':''}">${st.text?esc(stripMarkup(st.text).slice(0,90))+(st.text.length>90?'…':''):'Tap to add content...'}</div>
             <div class="step-tags">
               ${st.photos&&st.photos.length?`<span class="step-tag tag-photo">${st.photos.length} photo${st.photos.length>1?'s':''}</span>`:''}
               ${st.voice?`<span class="step-tag tag-voice">voix</span>`:''}
@@ -2964,7 +2982,7 @@ function renderCapture(){
           <div class="step-top" onclick="editSub('${sec.id}','${st.id}','${sub.id}')">
             <div class="step-n" style="background:var(--blue-pale);color:var(--blue)">${subLabel(si,idx,sidx)}</div>
             <div style="flex:1">
-              <div class="step-txt ${!sub.text?'empty':''}">${sub.text?esc(sub.text.slice(0,90))+(sub.text.length>90?'…':''):'Tap to add content...'}</div>
+              <div class="step-txt ${!sub.text?'empty':''}">${sub.text?esc(stripMarkup(sub.text).slice(0,90))+(sub.text.length>90?'…':''):'Tap to add content...'}</div>
               <div class="step-tags">
                 ${sub.photos&&sub.photos.length?`<span class="step-tag tag-photo">${sub.photos.length} photo${sub.photos.length>1?'s':''}</span>`:''}
                 ${sub.voice?`<span class="step-tag tag-voice">voix</span>`:''}
@@ -3104,7 +3122,9 @@ function openStepEditor(secId,stepId,subId){
   const idx0=sec.steps.indexOf(st);
   var hdr=subId?subLabel(si0,idx0,st.subs.indexOf(node)):stepLabel(si0,idx0);
   document.getElementById('step-hdr').textContent=`${hdr} — ${sec.title}`;
-  document.getElementById('step-txt').value=node.text||'';
+  var richEl=document.getElementById('step-txt');
+  richEl.innerHTML=markupToHtml(node.text||'');
+  _setupRichEditor(richEl);
   const vb=document.getElementById('voice-box');
   vb.textContent=node.voice||'Tap "Start" to begin...';
   vb.style.fontStyle=node.voice?'normal':'italic';
@@ -3112,42 +3132,166 @@ function openStepEditor(secId,stepId,subId){
   stopVoice();renderPhotoGrid();go('step');
 }
 
-// ─── Barre d'outils de mise en forme (zone de rédaction) ───────────────────
-// Insère une syntaxe légère directement dans le texte (ex: **gras**), que
-// generate.js sait interpréter pour produire le vrai formatage Word. Pas
-// d'éditeur riche complexe: on manipule juste la sélection du <textarea>,
-// fiable sur mobile et facile à maintenir.
-function wrapSelection(startTag,endTag){
-  var ta=document.getElementById('step-txt');
-  if(!ta)return;
-  var s=ta.selectionStart,e=ta.selectionEnd;
-  var val=ta.value;
-  var selected=val.slice(s,e);
-  ta.value=val.slice(0,s)+startTag+selected+endTag+val.slice(e);
-  var newS=s+startTag.length;
-  ta.focus();
-  ta.setSelectionRange(newS,newS+selected.length);
+// ─── Éditeur riche (zone de rédaction) ──────────────────────────────────────
+// L'utilisateur voit directement le gras/couleur/surlignage — pas de code
+// visible. En interne, on sérialise vers la même syntaxe légère qu'avant
+// (**gras**, [[color:x]]...[[/color]], etc.) pour rester compatible avec
+// generateAI() et generate.js, sans rien avoir à changer côté export.
+var RICH_COLORS={red:'#CC0000',blue:'#1B3A6B',green:'#1F7A3D',black:'#000000'};
+var RICH_SIZES={sm:'11px',normal:null,lg:'17px',xl:'20px'};
+
+function _setupRichEditor(el){
+  if(!el||el._richSetup)return;
+  el._richSetup=true;
+  el.addEventListener('keydown',function(e){
+    if(e.key==='Enter'){
+      e.preventDefault();
+      var sel=window.getSelection();
+      if(!sel.rangeCount)return;
+      var range=sel.getRangeAt(0);
+      range.deleteContents();
+      var br=document.createElement('br');
+      range.insertNode(br);
+      range.setStartAfter(br);range.collapse(true);
+      sel.removeAllRanges();sel.addRange(range);
+    }
+  });
 }
-function toggleBulletLines(){
+
+// Enveloppe (ou remplace, si déjà mis en forme) la sélection courante dans un
+// <span> avec le style donné. On extrait d'abord le texte brut de la sélection
+// (perdant toute mise en forme précédente sur CETTE portion précise) avant de
+// réenvelopper — ça évite l'empilement de styles et permet de "changer d'avis"
+// simplement en choisissant une nouvelle valeur (ex: cliquer sur noir après rouge).
+function applyInlineStyle(styleProps){
   var ta=document.getElementById('step-txt');
-  if(!ta)return;
-  var s=ta.selectionStart,e=ta.selectionEnd;
-  var val=ta.value;
-  var lineStart=val.lastIndexOf('\n',s-1)+1;
-  var lineEnd=val.indexOf('\n',e);
-  if(lineEnd===-1)lineEnd=val.length;
-  var block=val.slice(lineStart,lineEnd);
-  var lines=block.split('\n');
+  var sel=window.getSelection();
+  if(!sel.rangeCount||!ta.contains(sel.anchorNode)){ta.focus();return;}
+  var range=sel.getRangeAt(0);
+  if(range.collapsed)return; // rien de sélectionné, on ignore silencieusement
+  var frag=range.extractContents();
+  var text=_fragToText(frag);
+  if(!text){range.insertNode(frag);return;}
+  var span=document.createElement('span');
+  Object.keys(styleProps).forEach(function(k){span.style[k]=styleProps[k];});
+  span.textContent=text;
+  range.insertNode(span);
+  var newRange=document.createRange();
+  newRange.selectNodeContents(span);
+  sel.removeAllRanges();sel.addRange(newRange);
+  ta.focus();
+}
+function _fragToText(node){
+  var out='';
+  node.childNodes.forEach(function(n){
+    if(n.nodeType===3)out+=n.textContent;
+    else if(n.tagName==='BR')out+='\n';
+    else out+=_fragToText(n);
+  });
+  return out;
+}
+
+function applyBold(){applyInlineStyle({fontWeight:'bold'});}
+function applyHighlight(){applyInlineStyle({backgroundColor:'#fff59d'});}
+function applyColor(name){applyInlineStyle({color:RICH_COLORS[name]});}
+function applyFontSize(key){
+  if(key==='normal'){applyInlineStyle({fontSize:''});return;}
+  var px=RICH_SIZES[key];if(!px)return;
+  applyInlineStyle({fontSize:px});
+}
+
+// Puces: sur une sélection multi-lignes, préfixe/retire "- " sur chaque ligne
+// (la mise en forme existante dans la sélection est perdue — cas rare pour
+// une liste de pièces). Sur un simple curseur, insère juste "- " à cet endroit.
+function applyBulletToggle(){
+  var ta=document.getElementById('step-txt');
+  var sel=window.getSelection();
+  if(!sel.rangeCount||!ta.contains(sel.anchorNode)){ta.focus();return;}
+  var range=sel.getRangeAt(0);
+  if(range.collapsed){
+    range.insertNode(document.createTextNode('- '));
+    range.collapse(false);
+    sel.removeAllRanges();sel.addRange(range);
+    ta.focus();
+    return;
+  }
+  var frag=range.extractContents();
+  var text=_fragToText(frag);
+  var lines=text.split('\n');
   var allBulleted=lines.every(function(l){return l.trim()===''||/^[-•]\s/.test(l);});
   var newLines=lines.map(function(l){
     if(l.trim()==='')return l;
     if(allBulleted)return l.replace(/^[-•]\s*/,'');
     return /^[-•]\s/.test(l)?l:'- '+l;
   });
-  var newBlock=newLines.join('\n');
-  ta.value=val.slice(0,lineStart)+newBlock+val.slice(lineEnd);
+  var out=document.createDocumentFragment();
+  newLines.forEach(function(l,i){
+    if(i>0)out.appendChild(document.createElement('br'));
+    out.appendChild(document.createTextNode(l));
+  });
+  range.insertNode(out);
   ta.focus();
-  ta.setSelectionRange(lineStart,lineStart+newBlock.length);
+}
+
+// Texte stocké (**gras**, [[color:x]]...) → HTML affiché en direct dans l'éditeur.
+function markupToHtml(text){
+  text=text||'';
+  var esc=function(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
+  return text.split('\n').map(function(line){
+    line=esc(line);
+    line=line.replace(/\*\*([\s\S]+?)\*\*/g,'<span style="font-weight:bold">$1</span>');
+    line=line.replace(/\[\[color:(red|blue|green|black)\]\]([\s\S]+?)\[\[\/color\]\]/g,function(m,c,t){
+      return '<span style="color:'+RICH_COLORS[c]+'">'+t+'</span>';
+    });
+    line=line.replace(/\[\[size:(sm|lg|xl)\]\]([\s\S]+?)\[\[\/size\]\]/g,function(m,s,t){
+      return '<span style="font-size:'+RICH_SIZES[s]+'">'+t+'</span>';
+    });
+    line=line.replace(/\[\[hl\]\]([\s\S]+?)\[\[\/hl\]\]/g,'<span style="background-color:#fff59d">$1</span>');
+    return line;
+  }).join('<br>');
+}
+// HTML de l'éditeur → texte stocké (sens inverse), utilisé à la sauvegarde.
+function htmlToMarkup(el){
+  function colorToName(c){
+    c=(c||'').toLowerCase().replace(/\s/g,'');
+    var map={'#cc0000':'red','rgb(204,0,0)':'red','#1b3a6b':'blue','rgb(27,58,107)':'blue',
+      '#1f7a3d':'green','rgb(31,122,61)':'green','#000000':'black','rgb(0,0,0)':'black'};
+    return map[c]||null;
+  }
+  function sizeToKey(px){
+    px=parseInt(px);if(isNaN(px))return null;
+    if(px<=11)return 'sm';
+    if(px>=20)return 'xl';
+    if(px>=15)return 'lg';
+    return null;
+  }
+  function walk(node){
+    if(node.nodeType===3)return node.textContent;
+    if(node.nodeType!==1)return '';
+    if(node.tagName==='BR')return '\n';
+    if(node.tagName==='DIV'||node.tagName==='P'){
+      return Array.prototype.map.call(node.childNodes,walk).join('')+'\n';
+    }
+    if(node.tagName==='SPAN'||node.tagName==='B'||node.tagName==='STRONG'){
+      var inner=Array.prototype.map.call(node.childNodes,walk).join('');
+      if(!inner)return '';
+      var st=node.style||{};
+      if(node.tagName==='B'||node.tagName==='STRONG'||st.fontWeight==='bold'||st.fontWeight==='700')return '**'+inner+'**';
+      var bg=(st.backgroundColor||'').replace(/\s/g,'');
+      if(bg==='rgb(255,245,157)'||bg==='#fff59d')return '[[hl]]'+inner+'[[/hl]]';
+      if(st.color){
+        var name=colorToName(st.color);
+        if(name)return '[[color:'+name+']]'+inner+'[[/color]]';
+      }
+      if(st.fontSize){
+        var key=sizeToKey(st.fontSize);
+        if(key)return '[[size:'+key+']]'+inner+'[[/size]]';
+      }
+      return inner;
+    }
+    return Array.prototype.map.call(node.childNodes,walk).join('');
+  }
+  return Array.prototype.map.call(el.childNodes,walk).join('').replace(/\n+$/,'');
 }
 
 function cancelStep(){
@@ -3167,7 +3311,7 @@ function cancelStep(){
 
 function saveStep(){
   const st=S.curStep;if(!st)return;
-  st.text=document.getElementById('step-txt').value.trim();
+  st.text=htmlToMarkup(document.getElementById('step-txt')).trim();
   const vt=document.getElementById('voice-box').textContent;
   if(vt&&vt!=='Tap "Start" to begin...')st.voice=vt.trim();
   if(!st.text&&st.voice)st.text=st.voice;
@@ -3325,7 +3469,8 @@ function appendVoiceToText(){
   const vt=document.getElementById('voice-box').textContent;
   if(!vt||vt==='Tap "Start" to begin...')return;
   const ta=document.getElementById('step-txt');
-  ta.value=(ta.value?ta.value+'\n':'')+vt.trim();
+  if(ta.childNodes.length)ta.appendChild(document.createElement('br'));
+  ta.appendChild(document.createTextNode(vt.trim()));
   toast(t('toast_voice_copied'));
 }
 
@@ -3532,7 +3677,7 @@ function openPreview(){
     var txt=node.aiText||node.text||'';
     var photos=node.photos||[];
     var out='<div style="background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:6px;border:1px solid var(--border)">'
-      +'<div style="font-size:13px;font-weight:600">'+esc(label)+' '+esc(txt)+'</div>';
+      +'<div style="font-size:13px;font-weight:600">'+esc(label)+' '+markupToHtml(txt)+'</div>';
     if(photos.length){
       out+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">';
       photos.forEach(function(ph){
