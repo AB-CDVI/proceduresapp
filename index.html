@@ -43,6 +43,11 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .fi:focus,.fs:focus,.fta:focus{outline:none;border-color:var(--blue-mid)}
 .fs{appearance:none}
 .fta{resize:none;line-height:1.5}
+.fmt-toolbar{display:flex;align-items:center;gap:4px;margin-bottom:6px;flex-wrap:wrap}
+.fmt-btn{border:1px solid var(--border);background:#fff;border-radius:7px;padding:5px 9px;font-size:13px;cursor:pointer;color:var(--text);line-height:1}
+.fmt-btn:active{background:var(--blue-pale)}
+.fmt-color{font-size:16px;padding:4px 7px}
+.fmt-sep{width:1px;height:18px;background:var(--border);margin:0 2px}
 
 /* LOGIN */
 .login-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:var(--blue)}
@@ -203,7 +208,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.87</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.88</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -542,6 +547,16 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     </div>
     <div class="card">
       <div class="card-title" data-i18n="notes">✍️ Notes</div>
+      <div class="fmt-toolbar">
+        <button type="button" class="fmt-btn" onclick="wrapSelection('**','**')" title="Gras"><b>B</b></button>
+        <button type="button" class="fmt-btn" onclick="toggleBulletLines()" title="Puces">≡•</button>
+        <button type="button" class="fmt-btn" onclick="wrapSelection('[[hl]]','[[/hl]]')" title="Important (surligné)">🖍</button>
+        <button type="button" class="fmt-btn" onclick="wrapSelection('[[size:lg]]','[[/size]]')" title="Texte plus grand">A+</button>
+        <span class="fmt-sep"></span>
+        <button type="button" class="fmt-btn fmt-color" style="color:#CC0000" onclick="wrapSelection('[[color:red]]','[[/color]]')" title="Rouge">●</button>
+        <button type="button" class="fmt-btn fmt-color" style="color:#1B3A6B" onclick="wrapSelection('[[color:blue]]','[[/color]]')" title="Bleu">●</button>
+        <button type="button" class="fmt-btn fmt-color" style="color:#1F7A3D" onclick="wrapSelection('[[color:green]]','[[/color]]')" title="Vert">●</button>
+      </div>
       <textarea id="step-txt" class="fta" rows="6" data-i18n="notes_ph" data-i18n-attr="placeholder"></textarea>
     </div>
   </div></div>
@@ -1199,7 +1214,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.87 — Architecture séparée
+// GITHUB SYNC v1.88 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -3097,6 +3112,44 @@ function openStepEditor(secId,stepId,subId){
   stopVoice();renderPhotoGrid();go('step');
 }
 
+// ─── Barre d'outils de mise en forme (zone de rédaction) ───────────────────
+// Insère une syntaxe légère directement dans le texte (ex: **gras**), que
+// generate.js sait interpréter pour produire le vrai formatage Word. Pas
+// d'éditeur riche complexe: on manipule juste la sélection du <textarea>,
+// fiable sur mobile et facile à maintenir.
+function wrapSelection(startTag,endTag){
+  var ta=document.getElementById('step-txt');
+  if(!ta)return;
+  var s=ta.selectionStart,e=ta.selectionEnd;
+  var val=ta.value;
+  var selected=val.slice(s,e);
+  ta.value=val.slice(0,s)+startTag+selected+endTag+val.slice(e);
+  var newS=s+startTag.length;
+  ta.focus();
+  ta.setSelectionRange(newS,newS+selected.length);
+}
+function toggleBulletLines(){
+  var ta=document.getElementById('step-txt');
+  if(!ta)return;
+  var s=ta.selectionStart,e=ta.selectionEnd;
+  var val=ta.value;
+  var lineStart=val.lastIndexOf('\n',s-1)+1;
+  var lineEnd=val.indexOf('\n',e);
+  if(lineEnd===-1)lineEnd=val.length;
+  var block=val.slice(lineStart,lineEnd);
+  var lines=block.split('\n');
+  var allBulleted=lines.every(function(l){return l.trim()===''||/^[-•]\s/.test(l);});
+  var newLines=lines.map(function(l){
+    if(l.trim()==='')return l;
+    if(allBulleted)return l.replace(/^[-•]\s*/,'');
+    return /^[-•]\s/.test(l)?l:'- '+l;
+  });
+  var newBlock=newLines.join('\n');
+  ta.value=val.slice(0,lineStart)+newBlock+val.slice(lineEnd);
+  ta.focus();
+  ta.setSelectionRange(lineStart,lineStart+newBlock.length);
+}
+
 function cancelStep(){
   const sec=S.cur.sections.find(s=>s.id===S.curSecId);
   const isEmpty=S.curStep&&!S.curStep.text&&!S.curStep.voice&&(!S.curStep.photos||!S.curStep.photos.length);
@@ -3350,7 +3403,10 @@ async function generateAI(){
     +'Keep the SAME language as the original text for that item — never translate. '
     +'Keep the exact same meaning and level of detail: do not add or remove information, '
     +'do not add labels like "Notes:" or "(see photo)", do not add numbering. '
-    +'Just return a clear, concise, professional version of the same instruction.\n\n'
+    +'Some items contain formatting markup: **bold**, lines starting with "- " (bullets), '
+    +'[[color:red/blue/green]]...[[/color]], [[size:lg]]...[[/size]], [[hl]]...[[/hl]] (highlight). '
+    +'Preserve ALL such markup EXACTLY as-is, in the same position relative to the text it wraps — '
+    +'never remove it, never alter the tag names, only fix the plain text around/inside it.\n\n'
     +'ITEMS:\n'+JSON.stringify(payload)+'\n\n'
     +'Respond with ONLY a raw JSON object mapping each id to its corrected text, e.g. '
     +'{"'+payload[0].id+'":"corrected text"}. No markdown, no code fences, no explanation.';
