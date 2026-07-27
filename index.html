@@ -211,7 +211,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="login-wrap">
     <div class="login-logo">
       <div class="login-logo-title">ProceduresApp</div>
-      <div class="login-logo-sub">Magnetic Solution — v1.89</div>
+      <div class="login-logo-sub">Magnetic Solution — v1.90</div>
     </div>
 
     <div id="site-code-box" class="login-card">
@@ -1224,7 +1224,7 @@ function decryptKey(e,h){if(!e||!e.startsWith('enc:'))return e||'';try{var s=ato
 // ═══════════════════════════════════════════════════════
 // SHARED TOKEN & GITHUB
 // ═══════════════════════════════════════════════════════
-// GITHUB SYNC v1.89 — Architecture séparée
+// GITHUB SYNC v1.90 — Architecture séparée
 // data.json  → utilisateurs + token (petit fichier, pas de photos)
 // procs/id.json → procédures individuelles (une par fichier)
 // ═══════════════════════════════════════════════════════
@@ -3163,12 +3163,40 @@ function _setupRichEditor(el){
 // (perdant toute mise en forme précédente sur CETTE portion précise) avant de
 // réenvelopper — ça évite l'empilement de styles et permet de "changer d'avis"
 // simplement en choisissant une nouvelle valeur (ex: cliquer sur noir après rouge).
-function applyInlineStyle(styleProps){
+function applyInlineStyle(styleProps,isToggle){
   var ta=document.getElementById('step-txt');
   var sel=window.getSelection();
   if(!sel.rangeCount||!ta.contains(sel.anchorNode)){ta.focus();return;}
   var range=sel.getRangeAt(0);
   if(range.collapsed)return; // rien de sélectionné, on ignore silencieusement
+
+  // Cas le plus courant: la sélection correspond exactement au contenu d'un
+  // span déjà formaté (ex: on vient de le surligner et on resélectionne pareil
+  // pour changer d'avis) → on modifie CE span directement. Plus robuste que
+  // extraire/réenvelopper, qui pouvait laisser une trace vide de l'ancien span
+  // avec son style toujours actif.
+  var startEl=range.startContainer.nodeType===3?range.startContainer.parentElement:range.startContainer;
+  var endEl=range.endContainer.nodeType===3?range.endContainer.parentElement:range.endContainer;
+  var startLen=range.startContainer.textContent?range.startContainer.textContent.length:0;
+  if(startEl===endEl&&startEl&&startEl.tagName==='SPAN'&&ta.contains(startEl)
+     &&range.startOffset===0&&range.endOffset===(range.endContainer.textContent||'').length
+     &&startLen===(range.endContainer.textContent||'').length){
+    var key=Object.keys(styleProps)[0];
+    var newVal=styleProps[key];
+    if(isToggle&&startEl.style[key]&&startEl.style[key]!==''){
+      startEl.style[key]='';
+    } else {
+      startEl.style[key]=newVal;
+    }
+    if(!startEl.getAttribute('style')||startEl.getAttribute('style').trim()===''){
+      startEl.replaceWith(document.createTextNode(startEl.textContent));
+    }
+    ta.focus();
+    return;
+  }
+
+  // Cas général: extraire le texte brut (perd toute mise en forme précédente
+  // sur cette portion) et le réenvelopper dans un nouveau span.
   var frag=range.extractContents();
   var text=_fragToText(frag);
   if(!text){range.insertNode(frag);return;}
@@ -3191,8 +3219,8 @@ function _fragToText(node){
   return out;
 }
 
-function applyBold(){applyInlineStyle({fontWeight:'bold'});}
-function applyHighlight(){applyInlineStyle({backgroundColor:'#fff59d'});}
+function applyBold(){applyInlineStyle({fontWeight:'bold'},true);}
+function applyHighlight(){applyInlineStyle({backgroundColor:'#fff59d'},true);}
 function applyColor(name){applyInlineStyle({color:RICH_COLORS[name]});}
 function applyFontSize(key){
   if(key==='normal'){applyInlineStyle({fontSize:''});return;}
